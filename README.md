@@ -12,10 +12,10 @@
 `git clean-repo -V[--version]`
 > show application version
 
-`git clean-repo --scan --range=full/blobs/commits/trees/refs`
-> scan range can be: full|blobs|commits|trees|refs|tags
+<!-- `git clean-repo --scan --range=full/blobs/commits/trees/refs` -->
+<!-- > scan range can be: full|blobs|commits|trees|refs|tags -->
 
-`git clean-repo --scan --range=blobs --limit=10m --type=jpg --number=5`
+`git clean-repo --scan --limit=10m --type=jpg --number=5`
 > scan top 5 file(.jpg type, if have any) which size larger than 10M
 
 `git clean-repo --delete filepath [OID]`
@@ -29,7 +29,7 @@
 > interactive with user end, guide user step by step
 > this contains serveral commands below:
 
-`git clean-repo --scan --range=blobs --number=N --limit=50m`
+`git clean-repo --scan --number=N --limit=50m`
 > show a list of top N biggest files(blobs), which type are unspecified but size larger than 50M
 > hint user to specify file type by using commands
 
@@ -46,7 +46,7 @@
 
 
 **LFS使用流程**
-
+# https://help.aliyun.com/document_detail/206889.html
 + download and install
 > https://github.com/git-lfs/git-lfs/releases
 + set up in machine
@@ -60,11 +60,20 @@
 
 git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中的文件
 已经存在于提交历史中的大文件，如果想要使用LFS，需要用迁移：
+# https://help.aliyun.com/document_detail/206890.html?spm=a2c4g.11186623.0.nextDoc.778d3f107TbPkx
 + mirate existing file in history
 > git lfs migrate import --include="*.psd" --everything
 + push to remote
 > git push origin main
 
+使用LFS将历史中的某个文件纳入到LFS的追踪管理，此时会生成`.git/lfs/objects`保存该文件对象
+然后对仓库过滤，删除文件
+然后强制推送到远程仓库
+
+
+**git-filter-repo**
+https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37ea546fd9001aee823d
+https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/docs/html/git-filter-repo.html
 
 
 **Code Struct**
@@ -81,3 +90,18 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 ## TODO
 + suppoort refs filter
 + support multi file type in one option
+
+
+**NOTE**
++ 目前只关注文件本身，所以扫描时只关注blob类型对象
++ 考虑到有种情况是扫描出来的大文件(blob)只存在历史中，此时如果想删除，指定文件名是找不到该文件的。因此，实际在做文件删除时，应该指定为blob hash值，也就是虽然看起来用户选择的是文件名，实际上使用它对应的blob hash。
++ 由于需要先将大文件扫描处理，交给用户选择，所以整个过程需要经过两次扫描。一次是根据用户选项，筛选出符合条件的文件，二是在删除重写历史时，使用fast-export进行扫描。
++ fast-export的输出结果需要结构化解析，然后才方便过滤
++ 需要提示说明同一个文件多次出现在扫描结果中的现象：同一个大文件存在不同版本，他们的文件名相同，但OID不同。
+在删除时，有两种情况：一是根据文件名，一次性删除其所有版本(delete by name)，二是根据OID不同，一次删除一个版本(delete by oid)。
++ 为了防止用户没有对仓库进行备份，当用户在进行删除重、写历史操作时，有一种策略是首先进行`fresh clone safety check`，即检查正在操作的仓库是不是刚克隆的，如果不是新鲜克隆的，则很有可能该仓库是单例仓库，没有副本，没有原始仓库，所以进行一些操作是非常危险的，此时需要提示用户正在非副本仓库中进行危险操作。不是完全拒绝的，用户还可以使用选项`--force`强制进行操作 ([参考](https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/docs/html/git-filter-repo.html#FRESHCLONE))。
+虽然这种检测不是绝对准确的，但它是有用的。
+具体检测方法是查看`git reflog`命令的结果，是否只包含一项。如果超过一项，则会被认为不是刚克隆的仓库。
+
+**技术原理**
+见 [doc](docs/technical.md)

@@ -4,7 +4,9 @@ VERSION := 0.0.1
 
 GO_VERSION := $(subst go version go,,$(shell go version))
 
-GO_LDFLAGS := -X 'main.GoVersion=$(GO_VERSION)' -X 'main.BuildVersion=$(shell git describe --tags --always)'
+BUILD_VERSION := $(shell git describe --tags --always)
+
+GO_LDFLAGS := -X 'main.GoVersion=$(GO_VERSION)' -X 'main.BuildVersion=$(BUILD_VERSION)'
 GOFLAGS := -ldflags "$(GO_LDFLAGS)"
 
 

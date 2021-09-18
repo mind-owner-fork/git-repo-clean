@@ -2,50 +2,48 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/github/git-sizer/git"
-	"github.com/github/git-sizer/sizes"
 )
-
-var BuildVersion string
 
 func main() {
 	// parse argument
 	var op = Options{}
 	if err := op.OptionInit(os.Args[1:]); err != nil {
 		fmt.Println("init error")
+		os.Exit(1)
 	}
 
 	// create repo
-	repo, err := git.NewRepository(".")
+	raw_repo, err := git.NewRepository(op.path)
 	if err != nil {
 		fmt.Println("couldn't open Git repository")
-
+		os.Exit(1)
 	}
+	gitBin, err := findGitBin()
+	if err != nil {
+		fmt.Println("Couldn't find Git execute program")
+		os.Exit(1)
+	}
+
+	var repo = &Repository{*raw_repo, op.path, gitBin}
+
 	defer repo.Close()
-
 	// scan repo
-	var nameStyle sizes.NameStyle = sizes.NameStyleFull
-
-	var size uint
-	if op.ranges == "full" {
-		size = 0
-	} else {
-		size = 1
-	}
-	var threshold sizes.Threshold = sizes.Threshold(size)
 	var historySize HistoryRecord
 	if op.scan {
 		historySize, err = ScanRepository(*repo, op)
 		if err != nil {
 			fmt.Println("scanning repository error:\n *", err)
+			os.Exit(1)
 		}
-		for idx, b := range historySize.bigblob {
-			fmt.Printf("blob[%d]: %s -> %d\n", idx, b.oid.String(), b.objectSize)
+		if op.verbose {
+			for idx, b := range historySize.bigblob {
+				name, _ := repo.GetBlobName(b.oid.String())
+				fmt.Printf("[%d]: %s %d %s\n", idx, b.oid.String(), b.objectSize, name)
+
+			}
 		}
-		// report
-		io.WriteString(os.Stdout, historySize.TableString(threshold, nameStyle))
 	}
 }
