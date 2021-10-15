@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +14,7 @@ const (
 	idx_re  = `(\d+)\n$`              // mark :1, from :1, merge :1
 	oid_re  = `([0-9a-f]{40})\n$`     // original-oid 401fb905f1abf1d35331d0cddc8556ba23c1a212
 	user_re = `(.*?) <(.*?)> (.*)\n$` // author|commiter|tagger Li Linchao <lilinchao@oschina.cn> 1633964331 +0800
-	ref_re  = `(.*)\n$`               // commit|reset|ref refs/tags/v1.0.0
+	ref_re  = `(.*)\n$`               // commit|reset|tag refs/tags/v1.0.0
 )
 
 func Match(pattern string, str string) []string {
@@ -61,7 +62,6 @@ func (blob Blob) dump(writer io.WriteCloser) {
 	writer.Write([]byte(data_line))
 
 	// #TODO write certain size data
-	// writer.Write([]byte(blob.mark_id_))
 	writer.Write([]byte("\n"))
 }
 
@@ -114,6 +114,18 @@ func NewFileChange(types_, mode_ string, id_ int32, filepath_ string) FileChange
 		mode:       mode_,
 		blob_id:    id_,
 		filepath:   filepath_,
+	}
+}
+
+func (fc *FileChange) dumpToString() string {
+	if fc.changetype == "M" {
+		filechange_ := fmt.Sprintf("M %s :%d %s\n", fc.mode, fc.blob_id, fc.filepath)
+		return filechange_
+	} else if fc.changetype == "D" {
+		filechange_ := fmt.Sprintf("D %s\n", fc.filepath)
+		return filechange_
+	} else {
+		return ""
 	}
 }
 
@@ -179,7 +191,10 @@ type Commit struct {
 func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, msg_ []byte, parents_ []int32, filechanges_ []string) Commit {
 	var ele = NewGitElementsWithID()
 	ele.base.types = "commit"
-
+	if len(parents_) == 0 {
+		fmt.Printf("error parent ids is 0\n")
+		parents_ = make([]int32, 0)
+	}
 	return Commit{
 		ele:          ele,
 		old_id:       ele.id,
@@ -270,19 +285,19 @@ func NewReset(ref_ string, from_ref_ int32) Reset {
 	return Reset{
 		base: base,
 		ref:  ref_,      // ref is string
-		from: from_ref_, // but from_ref is short id
+		from: from_ref_, // but from_ref is short mark id, optional exist
 	}
 }
 
 func (r *Reset) dump(writer io.WriteCloser) {
 	r.base.dumped = true
 	ref_line := fmt.Sprintf("reset %s\n", r.ref)
-	from_ref_line := fmt.Sprintf("from :%d\n", r.from)
-
 	writer.Write([]byte(ref_line))
-	writer.Write([]byte(from_ref_line))
-
-	writer.Write([]byte("\n"))
+	if r.from > 0 {
+		from_ref_line := fmt.Sprintf("from :%d\n", r.from)
+		writer.Write([]byte(from_ref_line))
+		writer.Write([]byte("\n"))
+	}
 }
 
 /*
@@ -351,164 +366,161 @@ func (tag *Tag) dump(writer io.WriteCloser) {
 // reset refs/xxx/
 // tag xxx
 // ref types are: commit, reset, tag
-func (iter *FEOutPutIter) parse_ref_line(reftype, line string) (ref, newline string) {
+func (iter *FEOutPutIter) parse_ref_line(reftype, line string) (refname string) {
 	matches := Match(reftype+ref_re, line)
-	// go to next
-	new_line, _ := iter.Next()
-	// return literal ref, not contain type field
-	return matches[1], new_line
+	// don't match
+	if len(matches) == 0 {
+		return ""
+	}
+	// return literal ref, not its type
+	return matches[1]
 }
 
 // parent refs are like:
 // from :parent_ref_id
 // merge :parent_ref_id
 // parent ref types are: from or merge
-
-func (iter *FEOutPutIter) parse_parent_ref(reftype, line string) (ref, newline string) {
+func (iter *FEOutPutIter) parse_parent_ref(reftype, line string) (refid int32) {
 	matches := Match(reftype+" :"+ref_re, line)
+	if len(matches) == 0 {
+		// don't matched parent ref line
+		return 0
+	}
 	orig_baseref := matches[1]
 	ref_id, _ := strconv.Atoi(orig_baseref)
 	baseref := IDs.translate(int32(ref_id))
-	// return ref id, not the whole line
-	return strconv.Itoa(int(baseref)), newline
+	// return ref mark id, not the whole line
+	return baseref
 }
 
-func (iter *FEOutPutIter) parse_mark(line string) (idx int32, newline string) {
+func (iter *FEOutPutIter) parse_mark(line string) (idx int32) {
 	matches := Match("mark :"+idx_re, line)
-	if len(matches) <= 0 {
+	if len(matches) == 0 {
 		fmt.Println("no match mark id")
-		return 0, ""
+		return 0
 	}
 	if idx, err := strconv.Atoi(matches[1]); err == nil {
-		// go to next
-		new_line, _ := iter.Next()
-		return int32(idx), new_line
+		return int32(idx)
 	}
-	return 0, ""
+	return 0
 }
 
-func (iter *FEOutPutIter) parse_original_id(line string) (oid string, newline string) {
+func (iter *FEOutPutIter) parse_original_id(line string) (oid string) {
 	matches := Match("original-oid "+oid_re, line)
 	if len(matches) == 0 {
 		fmt.Println("no match original-oid")
-		return "", ""
+		return ""
 	}
-	// go to next
-	new_line, _ := iter.Next()
 	// single oid string
-	return matches[1], new_line
+	return matches[1]
 }
 
-// parse data size, return data size
+// parse raw blob data, return data size, data and err
 // **NOTE**
-// blob data size maybe zero!, so the parsed data matches maybe like:
+// blob data size maybe zero, so the parsed data matches maybe like:
 // [data 0
 //  0]
+// thus we use -1 to indicate parse error
+func (iter *FEOutPutIter) parse_data(line string) (n int64, data []byte) {
+	blank_data := make([]byte, 0)
+	var writer bytes.Buffer
 
-// parse data block too
-func (iter *FEOutPutIter) parse_data(line string) (size int64, newline string) {
 	matches := Match("data "+idx_re, line)
-	fmt.Printf("parsed data matches: %s\n", matches)
 	if len(matches) == 0 {
-		fmt.Println("no match data")
-		return -1, ""
+		fmt.Println("no match data size")
+		return -1, blank_data
 	}
-	if size, err := strconv.Atoi(matches[1]); err == nil {
-		// go to next
-		new_line, _ := iter.Next()
-		return int64(size), new_line
+	size, err := strconv.ParseInt(matches[1], 10, 64)
+	if err != nil {
+		return -1, blank_data
 	}
-	return -1, ""
+
+	// go to next line
+	newline, _ := iter.Next()
+
+	// if data size is 0, no need to read any data more, just go to next line
+	if size != 0 {
+		var sum int64
+		for {
+			n, err := writer.Write([]byte(newline))
+			if err != nil {
+				fmt.Println(err)
+			}
+			if n != len(newline) {
+				fmt.Println("failed to write data")
+			}
+			sum += int64(n)
+			if sum >= size {
+				break
+			}
+			newline, _ = iter.Next()
+		}
+	}
+	return size, writer.Bytes()
 }
 
 // author, commiter, tagger
-func (iter *FEOutPutIter) parse_user(usertype, line string) (use string, newline string) {
-
-	if matches := Match(usertype+" "+user_re, line); len(matches[0]) != 0 {
-		// go to next
-		new_line, _ := iter.Next()
-		// return whole line
-		return matches[0], new_line
+func (iter *FEOutPutIter) parse_user(usertype, line string) (use string) {
+	matches := Match(usertype+" "+user_re, line)
+	if len(matches) == 0 {
+		return ""
 	}
-	return "", ""
+	if len(matches[0]) != 0 {
+		// return whole match line
+		return matches[0]
+	}
+	return ""
 }
 
 // file mode can be: M(modify), D(delete), C(copy), R(rename), A(add)
-// here we only handle A, M and D mode
-// TODO: file path
-func (iter *FEOutPutIter) parse_filechange(line string) (filechange, newline string) {
+// here we only handle M,D and R mode
+// #FIXME: fix file path
+func (iter *FEOutPutIter) parse_filechange(line string) FileChange {
 	arr := strings.Split(line, " ")
-	flag := arr[0]
-	// mode := arr[1]
-	id_s := arr[2] // :18
-	path := arr[3]
+	types := arr[0]
+	if types == "M" { // pattern: M mode :id path
+		mode := arr[1]
+		parent_id, _ := strconv.ParseInt(strings.Split(arr[2], ":")[1], 10, 32)
+		path := strings.TrimSuffix(arr[3], "\n")
+		IDs.translate(int32(parent_id))
 
-	if flag == "M" {
-		id_s = strings.Split(id_s, ":")[1] // 18
-		id_t, _ := strconv.Atoi(id_s)
-		IDs.translate(int32(id_t))
-		if strings.HasPrefix(path, "\"") {
-			// dequote path
-		}
-		// type FileChange struct
-	} else if flag == "A" {
-
-	} else if flag == "D" {
-
+		filechange := NewFileChange("M", mode, int32(parent_id), path)
+		return filechange
+	} else if types == "D" { // pattern: D path
+		path := strings.TrimSuffix(arr[1], "\n")
+		filechange := NewFileChange("D", "", 0, path)
+		return filechange
+	} else if types == "R" { // pattern: R old new
+		original_path := arr[1]
+		// ???
+		// new_path := strings.TrimSuffix(arr[2], "\n")
+		filechange := NewFileChange("R", "", 0, original_path)
+		return filechange
 	}
 
-	return "", ""
+	return FileChange{}
 }
 
 func (iter *FEOutPutIter) parseBlob(op Options, line string) Blob {
-	// go to next
+	// go to next line
 	newline, _ := iter.Next()
-	id, newline := iter.parse_mark(newline)
-	fmt.Printf("parsed mark id: %d\n", id)
-	if id == 0 {
-		// throw err info, then exit
-		return Blob{}
-	}
-	original_oid, newline := iter.parse_original_id(newline)
-	fmt.Printf("parsed original oid: %s\n", original_oid)
-	if len(original_oid) == 0 {
-		// throw err info, then exit
+
+	mark_id := iter.parse_mark(newline)
+	if mark_id == 0 {
+		// #FIXME throw err info, then exit
 		return Blob{}
 	}
 
-	size, newline := iter.parse_data(newline)
-	fmt.Printf("parsed data size: %d\n", size)
-	data_block := make([]byte, size)
-
-	fmt.Printf("read size: %d\n", len(data_block))
-	// io.ReadFull(iter.out, data_block)
-
-	if size != 0 {
-		// parse size of raw blob data
-		for {
-			line_byte, err := iter.f.ReadBytes('\n')
-			if err != nil {
-				if err != io.EOF {
-					// normal exit
-					break
-				}
-				// parse wrong
-				break
-			}
-
-			// if we want to end the blob data read, only its size can be a flag
-			if line_byte[len(line_byte)-1] == '\n' && len(line_byte) == 1 {
-				break
-			}
-
-			fmt.Printf("read line : %s\n", line_byte)
-			data_block = append(data_block, line_byte...)
-			fmt.Printf("copy to data_block : %s\n", line_byte)
-		}
-	}
-	fmt.Printf("read total : %s\n", data_block)
 	newline, _ = iter.Next()
-	// Parse and construct a complete Blob object
+	original_oid := iter.parse_original_id(newline)
+	if len(original_oid) == 0 {
+		// #FIXME throw err info, then exit
+		return Blob{}
+	}
+
+	newline, _ = iter.Next()
+	size, data_block := iter.parse_data(newline)
+
 	blob := NewBlob(size, data_block, original_oid)
 
 	// decide whether to drop this blob
@@ -516,21 +528,125 @@ func (iter *FEOutPutIter) parseBlob(op Options, line string) Blob {
 	if size > int64(limit) {
 		blob.ele.base.dumped = false
 		fmt.Println("will drop this blob")
-		return Blob{}
+	}
+	// #TODO dump blob into fast-import here
+	if blob.ele.base.dumped {
+		// blob.dump()
+	}
+	if mark_id > 0 {
+		blob.ele.old_id = mark_id
+		IDs.record_rename(mark_id, blob.ele.id)
 	}
 	return blob
 }
 
 func (iter *FEOutPutIter) parseCommit(line string) Commit {
-	return Commit{}
+	if line == "\n" {
+		line, _ = iter.Next()
+	}
+	branch := iter.parse_ref_line("commit", line)
+
+	newline, _ := iter.Next()
+	mark_id := iter.parse_mark(newline)
+	if mark_id == 0 {
+		// #FIXME throw err info, then exit
+		return Commit{}
+	}
+
+	newline, _ = iter.Next()
+	orign_oid := iter.parse_original_id(newline)
+
+	newline, _ = iter.Next()
+	author := iter.parse_user("author", newline)
+
+	newline, _ = iter.Next()
+	commiter := iter.parse_user("committer", newline)
+
+	newline, _ = iter.Next()
+	size, msg := iter.parse_data(newline)
+
+	newline, _ = iter.Next()
+	from_id := iter.parse_parent_ref("from", newline)
+
+	var merge_id int32
+	parent_ids := make([]int32, 0)
+	parent_ids = append(parent_ids, from_id)
+
+	newline, _ = iter.Next()
+	for strings.HasPrefix(newline, "merge") {
+		merge_id = iter.parse_parent_ref("merge", newline)
+		parent_ids = append(parent_ids, merge_id)
+		newline, _ = iter.Next()
+	}
+
+	file_changes := make([]string, 0)
+	var filechange FileChange
+
+	for newline != "\n" {
+		filechange = iter.parse_filechange(newline)
+		file_changes = append(file_changes, filechange.dumpToString())
+		newline, _ = iter.Next()
+	}
+
+	commit := NewCommit(orign_oid, branch, author, commiter, int32(size),
+		msg, parent_ids, file_changes)
+
+	if mark_id > 0 {
+		commit.old_id = mark_id
+		IDs.record_rename(mark_id, commit.ele.id)
+	}
+	return commit
 }
 
 func (iter *FEOutPutIter) parseReset(line string) Reset {
-	return Reset{}
+	ref := iter.parse_ref_line("reset", line)
+	// this reset is the first reset on the first commit
+	str, _ := iter.f.Peek(6)
+	if string(str) == "commit" {
+		return NewReset(ref, 0)
+	}
+	// then countinue to parse from-line in reset structure
+	newline, _ := iter.Next()
+	parent_id := iter.parse_parent_ref("from", newline)
+
+	reset := NewReset(ref, parent_id)
+	// #TODO writer Reset to git-fast-import
+	if reset.base.dumped {
+		// reset.dump(writer)
+	}
+	return reset
 }
 
 func (iter *FEOutPutIter) parseTag(line string) Tag {
-	return Tag{}
+	tag_name := iter.parse_ref_line("tag", line)
+
+	// go to next new line
+	newline, _ := iter.Next()
+	mark_id := iter.parse_mark(newline)
+	if mark_id == 0 {
+		// #FIXME throw err info, then exit
+	}
+	newline, _ = iter.Next()
+	parent_id := iter.parse_parent_ref("from", newline)
+
+	newline, _ = iter.Next()
+	orig_id := iter.parse_original_id(newline)
+
+	newline, _ = iter.Next()
+	tagger := iter.parse_user("tagger", newline)
+
+	newline, _ = iter.Next()
+	size, msg := iter.parse_data(newline)
+
+	tag := NewTag(tag_name, parent_id, orig_id, tagger, int32(size), msg)
+	if mark_id > 0 {
+		// the current parsed mark id is old id
+		// the new id is generated by IDs.nextID() in NewTag()
+		tag.old_id = mark_id
+		IDs.record_rename(mark_id, tag.ele.id)
+	}
+
+	return tag
 }
 
 // pass some parameters into this for blob filter?
@@ -541,25 +657,22 @@ func (repo *Repository) Parser(opts Options) {
 	}
 	for {
 		line, _ := iter.Next()
-
-		if strings.HasPrefix(line, "feature done") {
-			// go to next line
+		// #FIXME fix miss read
+		if matches := Match("feature done\n", line); len(matches) != 0 {
 			continue
-		} else if strings.HasPrefix(line, "blob") {
-			// pass user options to filter blob
+		} else if matches := Match("blob\n", line); len(matches) != 0 {
+			// pass user-end options to filter blob
 			iter.parseBlob(opts, line)
-		} else if strings.HasPrefix(line, "reset") {
+		} else if matches := Match("reset (.*)\n$", line); len(matches) != 0 {
 			iter.parseReset(line)
-		} else if strings.HasPrefix(line, "commit") {
+		} else if matches := Match("commit (.*)\n$", line); len(matches) != 0 {
 			iter.parseCommit(line)
-		} else if strings.HasPrefix(line, "tag") {
+		} else if matches := Match("tag (.*)\n$", line); len(matches) != 0 {
 			iter.parseTag(line)
-		} else if strings.HasPrefix(line, "done") {
-			// parse done
+		} else if strings.HasPrefix(line, "done\n") && strings.HasPrefix(line, "done\n") {
 			iter.Close()
 			break
 		}
-		// continue next line
 	}
 
 }

@@ -46,4 +46,5 @@ func main() {
 			}
 		}
 	}
+	repo.Parser(op)
 }

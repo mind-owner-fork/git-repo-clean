@@ -469,3 +469,6 @@ func do() {
 > 原始id序号为：A:1, B:2, C:3
 > 加上过滤筛选条件后，按顺序A还是为1，B需要被过滤，跳过，C则自动加1，变为2
 > commitD 依赖B，则commitD 也会修改。
+
+> Blob, Commit, Reset, Tag, Filechange类型数据，底层都嵌套有`GitElements`结构，其中有`dumped`这个字段，
+一旦检测到改字段为`false`，则意味着改类型需要被过滤，整个条数据不再写入流中，同时直接跳到下一行继续解析其它类型数据。
