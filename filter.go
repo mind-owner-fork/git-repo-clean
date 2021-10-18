@@ -1,11 +1,12 @@
 package main
 
-// type Filter struct {
-// 	parse_blob_   func()
-// 	parse_reset_  func()
-// 	parse_commit_ func()
-// 	parse_tag_    func()
-// }
+//  Global OID and ID tables
+var (
+	IDs            = NewIDs()
+	Id_hash        = make(map[int32]string)
+	Hash_id        = make(map[string]int32)
+	Skiped_commits = make([]int32, 0)
+)
 
 /*Ids*/
 type Ids struct {
@@ -13,8 +14,8 @@ type Ids struct {
 	translations map[int32]int32
 }
 
-// create Ids object
-func (ids Ids) NewIDs() Ids {
+// create Ids object instance
+func NewIDs() Ids {
 	return Ids{
 		next_id:      1,
 		translations: make(map[int32]int32),
@@ -22,9 +23,9 @@ func (ids Ids) NewIDs() Ids {
 }
 
 // return current next_id, then next_id + 1
-func (ids Ids) nextID() int32 {
+func (ids *Ids) New() int32 {
 	id := ids.next_id
-	ids.next_id += 1 // need atomaic operation?
+	ids.next_id += 1 // need atomic operation?
 	return id
 }
 
@@ -47,14 +48,6 @@ func (ids Ids) translate(old_id int32) int32 {
 		return old_id
 	}
 }
-
-//  Global OID and tables
-var (
-	IDs            = Ids{}.NewIDs()
-	Id_hash        map[int32]string
-	Hash_id        map[string]int32
-	Skiped_commits []int32
-)
 
 // Git element basically contain type and dumped field
 type GitElements struct {
@@ -88,7 +81,7 @@ type GitElementsWithID struct {
 func NewGitElementsWithID() GitElementsWithID {
 	return GitElementsWithID{
 		base:   NewGitElement(),
-		id:     IDs.nextID(),
+		id:     IDs.New(),
 		old_id: 0, // mark id must > 0, so 0 just means it haven't initialized
 	}
 }

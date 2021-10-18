@@ -54,15 +54,12 @@ func (blob Blob) dump(writer io.WriteCloser) {
 
 	mark_line := fmt.Sprintf("mark :%d\n", blob.ele.id)
 	oid_line := fmt.Sprintf("original-oid %s\n", blob.original_oid)
-	data_line := fmt.Sprintf("data %d\n", blob.data_size)
+	data_line := fmt.Sprintf("data %d\n%s\n", blob.data_size, blob.data)
 
 	writer.Write([]byte("blob\n"))
 	writer.Write([]byte(mark_line))
 	writer.Write([]byte(oid_line))
 	writer.Write([]byte(data_line))
-
-	// #TODO write certain size data
-	writer.Write([]byte("\n"))
 }
 
 /*
@@ -141,6 +138,7 @@ func (fc *FileChange) dump(writer io.WriteCloser) {
 		writer.Write([]byte(filechange_))
 	} else {
 		// unhandle filechange type
+		fmt.Println("unsupported filechange type")
 	}
 }
 
@@ -217,10 +215,6 @@ func (commit *Commit) dump(writer io.WriteCloser) {
 	Hash_id[commit.original_oid] = commit.ele.id
 	Id_hash[commit.ele.id] = commit.original_oid
 
-	if commit.from == 0 || len(commit.merges) == 0 {
-		reset_line := fmt.Sprintf("reset %s\n", commit.branch)
-		writer.Write([]byte(reset_line))
-	}
 	commit_line := fmt.Sprintf("commit %s\n", commit.branch)
 	mark_line := fmt.Sprintf("mark :%d\n", commit.ele.id)
 	orig_id := fmt.Sprintf("original-oid %s\n", commit.original_oid)
@@ -230,19 +224,23 @@ func (commit *Commit) dump(writer io.WriteCloser) {
 	writer.Write([]byte(orig_id))
 
 	if len(commit.author) != 0 {
-		author_line := fmt.Sprintf("author %s\n", commit.author)
+		author_line := fmt.Sprintf("%s", commit.author)
 		writer.Write([]byte(author_line))
 	}
 	if len(commit.commiter) != 0 {
-		commiter_line := fmt.Sprintf("commiter %s\n", commit.commiter)
+		commiter_line := fmt.Sprintf("%s", commit.commiter)
 		writer.Write([]byte(commiter_line))
 	}
+
 	size_line := fmt.Sprintf("data %d\n", commit.msg_size)
-	data_line := fmt.Sprintf("%s\n", commit.message)
-	from_line := fmt.Sprintf("from :%d\n", commit.from)
+	data_line := fmt.Sprintf("%s", commit.message)
 	writer.Write([]byte(size_line))
 	writer.Write([]byte(data_line))
-	writer.Write([]byte(from_line))
+
+	if commit.from > 0 {
+		from_line := fmt.Sprintf("from :%d\n", commit.from)
+		writer.Write([]byte(from_line))
+	}
 
 	for _, parent := range commit.merges {
 		parent_line := fmt.Sprintf("merge :%d\n", parent)
@@ -347,18 +345,16 @@ func (tag *Tag) dump(writer io.WriteCloser) {
 	tag_line := fmt.Sprintf("tag %s\n", tag.ref)
 	mark_line := fmt.Sprintf("mark :%d\n", tag.ele.id)
 	from_line := fmt.Sprintf("from :%d\n", tag.from_ref)
-	tagger_line := fmt.Sprintf("%s\n", tag.tagger)
-	size_line := fmt.Sprintf("data %d\n", tag.data_size)
+	origin_oid := fmt.Sprintf("original-oid %s\n", tag.original_oid)
+	tagger_line := fmt.Sprintf("%s", tag.tagger)
+	data_line := fmt.Sprintf("data %d\n%s\n", tag.data_size, tag.msg)
 
 	writer.Write([]byte(tag_line))
 	writer.Write([]byte(mark_line))
 	writer.Write([]byte(from_line))
+	writer.Write([]byte(origin_oid))
 	writer.Write([]byte(tagger_line))
-	writer.Write([]byte(size_line))
-
-	// #TODO write certain size data
-
-	writer.Write([]byte("\n"))
+	writer.Write([]byte(data_line))
 }
 
 // ref_line are like:
@@ -474,7 +470,7 @@ func (iter *FEOutPutIter) parse_user(usertype, line string) (use string) {
 
 // file mode can be: M(modify), D(delete), C(copy), R(rename), A(add)
 // here we only handle M,D and R mode
-// #FIXME: fix file path
+// #FIXME: fix file path format in different OS platform
 func (iter *FEOutPutIter) parse_filechange(line string) FileChange {
 	arr := strings.Split(line, " ")
 	types := arr[0]
@@ -524,15 +520,13 @@ func (iter *FEOutPutIter) parseBlob(op Options, line string) Blob {
 	blob := NewBlob(size, data_block, original_oid)
 
 	// decide whether to drop this blob
+	// dumped == false, means will not dump into pipe
 	limit, _ := UnitConvert(op.limit)
 	if size > int64(limit) {
 		blob.ele.base.dumped = false
-		fmt.Println("will drop this blob")
+		// fmt.Println("will drop this blob")
 	}
-	// #TODO dump blob into fast-import here
-	if blob.ele.base.dumped {
-		// blob.dump()
-	}
+
 	if mark_id > 0 {
 		blob.ele.old_id = mark_id
 		IDs.record_rename(mark_id, blob.ele.id)
@@ -595,6 +589,10 @@ func (iter *FEOutPutIter) parseCommit(line string) Commit {
 		commit.old_id = mark_id
 		IDs.record_rename(mark_id, commit.ele.id)
 	}
+	// #TODO dump Commit into fast-import
+	if commit.ele.base.dumped {
+		// commit.dump(writer)
+	}
 	return commit
 }
 
@@ -610,7 +608,7 @@ func (iter *FEOutPutIter) parseReset(line string) Reset {
 	parent_id := iter.parse_parent_ref("from", newline)
 
 	reset := NewReset(ref, parent_id)
-	// #TODO writer Reset to git-fast-import
+	// #TODO dump Reset into git-fast-import
 	if reset.base.dumped {
 		// reset.dump(writer)
 	}
@@ -651,24 +649,42 @@ func (iter *FEOutPutIter) parseTag(line string) Tag {
 
 // pass some parameters into this for blob filter?
 func (repo *Repository) Parser(opts Options) {
-	iter, err := repo.NewFastExportIter()
+	var iter *FEOutPutIter
+	var input io.WriteCloser
+	// var input *os.File
+	var err error
+
+	iter, err = repo.NewFastExportIter()
 	if err != nil {
 		fmt.Fprint(os.Stdout, err)
 	}
+
+	go func() {
+		input, err = repo.FastImportOut()
+		if err != nil {
+			fmt.Println("run git-fast-import process failed")
+		}
+		// this is for test
+		// input, err = os.Create(".git/fast-export.out")
+	}()
+
 	for {
 		line, _ := iter.Next()
-		// #FIXME fix miss read
 		if matches := Match("feature done\n", line); len(matches) != 0 {
 			continue
 		} else if matches := Match("blob\n", line); len(matches) != 0 {
 			// pass user-end options to filter blob
-			iter.parseBlob(opts, line)
+			blob := iter.parseBlob(opts, line)
+			blob.dump(input)
 		} else if matches := Match("reset (.*)\n$", line); len(matches) != 0 {
-			iter.parseReset(line)
+			reset := iter.parseReset(line)
+			reset.dump(input)
 		} else if matches := Match("commit (.*)\n$", line); len(matches) != 0 {
-			iter.parseCommit(line)
+			commit := iter.parseCommit(line)
+			commit.dump(input)
 		} else if matches := Match("tag (.*)\n$", line); len(matches) != 0 {
-			iter.parseTag(line)
+			tag := iter.parseTag(line)
+			tag.dump(input)
 		} else if strings.HasPrefix(line, "done\n") && strings.HasPrefix(line, "done\n") {
 			iter.Close()
 			break
