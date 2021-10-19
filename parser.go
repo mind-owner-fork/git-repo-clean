@@ -186,13 +186,19 @@ type Commit struct {
 	filechanges  []string // multi-line
 }
 
+func parent_filter(str []int32) (int32, []int32) {
+	var empty []int32
+	if len(str) == 0 {
+		return 0, empty
+	} else {
+		return str[0], str[1:]
+	}
+}
+
 func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, msg_ []byte, parents_ []int32, filechanges_ []string) Commit {
 	var ele = NewGitElementsWithID()
 	ele.base.types = "commit"
-	if len(parents_) == 0 {
-		fmt.Printf("error parent ids is 0\n")
-		parents_ = make([]int32, 0)
-	}
+	from, merges := parent_filter(parents_)
 	return Commit{
 		ele:          ele,
 		old_id:       ele.id,
@@ -202,8 +208,8 @@ func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, m
 		commiter:     commiter_,
 		msg_size:     size_,
 		message:      msg_,
-		from:         parents_[0],
-		merges:       parents_[1:],
+		from:         from,
+		merges:       merges,
 		filechanges:  filechanges_,
 	}
 }
@@ -215,7 +221,7 @@ func (commit *Commit) dump(writer io.WriteCloser) {
 	Hash_id[commit.original_oid] = commit.ele.id
 	Id_hash[commit.ele.id] = commit.original_oid
 
-	commit_line := fmt.Sprintf("commit %s\n", commit.branch)
+	commit_line := fmt.Sprintf("commit%s\n", commit.branch)
 	mark_line := fmt.Sprintf("mark :%d\n", commit.ele.id)
 	orig_id := fmt.Sprintf("original-oid %s\n", commit.original_oid)
 
@@ -289,7 +295,7 @@ func NewReset(ref_ string, from_ref_ int32) Reset {
 
 func (r *Reset) dump(writer io.WriteCloser) {
 	r.base.dumped = true
-	ref_line := fmt.Sprintf("reset %s\n", r.ref)
+	ref_line := fmt.Sprintf("reset%s\n", r.ref)
 	writer.Write([]byte(ref_line))
 	if r.from > 0 {
 		from_ref_line := fmt.Sprintf("from :%d\n", r.from)
@@ -342,7 +348,7 @@ func (tag *Tag) dump(writer io.WriteCloser) {
 	Hash_id[tag.original_oid] = tag.ele.id
 	Id_hash[tag.ele.id] = tag.original_oid
 
-	tag_line := fmt.Sprintf("tag %s\n", tag.ref)
+	tag_line := fmt.Sprintf("tag%s\n", tag.ref)
 	mark_line := fmt.Sprintf("mark :%d\n", tag.ele.id)
 	from_line := fmt.Sprintf("from :%d\n", tag.from_ref)
 	origin_oid := fmt.Sprintf("original-oid %s\n", tag.original_oid)
@@ -535,6 +541,9 @@ func (iter *FEOutPutIter) parseBlob(op Options, line string) Blob {
 }
 
 func (iter *FEOutPutIter) parseCommit(line string) Commit {
+	var merge_id int32
+	parent_ids := make([]int32, 0)
+
 	if line == "\n" {
 		line, _ = iter.Next()
 	}
@@ -560,13 +569,11 @@ func (iter *FEOutPutIter) parseCommit(line string) Commit {
 	size, msg := iter.parse_data(newline)
 
 	newline, _ = iter.Next()
-	from_id := iter.parse_parent_ref("from", newline)
+	if strings.HasPrefix(newline, "from") {
+		from_id := iter.parse_parent_ref("from", newline)
+		parent_ids = append(parent_ids, from_id)
+	}
 
-	var merge_id int32
-	parent_ids := make([]int32, 0)
-	parent_ids = append(parent_ids, from_id)
-
-	newline, _ = iter.Next()
 	for strings.HasPrefix(newline, "merge") {
 		merge_id = iter.parse_parent_ref("merge", newline)
 		parent_ids = append(parent_ids, merge_id)
@@ -575,13 +582,11 @@ func (iter *FEOutPutIter) parseCommit(line string) Commit {
 
 	file_changes := make([]string, 0)
 	var filechange FileChange
-
 	for newline != "\n" {
 		filechange = iter.parse_filechange(newline)
 		file_changes = append(file_changes, filechange.dumpToString())
 		newline, _ = iter.Next()
 	}
-
 	commit := NewCommit(orign_oid, branch, author, commiter, int32(size),
 		msg, parent_ids, file_changes)
 
