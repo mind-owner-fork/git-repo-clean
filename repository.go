@@ -23,9 +23,8 @@ type HistoryRecord struct {
 	bigblob []BlobRecord
 }
 
-func (repo *Repository) GetBlobName(oid string) (string, error) {
-
-	cmd := repo.gitCommand("rev-list", "--objects", "--all")
+func (repo Repository) GetBlobName(oid string) (string, error) {
+	cmd := repo.GitCommand("rev-list", "--objects", "--all")
 
 	out, err := cmd.StdoutPipe()
 	if err != nil {
@@ -57,11 +56,62 @@ func (repo *Repository) GetBlobName(oid string) (string, error) {
 	}
 }
 
-func ScanRepository(repo Repository, op Options) (HistoryRecord, error) {
+/*
+$ git diff-tree -r HEAD^^ HEAD^
+:100644 000000 257cc5642cb1a054f08cc83f2d943e56fd3ebe99 0000000000000000000000000000000000000000 D      "path with\nnewline"
+:000000 100644 0000000000000000000000000000000000000000 257cc5642cb1a054f08cc83f2d943e56fd3ebe99 A      "subdir/path with\nnewline"
+*/
+func (repo Repository) GetFilechange(parent_hash, commit_hash string) []FileChange {
+	cmd := repo.GitCommand("diff-tree", "r", parent_hash, commit_hash)
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		// return "", nil
+	}
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Start()
+	buf := bufio.NewReader(out)
+
+	var filechanges []FileChange
+	for {
+		raw_line, err := buf.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				return []FileChange{}
+			}
+			return []FileChange{}
+		}
+		raw_line = raw_line[:len(raw_line)-1]
+		line := strings.Split(raw_line, "\t")
+		// :000000 100644 0000000000000000000000000000000000000000 257cc5642cb1a054f08cc83f2d943e56fd3ebe99 A
+		fileinfo := line[0]
+		filepath := line[1]
+
+		info := strings.Split(fileinfo, " ")
+		// info[0]: old-mode
+		// info[1]: new-mode
+		// info[2]: old-hash
+		// info[3]: new-hash
+		// info[4]: file-type
+		if info[4] == "D" {
+			filechanges = append(filechanges, NewFileChange("D", "", "", filepath))
+		} else if info[4] == "A" || info[4] == "M" || info[4] == "T" {
+			id := Hash_id[info[3]]
+			filechanges = append(filechanges, NewFileChange("M", info[1], string(id), filepath))
+		} else {
+			// un-support type
+			fmt.Println("ERROR:unsupport filechange type")
+			break
+		}
+	}
+	return filechanges
+}
+
+func ScanRepository(repo Repository) (HistoryRecord, error) {
 	graph := sizes.NewGraph(sizes.NameStyleFull)
 	history := HistoryRecord{}
 
-	if op.verbose {
+	if repo.opts.verbose {
 		fmt.Println("Start to scan repository: ")
 	}
 
@@ -138,7 +188,7 @@ func ScanRepository(repo Repository, op Options) (HistoryRecord, error) {
 		case "blob":
 			graph.RegisterBlob(oid, objectSize)
 
-			limit, err := UnitConvert(op.limit)
+			limit, err := UnitConvert(repo.opts.limit)
 			if err != nil {
 				return history, err
 			}
@@ -150,8 +200,8 @@ func ScanRepository(repo Repository, op Options) (HistoryRecord, error) {
 					return blobs[i].objectSize > blobs[j].objectSize
 				})
 				// remain first [op.number] blobs
-				if len(blobs) > int(op.number) {
-					blobs = blobs[:op.number]
+				if len(blobs) > int(repo.opts.number) {
+					blobs = blobs[:repo.opts.number]
 				}
 			}
 		default:

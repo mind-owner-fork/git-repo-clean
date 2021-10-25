@@ -19,19 +19,13 @@ func (repo *Repository) FastImportOut() (io.WriteCloser, error) {
 		"--force",
 		"--date-format=raw-permissive",
 	}
-	cmd := repo.gitCommand(args...)
+	cmd := repo.GitCommand(args...)
 
 	in, err := cmd.StdinPipe()
 	if err != nil {
 		in.Close()
 		return nil, err
 	}
-	// TODO: handle git-fast-import output
-	// out, err := cmd.StdoutPipe()
-	// if err != nil {
-	// 	out.Close()
-	// 	return nil, err
-	// }
 	cmd.Stderr = os.Stderr
 
 	cmd.Start()

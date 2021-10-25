@@ -104,9 +104,9 @@ func usage() {
 	fmt.Fprintf(os.Stderr, Usage)
 }
 
-func (op *Options) OptionInit(args []string) error {
+func (op *Options) ParseOptions(args []string) error {
 	if err := op.init(args); err != nil {
-		fmt.Printf("%s\n", err)
+		fmt.Printf("init ParseOptions error: %s\n", err)
 	}
 	if op.help || len(args) == 0 {
 		usage()

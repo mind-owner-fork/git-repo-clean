@@ -19,6 +19,8 @@ func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
 	args := []string{
 		"-C",
 		repo.path,
+		"-c",
+		"core.quotepath=false",
 		"fast-export",
 		"--show-original-ids",
 		"--signed-tags=strip",
@@ -28,9 +30,9 @@ func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
 		"--mark-tags",
 		"--reencode=yes",
 		"--all",
+		// "-M", // *
 	}
-
-	cmd := repo.gitCommand(args...)
+	cmd := repo.GitCommand(args...)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		out.Close()

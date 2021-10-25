@@ -1,96 +1,109 @@
 package main
 
-//  Global OID and ID tables
-var (
-	IDs            = NewIDs()
-	Id_hash        = make(map[int32]string)
-	Hash_id        = make(map[string]int32)
-	Skiped_commits = make([]int32, 0)
+import (
+	"io"
+	"strconv"
+
+	mapset "github.com/deckarep/golang-set"
+	"github.com/github/git-sizer/git"
 )
 
-/*Ids*/
-type Ids struct {
-	next_id      int32
-	translations map[int32]int32
+//  Global OID and ID tables
+var (
+	IDs             = NewIDs()
+	Id_hash         = make(map[int32]string)
+	Hash_id         = make(map[string]int32)
+	SKIPPED_COMMITS = mapset.NewSet()
+)
+
+type RepoFilter struct {
+	repo    *Repository
+	opts    Options
+	input   io.PipeWriter
+	output  io.PipeReader
+	parser  RepoParser
+	targets map[git.OID]string // blob oid => file name
 }
 
-// create Ids object instance
-func NewIDs() Ids {
-	return Ids{
-		next_id:      1,
-		translations: make(map[int32]int32),
+func (filter *RepoFilter) tweak_blob(blob *Blob) {
+	limit, err := UnitConvert(filter.repo.opts.limit)
+	if err != nil {
+		return
+	}
+	// filter by blob data size
+	if blob.data_size > int64(limit) {
+		// set new id to 0
+		blob.ele.skip(0)
+	}
+	// filter by blob id
+	for target := range filter.targets {
+		if target.String() == blob.original_oid {
+			// set new id to 0
+			blob.ele.skip(0)
+		}
 	}
 }
 
-// return current next_id, then next_id + 1
-func (ids *Ids) New() int32 {
-	id := ids.next_id
-	ids.next_id += 1 // need atomic operation?
-	return id
-}
+func (filter *RepoFilter) tweak_commit(commit *Commit, helper *Helper_info) {
 
-// record map: old_id => new_id
-func (ids Ids) record_rename(old_id, new_id int32) {
-	if old_id != new_id {
-		ids.translations[old_id] = new_id
+	// 如果没有from, 但是有filechange，则可能是first commit
+	// if commit.first_parent() == 0 {
+	// 	fmt.Println("DEBUG: this is a init commit!")
+	// }
+	// 如果有from，但是没有filechange， 则可能是merge commit
+	// if len(commit.filechanges) == 0 {
+	// 	fmt.Println("DEBUG: this is a merge commit!")
+	// }
+
+	// orig_parents := helper.orig_parents
+	// parents := commit.parents
+	old_1st_parent := commit.first_parent()
+
+	// 如果filechange中，查询不到from-id，则需要删除该条记录，
+	// 如果整个filechange都没了，则需要删除该commit
+	filter_filechange(commit)
+
+	if len(commit.filechanges) == 0 {
+		commit.skip(old_1st_parent)
+	}
+
+	// 如果 from-id 在ID-hash中能够查询到，则正常，否则说明parent commit被删了
+	// 或者，如果from-id在Skipped-commit中能够查询到，则也需要skip
+	if SKIPPED_COMMITS.Contains(old_1st_parent) {
+		commit.skip(old_1st_parent)
 	}
 }
 
-func (ids Ids) has_renames() bool {
-	return len(ids.translations) == 0
-}
+func filter_filechange(commit *Commit) {
+	newfilechanges := make([]FileChange, 0)
+	for _, filechange := range commit.filechanges {
 
-// query from translations map, if find return new_id, else return old_id
-func (ids Ids) translate(old_id int32) int32 {
-	if new_id, ok := ids.translations[old_id]; ok {
-		return new_id
-	} else {
-		return old_id
+		// *if id is 40-byte hash-1 then its a subdirectory
+		if len(filechange.blob_id) == 40 {
+			continue
+		}
+		// #TODO，在Skip_blob中查询应该更快
+		if filechange.changetype == "M" {
+			id, _ := strconv.Atoi(filechange.blob_id)
+			if _, ok := Id_hash[int32(id)]; !ok {
+				continue
+			}
+		}
+		// otherwise, keep it in newfilechange
+		newfilechanges = append(newfilechanges, filechange)
 	}
+	commit.filechanges = newfilechanges
 }
 
-// Git element basically contain type and dumped field
-type GitElements struct {
-	types  string
-	dumped bool
+func (filter *RepoFilter) tweak_reset(reset *Reset) {
+	Lasted_commit[reset.ref] = reset.from
+	Lasted_orig_commit[reset.ref] = reset.from
 }
 
-// return element types and dump status
-func NewGitElement() GitElements {
-	return GitElements{
-		types:  "none",
-		dumped: true, // true means to dump out, which is the default behavior
-	}
-}
-
-func (ele GitElements) skip() {
-	ele.dumped = false // false means to skip it
-}
-
-// base represents type and dumped,
-// id represents int32 short mark id,
-// old_id represents previous short mark id
-type GitElementsWithID struct {
-	base   GitElements
-	id     int32 // mark id
-	old_id int32 // previous mark id
-}
-
-// new Git element has new mark id, and its previous id is 0 as default,
-// but will set properly on the other place
-func NewGitElementsWithID() GitElementsWithID {
-	return GitElementsWithID{
-		base:   NewGitElement(),
-		id:     IDs.New(),
-		old_id: 0, // mark id must > 0, so 0 just means it haven't initialized
-	}
-}
-
-func (ele GitElementsWithID) skip(new_id int32) {
-	ele.base.dumped = false
-	if ele.old_id != 0 {
-		IDs.record_rename(ele.old_id, new_id)
-	} else {
-		IDs.record_rename(ele.id, new_id)
+func (filter *RepoFilter) tweak_tag(tag *Tag) {
+	// the tag may have no parents, if so skip it
+	if SKIPPED_COMMITS.Contains(tag.from_ref) == false {
+		tag.ele.base.dumped = false
+		tag.ele.skip(0)
 	}
 }

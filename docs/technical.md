@@ -472,3 +472,119 @@ func do() {
 
 > Blob, Commit, Reset, Tag, Filechange类型数据，底层都嵌套有`GitElements`结构，其中有`dumped`这个字段，
 一旦检测到改字段为`false`，则意味着改类型需要被过滤，整个条数据不再写入流中，同时直接跳到下一行继续解析其它类型数据。
+
+> 只有要dump到输入流中时的mark ID才是实际顺序的ID，所以可以在实际dump时才NewID(),否则始终记录的是原始顺序ID。
+
++ 使用 `git -c core.quotepath false`处理文件名：
+
+true:
+```bash
+reset refs/heads/master
+commit refs/heads/master
+mark :2
+author A U Thor <author@example.com> 1112354055 +0200
+committer C O Mitter <committer@example.com> 1112354055 +0200
+data 8
+Initial
+M 100644 :1 "Name and a\nLF"
+M 100644 :1 "Name and an\tHT"
+M 100644 :1 "Name\""
+M 100644 :1 Name
+M 100644 :1 "With SP in it"
+M 100644 :1 "\346\277\261\351\207\216\t\347\264\224"
+M 100644 :1 "\346\277\261\351\207\216\n\347\264\224"
+M 100644 :1 "\346\277\261\351\207\216 \347\264\224"
+M 100644 :1 "\346\277\261\351\207\216\"\347\264\224"
+M 100644 :1 "\346\277\261\351\207\216/file"
+M 100644 :1 "\346\277\261\351\207\216\347\264\224"
+```
+
+false:
+```bash
+reset refs/heads/master
+commit refs/heads/master
+mark :2
+author A U Thor <author@example.com> 1112354055 +0200
+committer C O Mitter <committer@example.com> 1112354055 +0200
+data 8
+Initial
+M 100644 :1 "Name and a\nLF"
+M 100644 :1 "Name and an\tHT"
+M 100644 :1 "Name\""
+M 100644 :1 Name
+M 100644 :1 "With SP in it"
+M 100644 :1 "濱野\t純"
+M 100644 :1 "濱野\n純"
+M 100644 :1 "濱野 純"
+M 100644 :1 "濱野\"純"
+M 100644 :1 濱野/file
+M 100644 :1 濱野純
+```
+
+对于filechange的类型：
+```bash
+blob
+mark :1
+data 4
+foo
+
+reset refs/heads/main
+commit refs/heads/main
+mark :2
+author A U Thor <author@example.com> 1112912773 -0700
+committer C O Mitter <committer@example.com> 1112912773 -0700
+data 9
+addition
+M 100644 :1 "path with\nnewline"
+M 100644 :1 "path with \"quote\""
+M 100644 :1 "path with \\backslash"
+M 100644 :1 "path with space"
+
+commit refs/heads/main
+mark :3
+author A U Thor <author@example.com> 1112912773 -0700
+committer C O Mitter <committer@example.com> 1112912773 -0700
+data 7
+rename
+from :2
+R "path with\nnewline" "subdir/path with\nnewline"
+R "path with \"quote\"" "subdir/path with \"quote\""
+R "path with \\backslash" "subdir/path with \\backslash"
+R "path with space" "subdir/path with space"
+
+commit refs/heads/main
+mark :4
+author A U Thor <author@example.com> 1112912773 -0700
+committer C O Mitter <committer@example.com> 1112912773 -0700
+data 9
+deletion
+from :3
+D "subdir/path with\nnewline"
+D "subdir/path with \"quote\""
+D "subdir/path with \\backslash"
+D "subdir/path with space"
+```
+
+增加文件，格式为：M fileType id path
+重命名文件, 格式为: R oldpath newpath
+删除文件，格式为：D file path
+
+
++ avoid seperated .git directory
+by comparing .git dir and working dir
+
++ provide filter branch choice for git-fast-export, instead of '--all' option
+
+**测试项：**
+
+- [x] 单分支， 最末端的文件及其commit
+- [x] 单分支，中间单个文件及其commit
+- [x] 单分支，中间连续多个文件及其commit
+- [x] 单分支，中间间断的文件及其commit
+- [x] 多分支，first parent(and its blob)(from-ref)
+- [x] 多分支，second parent(and its blob)(merge-ref)
+- [x] 多分支，all parents
+- [ ] 多分支，merge point(*)
+- [x] 多分支，after merge point
+
+*  merge point 没有实际的文件(blob)，无法删除。
