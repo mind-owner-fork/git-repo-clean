@@ -14,7 +14,6 @@ func InitContext(args []string) *Repository {
 		fmt.Println("Parse Option error")
 		os.Exit(1)
 	}
-
 	repo, err := git.NewRepository(op.path)
 	if err != nil {
 		fmt.Println("couldn't open Git repository")
@@ -27,6 +26,16 @@ func InitContext(args []string) *Repository {
 		fmt.Println("Couldn't find Git execute program")
 		os.Exit(1)
 	}
+
+	if bare, err := IsBare(gitBin, op.path); err != nil || bare {
+		fmt.Println("Couldn't support running in bare repository")
+		os.Exit(1)
+	}
+	if shallow, err := IsShallow(gitBin, op.path); err != nil || shallow {
+		fmt.Println("Couldn't support running in shallow repository")
+		os.Exit(1)
+	}
+
 	gitDir, err := GitDir(gitBin, op.path)
 	if err != nil {
 		fmt.Println(err)
