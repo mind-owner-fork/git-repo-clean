@@ -10,6 +10,9 @@ import (
 // e.g. 10 Kib => (10 * 1024) bytes
 // valid unit: b, B, k, K, m, M, g, G
 func UnitConvert(input string) (uint64, error) {
+	if len(input) == 0 {
+		return 0, fmt.Errorf("expected a value followed by --limit options, but you are: %s", input)
+	}
 	v := input[:len(input)-1]
 	u := input[len(input)-1:]
 	cv, err := strconv.ParseUint(v, 10, 32)
