@@ -574,17 +574,3 @@ D "subdir/path with space"
 by comparing .git dir and working dir
 
 + provide filter branch choice for git-fast-export, instead of '--all' option
-
-**测试项：**
-
-- [x] 单分支， 最末端的文件及其commit
-- [x] 单分支，中间单个文件及其commit
-- [x] 单分支，中间连续多个文件及其commit
-- [x] 单分支，中间间断的文件及其commit
-- [x] 多分支，first parent(and its blob)(from-ref)
-- [x] 多分支，second parent(and its blob)(merge-ref)
-- [x] 多分支，all parents
-- [ ] 多分支，merge point(*)
-- [x] 多分支，after merge point
-
-*  merge point 没有实际的文件(blob)，无法删除。

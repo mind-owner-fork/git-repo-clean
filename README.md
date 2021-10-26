@@ -105,3 +105,31 @@ https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/do
 
 **技术原理**
 见 [doc](docs/technical.md)
+
+
+
+
+**测试项：**
+
+- [x] 单分支，最末端的文件及其commit
+- [x] 单分支，中间单个文件及其commit
+- [x] 单分支，中间连续多个文件及其commit
+- [x] 单分支，中间间断的文件及其commit
+- [x] 多分支，first parent(and its blob)(from-ref)
+- [x] 多分支，second parent(and its blob)(merge-ref)
+- [x] 多分支，all parents
+- [x] 多分支，after merge point
+- [x] 可执行文件
+- [x] 压缩文件
+- [x] 多媒体文件
+
+
+极端情况下，在仓库中加入一个文件大小为1216179567 byte(1.2G)的压缩文件, 作为仓库最近一次提交(最后被扫描)，从仓库删除，最快不到10s。
+```bash
+$ time git clean-repo -s -v --limit=1g -n=3
+Start to scan repository:
+[0]: 449a189d6fb67b3dc0cfcce086847fc93ac86fd0 1216179567 gitaly-dev.tar.gz
+git clean-repo -s -v --limit=1g -n=3  9.87s user 7.62s system 150% cpu 11.651 total
+```
+
+以上是理想情况，即在仓库历史中没有加入其它二进制文件，否则过程也会比较长，这取决于仓库中的数据大小。
