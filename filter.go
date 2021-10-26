@@ -26,16 +26,6 @@ type RepoFilter struct {
 }
 
 func (filter *RepoFilter) tweak_blob(blob *Blob) {
-	limit, err := UnitConvert(filter.repo.opts.limit)
-	if err != nil {
-		return
-	}
-	// filter by blob data size
-	if blob.data_size > int64(limit) {
-		// set new id to 0
-		blob.ele.skip(0)
-	}
-	// filter by blob id
 	for target := range filter.targets {
 		if target.String() == blob.original_oid {
 			// set new id to 0
