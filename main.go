@@ -14,6 +14,9 @@ func InitContext(args []string) *Repository {
 		fmt.Println("Parse Option error")
 		os.Exit(1)
 	}
+	if op.interact {
+		op.Cmd()
+	}
 	repo, err := git.NewRepository(op.path)
 	if err != nil {
 		fmt.Println("couldn't open Git repository")
@@ -50,21 +53,32 @@ func InitContext(args []string) *Repository {
 	}
 }
 
+type SelectedBlob struct {
+	idx      int
+	oid      git.OID
+	filesize uint32
+	filename string
+}
+type BlobList []SelectedBlob
+
 func NewFilter(args []string) (*RepoFilter, error) {
 
 	var repo = InitContext(args)
 	filtered := make(map[git.OID]string)
 	if repo.opts.scan {
-		blobsize, err := ScanRepository(*repo)
+		bloblist, err := ScanRepository(*repo)
 		if err != nil {
 			fmt.Println("scanning repository error:\n *", err)
 			os.Exit(1)
 		}
+		for _, b := range bloblist {
+			name, _ := repo.GetBlobName(b.oid.String())
+			filtered[b.oid] = name
+		}
 		if repo.opts.verbose {
-			for idx, b := range blobsize.bigblob {
-				name, _ := repo.GetBlobName(b.oid.String())
-				filtered[b.oid] = name
-				fmt.Printf("[%d]: %s %d %s\n", idx, b.oid.String(), b.objectSize, name)
+			for idx, name := range filtered {
+				fmt.Println(idx)
+				fmt.Println(name)
 			}
 		}
 	}

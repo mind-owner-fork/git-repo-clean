@@ -83,7 +83,7 @@ func (op *Options) init(args []string) error {
 	// default is null, which means all type
 	flags.StringVarP(&op.types, "type", "t", "", "set the file type to filter from Git repository")
 	flags.BoolVarP(&op.delete, "delete", "d", false, "delete the file from Git repository history")
-	flags.BoolVarP(&op.interact, "interative", "i", true, "enable interactive operation")
+	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
 	flags.BoolVarP(&op.lfs, "lfs", "L", false, "use LFS server to storage local large file, must followed by --add option")
 	flags.StringVarP(&op.add, "add", "a", "", "let LFS track specified file, will execute 'git lfs migrate import --include=file --everything'")
 

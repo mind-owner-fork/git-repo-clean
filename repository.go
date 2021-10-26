@@ -10,18 +10,18 @@ import (
 
 	"github.com/github/git-sizer/counts"
 	"github.com/github/git-sizer/git"
-	"github.com/github/git-sizer/sizes"
 )
 
-type BlobRecord struct {
+type HistoryRecord struct {
 	oid        git.OID
-	objectSize counts.Count32
+	objectSize uint32
+	objectName string
 }
 
-type HistoryRecord struct {
-	sizes.HistorySize
-	bigblob []BlobRecord
-}
+// type HistoryRecord struct {
+// 	sizes.HistorySize
+// 	bigblob []BlobRecord
+// }
 
 func (repo Repository) GetBlobName(oid string) (string, error) {
 	cmd := repo.GitCommand("rev-list", "--objects", "--all")
@@ -107,9 +107,10 @@ func (repo Repository) GetFilechange(parent_hash, commit_hash string) []FileChan
 	return filechanges
 }
 
-func ScanRepository(repo Repository) (HistoryRecord, error) {
-	graph := sizes.NewGraph(sizes.NameStyleFull)
-	history := HistoryRecord{}
+func ScanRepository(repo Repository) ([]HistoryRecord, error) {
+
+	var empty []HistoryRecord
+	var blobs []HistoryRecord
 
 	if repo.opts.verbose {
 		fmt.Println("Start to scan repository: ")
@@ -118,7 +119,7 @@ func ScanRepository(repo Repository) (HistoryRecord, error) {
 	// get reference iter
 	refIter, err := repo.NewReferenceIter()
 	if err != nil {
-		return history, err
+		return empty, err
 	}
 	defer func() {
 		if refIter != nil {
@@ -129,7 +130,7 @@ func ScanRepository(repo Repository) (HistoryRecord, error) {
 	// get object iter
 	iter, in, err := repo.NewObjectIter("--stdin", "--date-order")
 	if err != nil {
-		return history, err
+		return empty, err
 	}
 	defer func() {
 		if iter != nil {
@@ -173,29 +174,48 @@ func ScanRepository(repo Repository) (HistoryRecord, error) {
 		refIter = nil
 	}()
 
-	var blobs []BlobRecord
-
 	// process blobs
 	for {
 		oid, objectType, objectSize, err := iter.Next()
 		if err != nil {
 			if err != io.EOF {
-				return history, err
+				return empty, err
 			}
 			break
 		}
 		switch objectType {
 		case "blob":
-			graph.RegisterBlob(oid, objectSize)
+			// graph.RegisterBlob(oid, objectSize)
 
 			limit, err := UnitConvert(repo.opts.limit)
 			if err != nil {
-				return history, err
+				return empty, err
 			}
 			if objectSize > counts.Count32(limit) {
+
+				name, err := repo.GetBlobName(oid.String())
+				if err != nil {
+					fmt.Println("get blob name fail, but will continue to try to get next one")
+					continue
+				}
+
+				fmt.Printf("DEBUG: get blob name: %s\n", name)
+
+				var pattern string
+				if strings.HasSuffix(name, "\"") {
+					pattern = "." + repo.opts.types + "\"$"
+				} else {
+					pattern = "." + repo.opts.types + "$"
+				}
+				if matches := Match(pattern, name); len(matches) > 0 {
+					// matched
+				} else {
+					continue
+					// 仓库中不存在该类型文件，忽略
+				}
 				// append this record blob into slice
-				blobs = append(blobs, BlobRecord{oid, objectSize})
-				// sort
+				blobs = append(blobs, HistoryRecord{oid, uint32(objectSize), name})
+				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize
 				})
@@ -209,5 +229,5 @@ func ScanRepository(repo Repository) (HistoryRecord, error) {
 		}
 
 	}
-	return HistoryRecord{graph.HistorySize(), blobs}, err
+	return blobs, err
 }
