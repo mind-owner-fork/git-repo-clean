@@ -229,3 +229,47 @@ func NewRepository(path string) (*Repository, error) {
 func (repo *Repository) Close() error {
 	return nil
 }
+
+func (repo *Repository) CleanUp() {
+	// clean up
+	fmt.Println("clean up the repository...")
+
+	fmt.Println("running git reset --hard")
+	cmd1 := repo.GitCommand("reset", "--hard")
+	cmd1.Stdout = os.Stdout
+	err := cmd1.Start()
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = cmd1.Wait()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("running git reflog expire --expire=now --all")
+	cmd2 := repo.GitCommand("reflog", "expire", "--expire=now", "--all")
+	cmd2.Stderr = os.Stderr
+	cmd2.Stdout = os.Stdout
+	err = cmd2.Start()
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = cmd2.Wait()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("running git gc --prune=now")
+	cmd3 := repo.GitCommand("gc", "--prune=now")
+	cmd3.Stderr = os.Stderr
+	cmd3.Stdout = os.Stdout
+	err = cmd3.Start()
+	if err != nil {
+		fmt.Println(err)
+	}
+	cmd3.Wait()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+}

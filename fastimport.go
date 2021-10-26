@@ -3,12 +3,13 @@ package main
 import (
 	"io"
 	"os"
+	"os/exec"
 )
 
 // run a git-fast-export process
 // but keep repo path the same with git-fast-export
 // return a Writer for stream pipeline to feed data into this process
-func (repo *Repository) FastImportOut() (io.WriteCloser, error) {
+func (repo *Repository) FastImportOut() (io.WriteCloser, *exec.Cmd, error) {
 	args := []string{
 		"-C",
 		repo.path,
@@ -24,11 +25,11 @@ func (repo *Repository) FastImportOut() (io.WriteCloser, error) {
 	in, err := cmd.StdinPipe()
 	if err != nil {
 		in.Close()
-		return nil, err
+		return nil, nil, err
 	}
 	cmd.Stderr = os.Stderr
 
 	cmd.Start()
 
-	return in, nil
+	return in, cmd, nil
 }

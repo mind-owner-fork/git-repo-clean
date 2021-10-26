@@ -17,6 +17,33 @@ const (
 	ref_re  = `(.*)\n$`               // commit|reset|tag refs/tags/v1.0.0
 )
 
+var (
+	Lasted_commit      = make(map[string]int32)
+	Lasted_orig_commit = make(map[string]int32)
+)
+
+type origParents []int32
+type hasFilechange bool
+
+type Helper_info struct {
+	orig_parents   origParents
+	has_filechange hasFilechange
+}
+
+type blob_callback func(interface{}) interface{}
+type commit_callback func(interface{}) interface{}
+type reset_callback func(interface{}) interface{}
+type tag_callback func(interface{}) interface{}
+
+type RepoParser struct {
+	blob_callback
+	commit_callback
+	reset_callback
+	tag_callback
+	in  io.PipeWriter
+	out io.PipeReader
+}
+
 func Match(pattern string, str string) []string {
 	re := regexp.MustCompile(pattern)
 	return re.FindStringSubmatch(str)
@@ -30,17 +57,17 @@ data 9
 "file a"
 */
 type Blob struct {
-	ele          GitElementsWithID // contain: id, old_id, types, dumped
-	original_oid string            // 40 bytes
-	data_size    int64             // blob size maybe very large
-	data         []byte            // raw data block
+	ele          *GitElementsWithID // contain: id, old_id, types, dumped
+	original_oid string             // 40 bytes
+	data_size    int64              // blob size maybe very large
+	data         []byte             // raw data block
 }
 
 func NewBlob(size_ int64, data_ []byte, hash_id_ string) Blob {
 	var ele = NewGitElementsWithID()
 	ele.base.types = "blob"
 	return Blob{
-		ele:          ele,
+		ele:          &ele,
 		original_oid: hash_id_,
 		data_size:    size_,
 		data:         data_,
@@ -91,10 +118,10 @@ filechange can compose together :
 this means rename a file and move it from another location
 */
 type FileChange struct {
-	base       GitElements
+	base       *GitElements
 	changetype string
 	mode       string
-	blob_id    int32
+	blob_id    string
 	filepath   string
 }
 
@@ -102,11 +129,11 @@ type FileChange struct {
 // when type is "M", mode and id must not nil, when type is "D", mode and id is nil
 //
 // filechange usually have multi-line
-func NewFileChange(types_, mode_ string, id_ int32, filepath_ string) FileChange {
+func NewFileChange(types_, mode_, id_, filepath_ string) FileChange {
 	var base = NewGitElement()
 	base.types = "filechange"
 	return FileChange{
-		base:       base,
+		base:       &base,
 		changetype: types_,
 		mode:       mode_,
 		blob_id:    id_,
@@ -116,29 +143,46 @@ func NewFileChange(types_, mode_ string, id_ int32, filepath_ string) FileChange
 
 func (fc *FileChange) dumpToString() string {
 	if fc.changetype == "M" {
-		filechange_ := fmt.Sprintf("M %s :%d %s\n", fc.mode, fc.blob_id, fc.filepath)
-		return filechange_
+		if fc.mode == "160000" || fc.mode == "040000" { // gitlink or subdirectory
+			filechange_ := fmt.Sprintf("M %s %s %s\n", fc.mode, fc.blob_id, fc.filepath)
+			return filechange_
+		} else {
+			filechange_ := fmt.Sprintf("M %s :%s %s\n", fc.mode, fc.blob_id, fc.filepath)
+			return filechange_
+		}
 	} else if fc.changetype == "D" {
 		filechange_ := fmt.Sprintf("D %s\n", fc.filepath)
 		return filechange_
-	} else {
-		return ""
 	}
+	return ""
 }
 
 func (fc *FileChange) dump(writer io.WriteCloser) {
+	if fc.changetype == "M" && fc.blob_id == "0" {
+		return
+	}
 	fc.base.dumped = true
 	// currently only consider M type "M 100644 :18 files/1.c" and D type "D files/1.c"
 	// when the type is M, and the id is short mark id
 	if fc.changetype == "M" {
-		filechange_ := fmt.Sprintf("M %s :%d %s\n", fc.mode, fc.blob_id, fc.filepath)
-		writer.Write([]byte(filechange_))
+		if fc.mode == "160000" || fc.mode == "040000" {
+			filechange_ := fmt.Sprintf("M %s %s %s\n", fc.mode, fc.blob_id, fc.filepath)
+			writer.Write([]byte(filechange_))
+		} else {
+			filechange_ := fmt.Sprintf("M %s :%s %s\n", fc.mode, fc.blob_id, fc.filepath)
+			writer.Write([]byte(filechange_))
+		}
 	} else if fc.changetype == "D" {
 		filechange_ := fmt.Sprintf("D %s\n", fc.filepath)
 		writer.Write([]byte(filechange_))
+	} else if fc.changetype == "R" {
+		// **NOTE** if we don't add '-M' in git-fast-export, then it will use 'M' and 'D' to represent 'R'
+		// filepath_ := fmt.Sprintf("R %s %s\n", fc.old-path, new-path)
+		// writer.Write([]byte(filepath_))
 	} else {
 		// unhandle filechange type
 		fmt.Println("unsupported filechange type")
+		return
 	}
 }
 
@@ -163,6 +207,31 @@ and the commiter format is : <committer_name> SP <committer_email> SP <committer
 As for the format of "from", see:
 https://git-scm.com/docs/git-fast-import#_from
 
+**Special Case 1:**
+
+commit refs/heads/review-mode/readonly
+mark :23
+original-oid 46d3d959019ffe22c8399755dd7028cece366ccd
+author Cactusinhand <lilinchao@oschina.cn> 1626747427 +0000
+committer Gitee <noreply@gitee.com> 1626747427 +0000
+data 99
+!13 change readonly file
+Merge pull request !13 from Cactusinhand/auto-7670704-master-1626686679876from :4   <-------------
+merge :22
+M 100644 :21 README.en.md
+M 100644 :5 files/1.c
+
+**Special Case 2:**
+reset refs/heads/review-mode/readonly
+commit refs/heads/review-mode/readonly
+mark :4
+original-oid 1072abf2c53ce53ad88cb6fdea64d2cf51f9fac8
+author Cactusinhand <lilinchao@oschina.cn> 1626405532 +0000
+committer Gitee <noreply@gitee.com> 1626405532 +0000
+data 14
+Initial commitM 100644 :1 .gitee/PULL_REQUEST_TEMPLATE.zh-CN.md  <-------------
+M 100644 :2 README.en.md
+M 100644 :3 README.md
 
 **NOTE**
 
@@ -173,17 +242,16 @@ c). When merge multi branches into one, a commit have multi parents, then there 
 c). When a commit has parent commit, then it has from or merge(or both), otherwise, have none of them.
 */
 type Commit struct {
-	ele          GitElementsWithID // mark id
-	old_id       int32             // previous mark id, given by GitElementsWithID
+	ele          *GitElementsWithID // mark id
+	old_id       int32              // previous mark id, given by GitElementsWithID
 	original_oid string
 	branch       string
 	author       string
 	commiter     string
 	msg_size     int32
-	message      []byte   // commit message
-	from         int32    // parent mark id, exist when a commit have single-parent
-	merges       []int32  // merge mark id, exist when a commit have multi-parents
-	filechanges  []string // multi-line
+	message      []byte       // commit message
+	parents      []int32      // from and merge. from maybe none, and merge maybe multi
+	filechanges  []FileChange // multi-line
 }
 
 func parent_filter(str []int32) (int32, []int32) {
@@ -195,12 +263,11 @@ func parent_filter(str []int32) (int32, []int32) {
 	}
 }
 
-func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, msg_ []byte, parents_ []int32, filechanges_ []string) Commit {
+func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, msg_ []byte, parents_ []int32, filechanges_ []FileChange) Commit {
 	var ele = NewGitElementsWithID()
 	ele.base.types = "commit"
-	from, merges := parent_filter(parents_)
 	return Commit{
-		ele:          ele,
+		ele:          &ele,
 		old_id:       ele.id,
 		original_oid: original_oid_,
 		branch:       branch_,
@@ -208,8 +275,7 @@ func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, m
 		commiter:     commiter_,
 		msg_size:     size_,
 		message:      msg_,
-		from:         from,
-		merges:       merges,
+		parents:      parents_,
 		filechanges:  filechanges_,
 	}
 }
@@ -243,32 +309,36 @@ func (commit *Commit) dump(writer io.WriteCloser) {
 	writer.Write([]byte(size_line))
 	writer.Write([]byte(data_line))
 
-	if commit.from > 0 {
-		from_line := fmt.Sprintf("from :%d\n", commit.from)
+	if len(commit.parents) > 0 {
+		from_line := fmt.Sprintf("from :%d\n", commit.parents[0])
 		writer.Write([]byte(from_line))
 	}
-
-	for _, parent := range commit.merges {
-		parent_line := fmt.Sprintf("merge :%d\n", parent)
-		writer.Write([]byte(parent_line))
+	if len(commit.parents) > 1 {
+		for _, merge := range commit.parents[1:] {
+			parent_line := fmt.Sprintf("merge :%d\n", merge)
+			writer.Write([]byte(parent_line))
+		}
 	}
 	// **NOTE** the filechanges here are multi-string line
 	for _, filechange := range commit.filechanges {
-		writer.Write([]byte(filechange))
+		writer.Write([]byte(filechange.dumpToString()))
 	}
 
 	writer.Write([]byte("\n"))
 }
 
 func (commit *Commit) first_parent() int32 {
-	return commit.from
+	if len(commit.parents) > 0 {
+		return commit.parents[0]
+	}
+	return 0
 }
 
 func (commit *Commit) skip(new_id int32) {
 	if commit.old_id != 0 {
-		Skiped_commits = append(Skiped_commits, commit.old_id)
+		SKIPPED_COMMITS.Add(commit.old_id)
 	} else {
-		Skiped_commits = append(Skiped_commits, commit.ele.id)
+		SKIPPED_COMMITS.Add(commit.ele.id)
 	}
 	commit.ele.skip(new_id)
 }
@@ -278,7 +348,7 @@ reset refs/heads/main
 from :12
 */
 type Reset struct {
-	base GitElements
+	base *GitElements
 	ref  string
 	from int32
 }
@@ -287,7 +357,7 @@ func NewReset(ref_ string, from_ref_ int32) Reset {
 	base := NewGitElement()
 	base.types = "reset"
 	return Reset{
-		base: base,
+		base: &base,
 		ref:  ref_,      // ref is string
 		from: from_ref_, // but from_ref is short mark id, optional exist
 	}
@@ -318,27 +388,27 @@ tagger的格式为：<tagger_name> SP <tagger_email> SP <tagger_date>
 tag 内容为数据块，大小固定(e.g. data 11，指定大小为11), 不包含LF
 */
 type Tag struct {
-	ele          GitElementsWithID // mark_id, old_id, types, dumped
-	old_id       int32             // mark_id too
-	ref          string            // tag name(ref) line: tag v1.0.1, tag refs/heads/main
-	from_ref     int32             // from :id line
+	ele          *GitElementsWithID // mark_id, old_id, types, dumped
+	old_id       int32              // mark_id too
+	tag_name     string             // tag name(ref) line: tag v1.0.1, tag refs/heads/main
+	from_ref     int32              // from :id line
 	original_oid string
 	tagger       string // tagger line
-	data_size    int32  // tager size is not as large as blob's
+	msg_size     int32  // tager size is not as large as blob's
 	msg          []byte // message line, raw bytes
 }
 
-func NewTag(ref_ string, from_ref_ int32, original_oid_, tagger_ string, size_ int32, msg_ []byte) Tag {
+func NewTag(tag_name_ string, from_ref_ int32, original_oid_, tagger_ string, size_ int32, msg_ []byte) Tag {
 	ele := NewGitElementsWithID()
 	ele.base.types = "tag"
 	return Tag{
-		ele:          ele,
-		old_id:       ele.id,
-		ref:          ref_,
-		from_ref:     from_ref_,
-		original_oid: original_oid_,
+		ele:          &ele,
+		old_id:       ele.id, // old_id = current mark id
+		tag_name:     tag_name_,
+		from_ref:     from_ref_,     // parent mark id
+		original_oid: original_oid_, // sha-1 id
 		tagger:       tagger_,
-		data_size:    size_,
+		msg_size:     size_,
 		msg:          msg_,
 	}
 }
@@ -348,12 +418,12 @@ func (tag *Tag) dump(writer io.WriteCloser) {
 	Hash_id[tag.original_oid] = tag.ele.id
 	Id_hash[tag.ele.id] = tag.original_oid
 
-	tag_line := fmt.Sprintf("tag%s\n", tag.ref)
+	tag_line := fmt.Sprintf("tag%s\n", tag.tag_name)
 	mark_line := fmt.Sprintf("mark :%d\n", tag.ele.id)
 	from_line := fmt.Sprintf("from :%d\n", tag.from_ref)
 	origin_oid := fmt.Sprintf("original-oid %s\n", tag.original_oid)
 	tagger_line := fmt.Sprintf("%s", tag.tagger)
-	data_line := fmt.Sprintf("data %d\n%s\n", tag.data_size, tag.msg)
+	data_line := fmt.Sprintf("data %d\n%s\n", tag.msg_size, tag.msg)
 
 	writer.Write([]byte(tag_line))
 	writer.Write([]byte(mark_line))
@@ -368,7 +438,7 @@ func (tag *Tag) dump(writer io.WriteCloser) {
 // reset refs/xxx/
 // tag xxx
 // ref types are: commit, reset, tag
-func (iter *FEOutPutIter) parse_ref_line(reftype, line string) (refname string) {
+func parse_ref_line(reftype, line string) (refname string) {
 	matches := Match(reftype+ref_re, line)
 	// don't match
 	if len(matches) == 0 {
@@ -382,20 +452,20 @@ func (iter *FEOutPutIter) parse_ref_line(reftype, line string) (refname string) 
 // from :parent_ref_id
 // merge :parent_ref_id
 // parent ref types are: from or merge
-func (iter *FEOutPutIter) parse_parent_ref(reftype, line string) (refid int32) {
+func parse_parent_ref(reftype, line string) (orig_ref, ref int32) {
 	matches := Match(reftype+" :"+ref_re, line)
 	if len(matches) == 0 {
 		// don't matched parent ref line
-		return 0
+		return 0, 0
 	}
 	orig_baseref := matches[1]
-	ref_id, _ := strconv.Atoi(orig_baseref)
-	baseref := IDs.translate(int32(ref_id))
+	origref, _ := strconv.Atoi(orig_baseref)
+	baseref := IDs.translate(int32(origref))
 	// return ref mark id, not the whole line
-	return baseref
+	return int32(origref), baseref
 }
 
-func (iter *FEOutPutIter) parse_mark(line string) (idx int32) {
+func parse_mark(line string) (idx int32) {
 	matches := Match("mark :"+idx_re, line)
 	if len(matches) == 0 {
 		fmt.Println("no match mark id")
@@ -407,7 +477,7 @@ func (iter *FEOutPutIter) parse_mark(line string) (idx int32) {
 	return 0
 }
 
-func (iter *FEOutPutIter) parse_original_id(line string) (oid string) {
+func parse_original_id(line string) (oid string) {
 	matches := Match("original-oid "+oid_re, line)
 	if len(matches) == 0 {
 		fmt.Println("no match original-oid")
@@ -417,32 +487,34 @@ func (iter *FEOutPutIter) parse_original_id(line string) (oid string) {
 	return matches[1]
 }
 
+func parse_datasize(line string) int64 {
+	matches := Match("data "+idx_re, line)
+	if len(matches) == 0 {
+		fmt.Println("no match data size")
+		return -1
+	}
+	size, err := strconv.ParseInt(matches[1], 10, 64)
+	if err != nil {
+		return -1
+	}
+	return size
+}
+
 // parse raw blob data, return data size, data and err
 // **NOTE**
 // blob data size maybe zero, so the parsed data matches maybe like:
 // [data 0
 //  0]
 // thus we use -1 to indicate parse error
-func (iter *FEOutPutIter) parse_data(line string) (n int64, data []byte) {
-	blank_data := make([]byte, 0)
+
+func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, extra_msg []byte) {
+
 	var writer bytes.Buffer
-
-	matches := Match("data "+idx_re, line)
-	if len(matches) == 0 {
-		fmt.Println("no match data size")
-		return -1, blank_data
-	}
-	size, err := strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		return -1, blank_data
-	}
-
-	// go to next line
-	newline, _ := iter.Next()
-
+	var sum int64
+	newline := line
 	// if data size is 0, no need to read any data more, just go to next line
 	if size != 0 {
-		var sum int64
+
 		for {
 			n, err := writer.Write([]byte(newline))
 			if err != nil {
@@ -452,17 +524,24 @@ func (iter *FEOutPutIter) parse_data(line string) (n int64, data []byte) {
 				fmt.Println("failed to write data")
 			}
 			sum += int64(n)
-			if sum >= size {
+			if sum == size {
+				break
+			}
+			// #NOTE for some reason, the line maybe extra what we expected before
+			if sum > size {
+				cur_linelen := int64(len(newline))
+				extra_linelen := sum - size
+				extra_msg = []byte(newline)[(cur_linelen - extra_linelen):]
 				break
 			}
 			newline, _ = iter.Next()
 		}
 	}
-	return size, writer.Bytes()
+	return sum, writer.Bytes(), extra_msg
 }
 
 // author, commiter, tagger
-func (iter *FEOutPutIter) parse_user(usertype, line string) (use string) {
+func parse_user(usertype, line string) (use string) {
 	matches := Match(usertype+" "+user_re, line)
 	if len(matches) == 0 {
 		return ""
@@ -477,223 +556,310 @@ func (iter *FEOutPutIter) parse_user(usertype, line string) (use string) {
 // file mode can be: M(modify), D(delete), C(copy), R(rename), A(add)
 // here we only handle M,D and R mode
 // #FIXME: fix file path format in different OS platform
-func (iter *FEOutPutIter) parse_filechange(line string) FileChange {
+// func (iter *FEOutPutIter) parse_filechange(line string) FileChange {
+func parse_filechange(line string) FileChange {
 	arr := strings.Split(line, " ")
 	types := arr[0]
 	if types == "M" { // pattern: M mode :id path
 		mode := arr[1]
-		parent_id, _ := strconv.ParseInt(strings.Split(arr[2], ":")[1], 10, 32)
-		path := strings.TrimSuffix(arr[3], "\n")
-		IDs.translate(int32(parent_id))
 
-		filechange := NewFileChange("M", mode, int32(parent_id), path)
+		var parent_id string
+		if strings.HasPrefix(arr[2], ":") {
+			parent_id = strings.Split(arr[2], ":")[1]
+			tmp, _ := strconv.Atoi(parent_id)
+			IDs.translate(int32(tmp))
+		} else { // pattern: M mode hash1-id path
+			parent_id = arr[2]
+		}
+		path := strings.TrimSuffix(arr[3], "\n")
+
+		filechange := NewFileChange("M", mode, parent_id, path)
 		return filechange
 	} else if types == "D" { // pattern: D path
 		path := strings.TrimSuffix(arr[1], "\n")
-		filechange := NewFileChange("D", "", 0, path)
+		filechange := NewFileChange("D", "", "", path)
 		return filechange
 	} else if types == "R" { // pattern: R old new
-		original_path := arr[1]
-		// ???
-		// new_path := strings.TrimSuffix(arr[2], "\n")
-		filechange := NewFileChange("R", "", 0, original_path)
+		old_path := arr[1]
+		new_path := strings.TrimSuffix(arr[2], "\n")
+		filechange := NewFileChange("R", "", old_path, new_path)
 		return filechange
 	}
 
 	return FileChange{}
 }
 
-func (iter *FEOutPutIter) parseBlob(op Options, line string) Blob {
+func (iter *FEOutPutIter) parseBlob(op Options, line string) *Blob {
 	// go to next line
 	newline, _ := iter.Next()
 
-	mark_id := iter.parse_mark(newline)
+	mark_id := parse_mark(newline)
 	if mark_id == 0 {
-		// #FIXME throw err info, then exit
-		return Blob{}
+		fmt.Println("DEBUG: parse blob error: mark id should > 0")
+		return &Blob{}
 	}
 
 	newline, _ = iter.Next()
-	original_oid := iter.parse_original_id(newline)
+	original_oid := parse_original_id(newline)
 	if len(original_oid) == 0 {
-		// #FIXME throw err info, then exit
-		return Blob{}
+		fmt.Println("DEBUG: parse blob error: original oid should not empty")
+		return &Blob{}
 	}
 
 	newline, _ = iter.Next()
-	size, data_block := iter.parse_data(newline)
+	size := parse_datasize(newline)
 
-	blob := NewBlob(size, data_block, original_oid)
+	newline, _ = iter.Next()
+	actual_size, data_block, _ := iter.parse_data(newline, size)
 
-	// decide whether to drop this blob
-	// dumped == false, means will not dump into pipe
-	limit, _ := UnitConvert(op.limit)
-	if size > int64(limit) {
-		blob.ele.base.dumped = false
-		// fmt.Println("will drop this blob")
-	}
+	blob := NewBlob(actual_size, data_block, original_oid)
 
 	if mark_id > 0 {
 		blob.ele.old_id = mark_id
 		IDs.record_rename(mark_id, blob.ele.id)
 	}
-	return blob
+	return &blob
 }
 
-func (iter *FEOutPutIter) parseCommit(line string) Commit {
-	var merge_id int32
-	parent_ids := make([]int32, 0)
+func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 
 	if line == "\n" {
 		line, _ = iter.Next()
 	}
-	branch := iter.parse_ref_line("commit", line)
+	branch := parse_ref_line("commit", line)
 
 	newline, _ := iter.Next()
-	mark_id := iter.parse_mark(newline)
+	mark_id := parse_mark(newline)
 	if mark_id == 0 {
-		// #FIXME throw err info, then exit
-		return Commit{}
+		fmt.Println("no match mark id")
+		return &Commit{}, &Helper_info{}
 	}
 
 	newline, _ = iter.Next()
-	orign_oid := iter.parse_original_id(newline)
+	orign_oid := parse_original_id(newline)
 
 	newline, _ = iter.Next()
-	author := iter.parse_user("author", newline)
+	author := parse_user("author", newline)
 
 	newline, _ = iter.Next()
-	commiter := iter.parse_user("committer", newline)
+	commiter := parse_user("committer", newline)
 
 	newline, _ = iter.Next()
-	size, msg := iter.parse_data(newline)
+	size := parse_datasize(newline)
 
 	newline, _ = iter.Next()
+	actual_size, msg, tail_msg := iter.parse_data(newline, size)
+
+	// handle special case
+	var actual_msg []byte
+	var used bool
+	orig_parents := make([]int32, 0)
+	parents := make([]int32, 0)
+
+	if actual_size > size {
+		// treat this one as actual commit msg, the extra in the tail maybe filechange or parent(from), or just a LF
+		/*
+					Initial commit LF
+			        M 100644 :1 LICENSE LF
+			        M 100644 :1 README.md LF <--- tail-msg
+		*/
+		first_part := bytes.TrimRight(msg, string(tail_msg))
+		actual_msg = append(first_part, '\n')
+
+		if match := Match("from :"+ref_re, string(tail_msg)); len(match) > 0 {
+			// get a from parent in extra_msg
+			fromid, _ := strconv.Atoi(match[1])
+			parents = append(parents, int32(fromid))
+			orig_parents = append(orig_parents, int32(fromid))
+			used = true
+		} else {
+			used = false
+		}
+		msg = actual_msg
+	}
+
+	// next line maybe parents or filechanges
+	newline, _ = iter.Next()
+
+	// from parent
 	if strings.HasPrefix(newline, "from") {
-		from_id := iter.parse_parent_ref("from", newline)
-		parent_ids = append(parent_ids, from_id)
+		orig_ref, from_id := parse_parent_ref("from", newline)
+		orig_parents = append(orig_parents, orig_ref)
+		parents = append(parents, from_id)
+		newline, _ = iter.Next()
 	}
-
+	// merge parents
 	for strings.HasPrefix(newline, "merge") {
-		merge_id = iter.parse_parent_ref("merge", newline)
-		parent_ids = append(parent_ids, merge_id)
+		orig_ref, merge_id := parse_parent_ref("merge", newline)
+		orig_parents = append(orig_parents, orig_ref)
+		parents = append(parents, merge_id)
 		newline, _ = iter.Next()
 	}
 
-	file_changes := make([]string, 0)
+	if n := len(orig_parents); n == 0 {
+		if Lasted_commit[branch] > 0 {
+			parents = []int32{Lasted_commit[branch]}
+		}
+	}
+	if n := len(orig_parents); n == 0 {
+		if Lasted_orig_commit[branch] > 0 {
+			orig_parents = []int32{Lasted_orig_commit[branch]}
+		}
+	}
+
+	// parse filechanges
+	file_changes := make([]FileChange, 0)
 	var filechange FileChange
+
+	// if extra_msg is not empty and haven't been used, treat it as filechange
+	if len(tail_msg) > 1 && !used {
+		filechange = parse_filechange(string(tail_msg))
+		file_changes = append(file_changes, filechange)
+	}
 	for newline != "\n" {
-		filechange = iter.parse_filechange(newline)
-		file_changes = append(file_changes, filechange.dumpToString())
+		filechange = parse_filechange(newline)
+		file_changes = append(file_changes, filechange)
 		newline, _ = iter.Next()
 	}
-	commit := NewCommit(orign_oid, branch, author, commiter, int32(size),
-		msg, parent_ids, file_changes)
+
+	commit := NewCommit(orign_oid, branch, author, commiter, int32(len(msg)),
+		msg, parents, file_changes)
 
 	if mark_id > 0 {
 		commit.old_id = mark_id
 		IDs.record_rename(mark_id, commit.ele.id)
 	}
-	// #TODO dump Commit into fast-import
-	if commit.ele.base.dumped {
-		// commit.dump(writer)
+
+	hinfo := &Helper_info{
+		orig_parents:   orig_parents,
+		has_filechange: len(commit.filechanges) != 0,
 	}
-	return commit
+
+	return &commit, hinfo
 }
 
-func (iter *FEOutPutIter) parseReset(line string) Reset {
-	ref := iter.parse_ref_line("reset", line)
+func (iter *FEOutPutIter) parseReset(line string) *Reset {
+	ref := parse_ref_line("reset", line)
 	// this reset is the first reset on the first commit
 	str, _ := iter.f.Peek(6)
 	if string(str) == "commit" {
-		return NewReset(ref, 0)
+		reset := NewReset(ref, 0)
+		return &reset
 	}
 	// then countinue to parse from-line in reset structure
 	newline, _ := iter.Next()
-	parent_id := iter.parse_parent_ref("from", newline)
+	_, parent_id := parse_parent_ref("from", newline)
 
-	reset := NewReset(ref, parent_id)
-	// #TODO dump Reset into git-fast-import
-	if reset.base.dumped {
-		// reset.dump(writer)
+	if parent_id <= 0 {
+		delete(Lasted_commit, ref)
+		delete(Lasted_orig_commit, ref)
 	}
-	return reset
+	reset := NewReset(ref, parent_id)
+
+	return &reset
 }
 
-func (iter *FEOutPutIter) parseTag(line string) Tag {
-	tag_name := iter.parse_ref_line("tag", line)
+func (iter *FEOutPutIter) parseTag(line string) *Tag {
+	tag_name := parse_ref_line("tag", line)
 
 	// go to next new line
 	newline, _ := iter.Next()
-	mark_id := iter.parse_mark(newline)
+	mark_id := parse_mark(newline)
 	if mark_id == 0 {
-		// #FIXME throw err info, then exit
+		fmt.Println("no match mark id")
 	}
 	newline, _ = iter.Next()
-	parent_id := iter.parse_parent_ref("from", newline)
+	_, parent_id := parse_parent_ref("from", newline)
 
 	newline, _ = iter.Next()
-	orig_id := iter.parse_original_id(newline)
+	orig_id := parse_original_id(newline)
 
 	newline, _ = iter.Next()
-	tagger := iter.parse_user("tagger", newline)
+	tagger := parse_user("tagger", newline)
 
 	newline, _ = iter.Next()
-	size, msg := iter.parse_data(newline)
+	size := parse_datasize(newline)
 
-	tag := NewTag(tag_name, parent_id, orig_id, tagger, int32(size), msg)
+	newline, _ = iter.Next()
+	actual_size, msg, _ := iter.parse_data(newline, size)
+
+	tag := NewTag(tag_name, parent_id, orig_id, tagger, int32(actual_size), msg)
+
+	// the parsed mark id from original source data is old id,
+	// cause the new id is generated by IDs.New() in NewTag()
 	if mark_id > 0 {
-		// the current parsed mark id is old id
-		// the new id is generated by IDs.nextID() in NewTag()
+		// new_id = tag.ele.id
 		tag.old_id = mark_id
+		// map[old_id] = to new_id
 		IDs.record_rename(mark_id, tag.ele.id)
+	} else {
+		tag.ele.skip(0)
 	}
-
-	return tag
+	return &tag
 }
 
 // pass some parameters into this for blob filter?
-func (repo *Repository) Parser(opts Options) {
-	var iter *FEOutPutIter
-	var input io.WriteCloser
-	// var input *os.File
-	var err error
+func (filter *RepoFilter) Parser() {
+	if filter.opts.verbose {
+		fmt.Println("开始清理文件数据，请稍等...")
+	}
 
-	iter, err = repo.NewFastExportIter()
+	iter, err := filter.repo.NewFastExportIter()
+	defer iter.Close()
 	if err != nil {
 		fmt.Fprint(os.Stdout, err)
 	}
 
-	go func() {
-		input, err = repo.FastImportOut()
-		if err != nil {
-			fmt.Println("run git-fast-import process failed")
-		}
-		// this is for test
-		// input, err = os.Create(".git/fast-export.out")
+	input, cmd, err := filter.repo.FastImportOut()
+	defer func() {
+		input.Close()
+		cmd.Wait()
 	}()
+	if err != nil {
+		fmt.Println("run git-fast-import process failed")
+	}
+	// this is for test
+	// input, err := os.Create(".git/fast-export.out")
 
 	for {
 		line, _ := iter.Next()
 		if matches := Match("feature done\n", line); len(matches) != 0 {
 			continue
 		} else if matches := Match("blob\n", line); len(matches) != 0 {
-			// pass user-end options to filter blob
-			blob := iter.parseBlob(opts, line)
-			blob.dump(input)
+			blob := iter.parseBlob(filter.opts, line)
+			filter.tweak_blob(blob)
+
+			if blob.ele.base.dumped {
+				blob.dump(input)
+			}
+
+		} else if matches := Match("commit (.*)\n$", line); len(matches) != 0 {
+			commit, aux_info := iter.parseCommit(line)
+			filter.tweak_commit(commit, aux_info)
+
+			if commit.ele.base.dumped {
+				commit.dump(input)
+			}
+
 		} else if matches := Match("reset (.*)\n$", line); len(matches) != 0 {
 			reset := iter.parseReset(line)
-			reset.dump(input)
-		} else if matches := Match("commit (.*)\n$", line); len(matches) != 0 {
-			commit := iter.parseCommit(line)
-			commit.dump(input)
+
+			filter.tweak_reset(reset)
+
+			if reset.base.dumped {
+				reset.dump(input)
+			}
 		} else if matches := Match("tag (.*)\n$", line); len(matches) != 0 {
 			tag := iter.parseTag(line)
-			tag.dump(input)
-		} else if strings.HasPrefix(line, "done\n") && strings.HasPrefix(line, "done\n") {
+
+			filter.tweak_tag(tag)
+
+			if tag.ele.base.dumped {
+				tag.dump(input)
+			}
+		} else if strings.HasPrefix(line, "done\n") {
 			iter.Close()
 			break
 		}
 	}
-
 }

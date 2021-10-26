@@ -13,15 +13,12 @@ import (
 )
 
 type HistoryRecord struct {
-	oid        git.OID
+	oid        string
 	objectSize uint32
 	objectName string
 }
 
-// type HistoryRecord struct {
-// 	sizes.HistorySize
-// 	bigblob []BlobRecord
-// }
+type BlobList []HistoryRecord
 
 func (repo Repository) GetBlobName(oid string) (string, error) {
 	cmd := repo.GitCommand("rev-list", "--objects", "--all")
@@ -107,13 +104,13 @@ func (repo Repository) GetFilechange(parent_hash, commit_hash string) []FileChan
 	return filechanges
 }
 
-func ScanRepository(repo Repository) ([]HistoryRecord, error) {
+func ScanRepository(repo Repository) (BlobList, error) {
 
 	var empty []HistoryRecord
 	var blobs []HistoryRecord
 
 	if repo.opts.verbose {
-		fmt.Println("Start to scan repository: ")
+		fmt.Println("开始扫描...")
 	}
 
 	// get reference iter
@@ -185,8 +182,6 @@ func ScanRepository(repo Repository) ([]HistoryRecord, error) {
 		}
 		switch objectType {
 		case "blob":
-			// graph.RegisterBlob(oid, objectSize)
-
 			limit, err := UnitConvert(repo.opts.limit)
 			if err != nil {
 				return empty, err
@@ -199,22 +194,20 @@ func ScanRepository(repo Repository) ([]HistoryRecord, error) {
 					continue
 				}
 
-				fmt.Printf("DEBUG: get blob name: %s\n", name)
-
-				var pattern string
-				if strings.HasSuffix(name, "\"") {
-					pattern = "." + repo.opts.types + "\"$"
-				} else {
-					pattern = "." + repo.opts.types + "$"
-				}
-				if matches := Match(pattern, name); len(matches) > 0 {
-					// matched
-				} else {
-					continue
-					// 仓库中不存在该类型文件，忽略
+				if len(repo.opts.types) != 0 || repo.opts.types != "*" {
+					var pattern string
+					if strings.HasSuffix(name, "\"") {
+						pattern = "." + repo.opts.types + "\"$"
+					} else {
+						pattern = "." + repo.opts.types + "$"
+					}
+					if matches := Match(pattern, name); len(matches) == 0 {
+						// matched none, skip
+						continue
+					}
 				}
 				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{oid, uint32(objectSize), name})
+				blobs = append(blobs, HistoryRecord{oid.String(), uint32(objectSize), name})
 				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize

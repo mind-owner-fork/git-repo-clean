@@ -15,7 +15,7 @@ func InitContext(args []string) *Repository {
 		os.Exit(1)
 	}
 	if op.interact {
-		op.Cmd()
+		op.PreCmd()
 	}
 	repo, err := git.NewRepository(op.path)
 	if err != nil {
@@ -53,34 +53,47 @@ func InitContext(args []string) *Repository {
 	}
 }
 
-type SelectedBlob struct {
-	idx      int
-	oid      git.OID
-	filesize uint32
-	filename string
-}
-type BlobList []SelectedBlob
-
 func NewFilter(args []string) (*RepoFilter, error) {
 
 	var repo = InitContext(args)
-	filtered := make(map[git.OID]string)
+	var first_target []string
+	var final_target []string
+
+	// when run git-clean-repo -i, its means run scan too
+	if repo.opts.interact {
+		repo.opts.scan = true
+	}
 	if repo.opts.scan {
 		bloblist, err := ScanRepository(*repo)
 		if err != nil {
 			fmt.Println("scanning repository error:\n *", err)
 			os.Exit(1)
 		}
-		for _, b := range bloblist {
-			name, _ := repo.GetBlobName(b.oid.String())
-			filtered[b.oid] = name
-		}
+
 		if repo.opts.verbose {
-			for idx, name := range filtered {
-				fmt.Println(idx)
-				fmt.Println(name)
+			fmt.Println("根据选择扫描出的详细信息，分别为：文件ID，文件大小，文件名")
+			fmt.Println("同一个文件，因为版本不同，ID号不同，因此可能有多个同名文件")
+			for _, item := range bloblist {
+				fmt.Printf("%s  %d 字节  %s\n", item.oid, item.objectSize, item.objectName)
 			}
 		}
+
+		if repo.opts.interact {
+			first_target = PostCmd(bloblist)
+		} else {
+			for _, item := range bloblist {
+				final_target = append(final_target, item.oid)
+			}
+		}
+	}
+
+	if len(first_target) == 0 && len(final_target) == 0 && !(repo.opts.help || repo.opts.version || len(args) == 0) {
+		fmt.Println("根据你所选条件，没有匹配到任何文件，请调整筛选条件再试一试")
+		os.Exit(1)
+	}
+
+	if repo.opts.interact {
+		final_target = DoubleCheckCmd(first_target)
 	}
 
 	Preader, Pwriter := io.Pipe()
@@ -89,7 +102,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		repo:    repo,
 		input:   *Pwriter,
 		output:  *Preader,
-		targets: filtered}, nil
+		targets: final_target}, nil
 }
 
 func main() {
@@ -99,4 +112,6 @@ func main() {
 		os.Exit(1)
 	}
 	filter.Parser()
+
+	filter.repo.CleanUp()
 }

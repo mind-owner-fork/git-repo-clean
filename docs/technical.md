@@ -574,3 +574,42 @@ D "subdir/path with space"
 by comparing .git dir and working dir
 
 + provide filter branch choice for git-fast-export, instead of '--all' option
+
+
+
+**特殊commit**
+
+```bash
+#提交的commit如下：
+commit aa06fdf165058a1348892834554325831e00ec74
+Author: Li Linchao <lilinchao@oschina.cn>
+Date:   Thu Apr 15 20:59:43 2021 +0800
+
+    Create t.txt
+    from :45
+    from :42
+
+# 生成的metadata如下：
+commit refs/heads/master
+mark :41
+original-oid aa06fdf165058a1348892834554325831e00ec74
+author Li Linchao <lilinchao@oschina.cn> 1618491583 +0800
+committer GitHub <noreply@github.com> 1618491583 +0800
+data 30
+Create t.txt
+from :45
+from :42from :40
+M 100644 :39 dir/t.txt
+```
+
+实际应该解析的数据是：
+Create t.txt LF
+from :45 LF
+from :42
+大小为30
+
+最后应该插入一个LF换行，否则影响下一行读取的内容。
+
+
+以上情况已经能够识别和处理，但是在这种情况下还有一种更特殊的情况，即第一个commit就带有这个特殊的message，同时，修改文件为0。
+即：这种特殊情况就是，commit data 之后，既没有parents(from, merge)，也没有filechanges，同时commit message包含伪filechanges信息。

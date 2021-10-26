@@ -31,7 +31,6 @@ like delete operation(--delete) or interaction with the user
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
   -t, --type		set the file type to filter from Git repository
-  -d, --delete		delete the file from Git repository history
   -i, --interactive 	enable interactive operation
 
 Git Large File Storage(LFS) replaces large files such as
@@ -44,8 +43,6 @@ git-clean-repo will config it to track the file you scanned before.
 
   -L, --lfs		use LFS server to storage local large file
 			must followed by --add option
-  -a, --add <file>	let LFS track specified file, have the same effect with
-			"git lfs migrate import --include=<file> --everything"
 
 `
 
@@ -59,10 +56,8 @@ type Options struct {
 	limit    string
 	number   uint32
 	types    string
-	delete   bool
 	interact bool
 	lfs      bool
-	add      string
 }
 
 func (op *Options) init(args []string) error {
@@ -82,10 +77,8 @@ func (op *Options) init(args []string) error {
 	flags.Uint32VarP(&op.number, "number", "n", 3, "set the number of results to show")
 	// default is null, which means all type
 	flags.StringVarP(&op.types, "type", "t", "", "set the file type to filter from Git repository")
-	flags.BoolVarP(&op.delete, "delete", "d", false, "delete the file from Git repository history")
 	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
 	flags.BoolVarP(&op.lfs, "lfs", "L", false, "use LFS server to storage local large file, must followed by --add option")
-	flags.StringVarP(&op.add, "add", "a", "", "let LFS track specified file, will execute 'git lfs migrate import --include=file --everything'")
 
 	err := flags.Parse(args)
 	if err != nil {
@@ -106,7 +99,8 @@ func usage() {
 
 func (op *Options) ParseOptions(args []string) error {
 	if err := op.init(args); err != nil {
-		fmt.Printf("init ParseOptions error: %s\n", err)
+		fmt.Printf("option format error: %s\n", err)
+		os.Exit(1)
 	}
 	if op.help || len(args) == 0 {
 		usage()

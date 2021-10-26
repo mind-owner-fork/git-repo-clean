@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/github/git-sizer/git"
 )
 
 //  Global OID and ID tables
@@ -22,12 +21,12 @@ type RepoFilter struct {
 	input   io.PipeWriter
 	output  io.PipeReader
 	parser  RepoParser
-	targets map[git.OID]string // blob oid => file name
+	targets []string // blob oid string array
 }
 
 func (filter *RepoFilter) tweak_blob(blob *Blob) {
-	for target := range filter.targets {
-		if target.String() == blob.original_oid {
+	for _, target := range filter.targets {
+		if target == blob.original_oid {
 			// set new id to 0
 			blob.ele.skip(0)
 		}
@@ -37,14 +36,12 @@ func (filter *RepoFilter) tweak_blob(blob *Blob) {
 func (filter *RepoFilter) tweak_commit(commit *Commit, helper *Helper_info) {
 
 	// 如果没有from, 但是有filechange，则可能是first commit
-	// if commit.first_parent() == 0 {
-	// 	fmt.Println("DEBUG: this is a init commit!")
-	// }
 	// 如果有from，但是没有filechange， 则可能是merge commit
-	// if len(commit.filechanges) == 0 {
-	// 	fmt.Println("DEBUG: this is a merge commit!")
-	// }
 
+	// 如果存在from，且from：0, 说明是从第一个blob就开始删除了，后面都是0
+	if len(commit.parents) != 0 && commit.parents[0] == 0 {
+		commit.skip(0)
+	}
 	// orig_parents := helper.orig_parents
 	// parents := commit.parents
 	old_1st_parent := commit.first_parent()
@@ -88,11 +85,15 @@ func filter_filechange(commit *Commit) {
 func (filter *RepoFilter) tweak_reset(reset *Reset) {
 	Lasted_commit[reset.ref] = reset.from
 	Lasted_orig_commit[reset.ref] = reset.from
+	if SKIPPED_COMMITS.Contains(reset.from) == true {
+		reset.base.dumped = false
+		reset.base.skip()
+	}
 }
 
 func (filter *RepoFilter) tweak_tag(tag *Tag) {
 	// the tag may have no parents, if so skip it
-	if SKIPPED_COMMITS.Contains(tag.from_ref) == false {
+	if SKIPPED_COMMITS.Contains(tag.from_ref) == true {
 		tag.ele.base.dumped = false
 		tag.ele.skip(0)
 	}
