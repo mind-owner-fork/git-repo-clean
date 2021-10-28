@@ -1,52 +1,105 @@
-**Command Usage:**
+## 介绍
 
-`git clean-repo`
-> show usage
+`git clean-repo`是用Golang开发的具备Git仓库大文件扫描，清理，并重写commit提交记录功能的Git拓展工具。
 
-`git clean-repo -h[--help]`
-> show help info
+## 依赖环境：
+Golang >= 1.15
+Git >= 2.15.0
 
-`git clean-repo -v[--verbose]`
-> verbose output
+## 安装
++ 下载源码
+> git clone https://gitee.com/oschina/git-clean-repo
 
-`git clean-repo -V[--version]`
-> show application version
++ 进入源码目录，编译
+> make
 
-<!-- `git clean-repo --scan --range=full/blobs/commits/trees/refs` -->
-<!-- > scan range can be: full|blobs|commits|trees|refs|tags -->
++ 安装
+
+对于Linux环境
+> sudo cp git-clean-repo $(git --exec-path)
+
+对于Windows环境，类似的，将编译生成的可执行文件git-clean-repo放到系统$PATH路径中即可
+
+
+## 使用
+
+有两种使用方式，一种是命令行，一种是交互式。
+
+目前选项有如下：
+```bash
+  -v, --verbose		show process information
+  -V, --version		show git-clean-repo version number
+  -h, --help		show usage information
+  -p, --path		Git repository path, default is '.'
+  -s, --scan		scan the Git repository objects
+  -l, --limit		set the file size limitation, like: '--limit=10m'
+  -n, --number		set the number of results to show
+  -t, --type		set the file type to filter from Git repository
+  -i, --interactive 	enable interactive operation
+  -f, --force		force to perform history rewrite even the repository haven't backup
+  -d, --delete		execute file cleanup and history rewrite process
+```
+
+**命令行式用法:**
 
 `git clean-repo --scan --limit=10m --type=jpg --number=5`
-> scan top 5 file(.jpg type, if have any) which size larger than 10M
+> 在仓库中使用命令行，扫描仓库文件，文件最小为10M，类型为jpg，显示前5个结果
 
-`git clean-repo --delete filepath [OID]`
-> without --scan option, app will execute clean action
-> clean file by its filepath or OID(which type and size limitation are specified before)
+`git clean-repo --scan --limit=10m --type=jpg --number=5 --delete`
+> 加上`--delete`选项，则会批量删除扫描出的文件，并重写相关提交历史
 
 
-**UI Usage:**
+**交互式用法:**
 
 `git clean-repo -i[--interactive]`
-> interactive with user end, guide user step by step
-> this contains serveral commands below:
+> 使用`-i` 选项进入交互式模式，此模式下，默认打开的开关有`--sacn`, `--delete`, `--verbose`
 
-`git clean-repo --scan --number=N --limit=50m`
-> show a list of top N biggest files(blobs), which type are unspecified but size larger than 50M
-> hint user to specify file type by using commands
+进入交互模式后，首先提示如下：
+```bash
+$ git clean-repo -i
+? 选择要扫描的文件的类型: *
+? 选择要扫描文件的最低大小: 1M
+? 选择要显示扫描结果的数量: (3)
+```
+第一个问题，文件类型选择，默认`*`表示所有类型
+第二个问题，指定文件大小的限制，默认1M。 注意，需要有单位，可选单位有B, K, M, G，不区分大小写
+第三个问题，选择显示结果的数量，默认显示前三个结果。
 
-> hint user can upload bigfile to Gitee LFS server or just delete
-> * let user choose which one to delete, or delete at on time
-> `git clean-repo --delete filepath_0 [index_0]`
-> `git clean-repo --delete filepath_1 [index_1]`
-> `git clean-repo --delete filepath_2 [index_2]`
-> * let user use LFS tool to upload bigfile to LFS server
-> `git clean-repo --lfs --add url -- filepath`
-> this will add the large file to remote LFS repo
-> `git clean-repo --delete filepath`
-> then delete from local repo
+用户选择好了三个条件后，便开始扫描仓库，对于较大的仓库，这可能会花一段时间。
+
+```bash
+开始扫描...
+根据选择扫描出的详细信息，分别为：文件ID，文件大小，文件名
+同一个文件，因为版本不同，ID号不同，因此可能有多个同名文件
+079266398882a970242daaab4c53956da2a3f2b6  954371 字节  po/bg.po
+29ba1c82fed9ee7837b6d84f4966fce2724f5c1f  940063 字节  po/bg.po
+26998105879cc2113cb8e5dfed2bdec02820ab48  920035 字节  po/bg.po
+? 请选择你要删除的文件(可多选):  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter, ? for more help]
+> [ ]  po/bg.po
+  [ ]  po/bg.po
+  [ ]  po/bg.po
+```
+继续选择需要删除的文件即可。
+
+选择后便进入执行阶段，同样地，根据仓库大小情况，可能需要等待一段时间。
 
 
+
+
+扫描结果显示了文件的ID，大小和文件名。
+第四个问题，对结果进一步选择。该选择可以多选，使用向上、向下按键可以指定不同文件，使用向右按键可以全选，使用向左按键可取消全选。
+
+选中完成后，会有二次确认：
+```bash
+? 请选择你要删除的文件(可多选): po/bg.po, po/bg.po, po/bg.po
+? 以下是你要删除的文件ID，确定要删除吗?  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+> [ ]  po/bg.po
+  [ ]  po/bg.po
+  [ ]  po/bg.po
+```
+
+<!--
 **LFS使用流程**
-# https://help.aliyun.com/document_detail/206889.html
 + download and install
 > https://github.com/git-lfs/git-lfs/releases
 + set up in machine
@@ -58,9 +111,10 @@
 + normal git operation and the tracked file will upload to LFS server
 > git add && git commit && git push
 
+
 git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中的文件
 已经存在于提交历史中的大文件，如果想要使用LFS，需要用迁移：
-# https://help.aliyun.com/document_detail/206890.html?spm=a2c4g.11186623.0.nextDoc.778d3f107TbPkx
+> https://help.aliyun.com/document_detail/206890.html?spm=a2c4g.11186623.0.nextDoc.778d3f107TbPkx
 + mirate existing file in history
 > git lfs migrate import --include="*.psd" --everything
 + push to remote
@@ -68,29 +122,31 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 
 使用LFS将历史中的某个文件纳入到LFS的追踪管理，此时会生成`.git/lfs/objects`保存该文件对象
 然后对仓库过滤，删除文件
-然后强制推送到远程仓库
+然后强制推送到远程仓库 -->
 
 
-**git-filter-repo**
-https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37ea546fd9001aee823d
-https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/docs/html/git-filter-repo.html
+**代码结构**
 
-
-**Code Struct**
-
-+ main.go       | application layer
-+ options.go    | app options, arguments
-+ dialog.go     | interface with user
-+ repository.go | maintain a repo
-+ scan.go       | scan repo
-+ actions.go    | execute some actions with repo
-+ lfs.go        | handle LFS
++ main.go       | 程序主入口
++ options.go    | 程序选项参数处理
++ cmd.go        | 交互式命令处理
++ repository.go | 仓库扫描相关处理
++ fastexport.go | 启动git-fast-export进程
++ fastimport.go | 启动git-fast-import进程
++ parser.go     | 仓库数据解析
++ filter.go     | 仓库数据过滤
++ git.go        | Git对象相关
 
 
 ## TODO
-+ suppoort refs filter
-+ support multi file type in one option
-
++ 支持在同一个选项中有多个选择，如：--type=jpg, png, mp4
++ 支持指定更准确范围的文件大小
++ 对特殊文件名的处理
++ 对用户提供的仓库做进一步检测，如检测`.git`与工作目录是否分离
++ 提供选项给git-fast-export，对特定分支进行筛选，而不是所有分支
++ 改写历史后可能影响签名，需要考虑
++ 需要对引用分支等影响，已经用户签名的影响
++ 对于PR，重写历史可能会加大仓库体积
 
 **NOTE**
 + 目前只关注文件本身，所以扫描时只关注blob类型对象
@@ -111,6 +167,8 @@ https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/do
 
 **测试项：**
 
++ 普通仓库
+
 - [x] 单分支，最末端的文件及其commit
 - [x] 单分支，中间单个文件及其commit
 - [x] 单分支，中间连续多个文件及其commit
@@ -123,6 +181,7 @@ https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/do
 - [x] 压缩文件
 - [x] 多媒体文件
 
++ 大型仓库
 
 极端情况下，在仓库中加入一个文件大小为1216179567 byte(1.2G)的压缩文件, 作为仓库最近一次提交(最后被扫描)，从仓库删除，最快不到10s。
 ```bash
@@ -131,5 +190,4 @@ Start to scan repository:
 [0]: 449a189d6fb67b3dc0cfcce086847fc93ac86fd0 1216179567 gitaly-dev.tar.gz
 git clean-repo -s -v --limit=1g -n=3  9.87s user 7.62s system 150% cpu 11.651 total
 ```
-
 以上是理想情况，即在仓库历史中没有加入其它二进制文件，否则过程也会比较长，这取决于仓库中的数据大小。

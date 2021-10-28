@@ -1,5 +1,9 @@
 **Git仓库数据过滤的大概流程**
 
+git 本身提供了两个命令: `git-fast-export`, `git-fast-import`， 他们分别作用将Git仓库数据(.git/objects)导出为特定格式的元数据，流式读取这种特定格式的元数据，并生成一个完成的Git仓库。任何符合这种格式的文件，输入给git-fast-import都能创建一个Git仓库。
+
+所以git-clean-repo的大致流程如下：
+
 ```
 fast-export
     |
@@ -11,13 +15,9 @@ fast-export
             |
             ---> filter(blob size, blob oid)
                     |
-                    | append to
+                    | input stream
                     |
-                    ---> temp file
-                            |
-                            | output stream
-                            |
-                            --->  fast-import
+                    ---> fast-import
 ```
 
 + parser的解析数据类型很多，这些类型取决于fast-export的输出内容，且根据fast-export使用的选项不同而不同。
@@ -25,7 +25,7 @@ fast-export
 
 + filter目前考虑blob类型和commit类型，过滤维度包括blob size, blob oid, blob name等。
 
-+ export和import中间需要临时文件缓存内容, 也是给解析过滤处理空间。
+<!-- + export和import中间需要临时文件缓存内容, 也是给解析过滤处理空间。 -->
 
 **git fast-export 输出分析**
 
@@ -38,7 +38,7 @@ mark :1                                                         # 序号：1
 data 11                                                         # 文件（大小）：11 bytes
 "11111111"                                                      # 文件内容
                                                                 # 换行 LF (必须单行)
-reset refs/heads/main                                           # ？？？ 表示当前分支(ref)为main
+reset refs/heads/main                                           # 表示当前分支(ref)为main
 commit refs/heads/main                                          # 类型：commit
 mark :2                                                         # 序号：2
 author Li Linchao <lilinchao@oschina.cn> 1633749662 +0800       # author
@@ -77,94 +77,10 @@ data 21
 from :4
 M 100644 :5 README.md
 
-reset refs/remotes/origin/main                                 # ？？？ 表示追踪的远程分支为main
+reset refs/remotes/origin/main                                 # 表示追踪的远程分支为main
 from :6                                                        # 表示远程分支的commit对应本地序号6的commit
 ```
 > 测试仓库: https://gitee.com/cactusinhand/fast-export-test.git
-
-加上`--full-tree`选项：
-`$ git fast-export --all --full-tree`:
-
-```diff
-
-@@ -10,6 +10,7 @@ author Li Linchao <lilinchao@oschina.cn> 1633749662 +0800
- committer Li Linchao <lilinchao@oschina.cn> 1633749662 +0800
- data 16
- 第一个commit
-+deleteall
- M 100644 :1 README.md
-
- blob
-@@ -25,7 +26,9 @@ committer Li Linchao <lilinchao@oschina.cn> 1633749750 +0800
- data 21
- add new LICENSE file
- from :2
-+deleteall
- M 100644 :3 LICENSE
-+M 100644 :1 README.md
-
- blob
- mark :5
-@@ -40,6 +43,8 @@ committer Li Linchao <lilinchao@oschina.cn> 1633749780 +0800
- data 21
- 修改 README 文件
- from :4
-+deleteall
-+M 100644 :3 LICENSE
- M 100644 :5 README.md
-
- reset refs/remotes/origin/main
-```
-
-加上`--show-original-ids`选项：
-`$ git fast-export --all --show-original-ids`:
-
-```diff
-@@ -1,11 +1,13 @@
- blob
- mark :1
-+original-oid 3e7aae957d47a5bab6b32ca8878527b187f3081d
- data 11
- "11111111"
-
- reset refs/heads/main
- commit refs/heads/main
- mark :2
-+original-oid c25c298f8980f596a9561de6b8097c2b8702e01f
- author Li Linchao <lilinchao@oschina.cn> 1633749662 +0800
- committer Li Linchao <lilinchao@oschina.cn> 1633749662 +0800
- data 16
-@@ -14,12 +16,14 @@ M 100644 :1 README.md
-
- blob
- mark :3
-+original-oid 36153aa46cfc504b14887cd7f18325ddb3d0d180
- data 33
- CopyRight@2021
- Author: lilinchao
-
- commit refs/heads/main
- mark :4
-+original-oid 1a6699d9a2e860ee36d9abca224622139e5fda82
- author Li Linchao <lilinchao@oschina.cn> 1633749750 +0800
- committer Li Linchao <lilinchao@oschina.cn> 1633749750 +0800
- data 21
-@@ -29,12 +33,14 @@ M 100644 :3 LICENSE
-
- blob
- mark :5
-+original-oid bea31b52a7f5d38ef0ddc0b1ec35c2caeb26006a
- data 22
- "11111111"
- "22222222"
-
- commit refs/heads/main
- mark :6
-+original-oid fc556bc71a844cdec3eb878fd489fe59c469e7e9
- author Li Linchao <lilinchao@oschina.cn> 1633749780 +0800
- committer Li Linchao <lilinchao@oschina.cn> 1633749780 +0800
- data 21
-```
 
 
 
@@ -320,17 +236,16 @@ blob类型数据包含的字段：
 
 fast-export输出流中，commit类型数据包含的字段：
 
-+ reset
 + commit
 + mark
 + author
 + commiter
-+ encoding
++ encoding(*)
 + from
 + merge
 + filechange
 + original-oid
-+ deleteall
++ deleteall(*)
 
 
 如果想删除某个文件(blob)以及其涉及的提交(commit)，对输出流的改动如下：
@@ -431,35 +346,6 @@ $ git reset --hard
 blob后面会紧跟一个commit，可以是多个blob跟一个commit
 
 
-
-
-```go
-
-package main
-
-import "io"
-
-func do() {
-        reader := git-fast-export
-        r1, w1 := io.Pipe()
-        writer := git-fast-import
-
-        go func() {
-        // run git-fast-export process
-        // parse output
-        // filter out some objects
-        // write to pipe: w1.Write(reader)
-        // # if parsed "done" flag, then w1.Close()
-        }()
-
-        go func() {
-                // run git-fast-import process
-                // copy Pipe output to writer
-                // io.Copy(writer, r1)
-        } ()
-}
-
-```
 
 **NOTE**
 
@@ -568,13 +454,6 @@ D "subdir/path with space"
 增加文件，格式为：M fileType id path
 重命名文件, 格式为: R oldpath newpath
 删除文件，格式为：D file path
-
-
-+ avoid seperated .git directory
-by comparing .git dir and working dir
-
-+ provide filter branch choice for git-fast-export, instead of '--all' option
-
 
 
 **特殊commit**

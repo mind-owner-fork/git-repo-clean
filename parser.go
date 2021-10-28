@@ -506,7 +506,6 @@ func parse_datasize(line string) int64 {
 // [data 0
 //  0]
 // thus we use -1 to indicate parse error
-
 func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, extra_msg []byte) {
 
 	var writer bytes.Buffer
@@ -527,7 +526,6 @@ func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, ex
 			if sum == size {
 				break
 			}
-			// #NOTE for some reason, the line maybe extra what we expected before
 			if sum > size {
 				cur_linelen := int64(len(newline))
 				extra_linelen := sum - size
@@ -556,7 +554,6 @@ func parse_user(usertype, line string) (use string) {
 // file mode can be: M(modify), D(delete), C(copy), R(rename), A(add)
 // here we only handle M,D and R mode
 // #FIXME: fix file path format in different OS platform
-// func (iter *FEOutPutIter) parse_filechange(line string) FileChange {
 func parse_filechange(line string) FileChange {
 	arr := strings.Split(line, " ")
 	types := arr[0]
@@ -798,7 +795,6 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 	return &tag
 }
 
-// pass some parameters into this for blob filter?
 func (filter *RepoFilter) Parser() {
 	if filter.opts.verbose {
 		fmt.Println("开始清理文件数据，请稍等...")

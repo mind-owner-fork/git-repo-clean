@@ -76,11 +76,6 @@ func PostCmd(list BlobList) []string {
 func DoubleCheckCmd(list []string) []string {
 	selected := []string{}
 
-	// options := []string{}
-	// options = list
-	// for _, target := range list {
-	// 	options = append(options, target)
-	// }
 	prompt := &survey.MultiSelect{
 		Message: "以下是你要删除的文件ID，确定要删除吗?",
 		Options: list,

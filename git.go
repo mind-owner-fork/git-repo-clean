@@ -2,24 +2,13 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/cli/safeexec"
-	"github.com/github/git-sizer/git"
 )
-
-type Repository struct {
-	git.Repository
-	path   string
-	gitBin string
-	gitDir string
-	opts   Options
-}
 
 /*Ids*/
 type Ids struct {
@@ -38,7 +27,7 @@ func NewIDs() Ids {
 // return current next_id, then next_id + 1
 func (ids *Ids) New() int32 {
 	id := ids.next_id
-	ids.next_id += 1 // need atomic operation?
+	ids.next_id += 1
 	return id
 }
 
@@ -166,124 +155,4 @@ func GitDir(gitbin, path string) (string, error) {
 	gitDir := CanonicalizePath(path, string(bytes.TrimSpace(out)))
 
 	return gitDir, nil
-}
-
-// check if the current repository is bare repo
-func IsBare(gitbin, path string) (bool, error) {
-
-	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--is-bare-repository")
-	out, err := cmd.Output()
-	if err != nil {
-		return false, fmt.Errorf(
-			"could not run 'git rev-parse --is-bare-repository': %s", err,
-		)
-	}
-	if string(bytes.TrimSpace(out)) == "true" {
-		return true, errors.New("this appears to be a bare clone; please operating in a normal repository")
-	}
-	return false, nil
-}
-
-// check if the current repository is shallow repo, need Git version 2.15.0 or newer
-func IsShallow(gitbin, path string) (bool, error) {
-	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--is-shallow-repository")
-	out, err := cmd.Output()
-	if err != nil {
-		return false, fmt.Errorf(
-			"could not run 'git rev-parse --is-shallow-repository': %s", err,
-		)
-	}
-	if string(bytes.TrimSpace(out)) == "true" {
-		return true, errors.New("this appears to be a shallow clone; full clone required")
-	}
-	return false, nil
-}
-
-// check if the current repository is flesh clone.
-func IsFresh(gitbin, path string) (bool, error) {
-	cmd := exec.Command(gitbin, "-C", path, "reflog", "show")
-	out, err := cmd.Output()
-	if err != nil {
-		return false, fmt.Errorf(
-			"could not run 'git reflog show': %s", err,
-		)
-	}
-	num := strings.Count(string(out), "\n")
-	return num < 2, nil
-}
-
-func NewRepository(path string) (*Repository, error) {
-	// Find the `git` executable to be used:
-	gitBin, err := findGitBin()
-	if err != nil {
-		return nil, fmt.Errorf(
-			"could not find 'git' executable (is it in your PATH?): %v", err,
-		)
-	}
-	gitdir, err := GitDir(gitBin, path)
-	if err != nil {
-		return &Repository{}, err
-	}
-
-	if bare, err := IsBare(gitBin, path); err != nil || bare {
-		return &Repository{}, err
-	}
-
-	if shallow, err := IsShallow(gitBin, path); err != nil || shallow {
-		return &Repository{}, err
-	}
-
-	return &Repository{
-		path:   path,   // working dir
-		gitDir: gitdir, // .git dir
-		gitBin: gitBin,
-	}, nil
-}
-
-func (repo *Repository) Close() error {
-	return nil
-}
-
-func (repo *Repository) CleanUp() {
-	// clean up
-	fmt.Println("clean up the repository...")
-
-	fmt.Println("running git reset --hard")
-	cmd1 := repo.GitCommand("reset", "--hard")
-	cmd1.Stdout = os.Stdout
-	err := cmd1.Start()
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = cmd1.Wait()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("running git reflog expire --expire=now --all")
-	cmd2 := repo.GitCommand("reflog", "expire", "--expire=now", "--all")
-	cmd2.Stderr = os.Stderr
-	cmd2.Stdout = os.Stdout
-	err = cmd2.Start()
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = cmd2.Wait()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("running git gc --prune=now")
-	cmd3 := repo.GitCommand("gc", "--prune=now")
-	cmd3.Stderr = os.Stderr
-	cmd3.Stdout = os.Stdout
-	err = cmd3.Start()
-	if err != nil {
-		fmt.Println(err)
-	}
-	cmd3.Wait()
-	if err != nil {
-		fmt.Println(err)
-	}
-
 }

@@ -42,8 +42,7 @@ func (filter *RepoFilter) tweak_commit(commit *Commit, helper *Helper_info) {
 	if len(commit.parents) != 0 && commit.parents[0] == 0 {
 		commit.skip(0)
 	}
-	// orig_parents := helper.orig_parents
-	// parents := commit.parents
+
 	old_1st_parent := commit.first_parent()
 
 	// 如果filechange中，查询不到from-id，则需要删除该条记录，
@@ -69,7 +68,7 @@ func filter_filechange(commit *Commit) {
 		if len(filechange.blob_id) == 40 {
 			continue
 		}
-		// #TODO，在Skip_blob中查询应该更快
+
 		if filechange.changetype == "M" {
 			id, _ := strconv.Atoi(filechange.blob_id)
 			if _, ok := Id_hash[int32(id)]; !ok {
@@ -92,7 +91,7 @@ func (filter *RepoFilter) tweak_reset(reset *Reset) {
 }
 
 func (filter *RepoFilter) tweak_tag(tag *Tag) {
-	// the tag may have no parents, if so skip it
+	// the tag may have no parent, if so skip it
 	if SKIPPED_COMMITS.Contains(tag.from_ref) == true {
 		tag.ele.base.dumped = false
 		tag.ele.skip(0)
