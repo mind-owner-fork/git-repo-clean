@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/cli/safeexec"
 	"github.com/github/git-sizer/git"
@@ -196,6 +197,19 @@ func IsShallow(gitbin, path string) (bool, error) {
 		return true, errors.New("this appears to be a shallow clone; full clone required")
 	}
 	return false, nil
+}
+
+// check if the current repository is flesh clone.
+func IsFresh(gitbin, path string) (bool, error) {
+	cmd := exec.Command(gitbin, "-C", path, "reflog", "show")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf(
+			"could not run 'git reflog show': %s", err,
+		)
+	}
+	num := strings.Count(string(out), "\n")
+	return num < 2, nil
 }
 
 func NewRepository(path string) (*Repository, error) {

@@ -32,6 +32,8 @@ like delete operation(--delete) or interaction with the user
   -n, --number		set the number of results to show
   -t, --type		set the file type to filter from Git repository
   -i, --interactive 	enable interactive operation
+  -f, --force		force to perform history rewrite even the repository haven't backup
+  -d, --delete		execute file cleanup and history rewrite process
 
 Git Large File Storage(LFS) replaces large files such as
 multi-media file, executable file with text pointers inside Git,
@@ -52,6 +54,8 @@ type Options struct {
 	help     bool
 	path     string
 	scan     bool
+	delete   bool
+	force    bool
 	ranges   string
 	limit    string
 	number   uint32
@@ -77,6 +81,8 @@ func (op *Options) init(args []string) error {
 	flags.Uint32VarP(&op.number, "number", "n", 3, "set the number of results to show")
 	// default is null, which means all type
 	flags.StringVarP(&op.types, "type", "t", "", "set the file type to filter from Git repository")
+	flags.BoolVarP(&op.delete, "delete", "d", false, "execute file cleanup and history rewrite process")
+	flags.BoolVarP(&op.force, "force", "f", false, "force to perform history rewrite even the repository haven't backup")
 	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
 	flags.BoolVarP(&op.lfs, "lfs", "L", false, "use LFS server to storage local large file, must followed by --add option")
 
