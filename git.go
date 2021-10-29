@@ -126,7 +126,7 @@ func (repo Repository) GitCommand(callerArgs ...string) *exec.Cmd {
 	cmd := exec.Command(repo.gitBin, args...)
 	cmd.Env = append(
 		os.Environ(),
-		"GIT_DIR"+repo.gitDir,
+		// "GIT_DIR"+repo.gitDir, // fix Windows issue
 		// Disable grafts when running our commands:
 		"GIT_GRAFT_FILE="+os.DevNull,
 	)

@@ -32,15 +32,18 @@ type HistoryRecord struct {
 type BlobList []HistoryRecord
 
 func (repo Repository) GetBlobName(oid string) (string, error) {
-	cmd := repo.GitCommand("rev-list", "--objects", "--all")
-
+	cmd := exec.Command(repo.gitBin, "rev-list", "--objects", "--all")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Start()
+	if err != nil {
+		return "", err
+	}
+
 	buf := bufio.NewReader(out)
 	for {
 		line, err := buf.ReadString('\n')
@@ -73,13 +76,16 @@ func (repo Repository) GetFilechange(parent_hash, commit_hash string) []FileChan
 	cmd := repo.GitCommand("diff-tree", "r", parent_hash, commit_hash)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		// return "", nil
+		return []FileChange{}
 	}
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Start()
-	buf := bufio.NewReader(out)
+	if err != nil {
+		return []FileChange{}
+	}
 
+	buf := bufio.NewReader(out)
 	var filechanges []FileChange
 	for {
 		raw_line, err := buf.ReadString('\n')
@@ -201,8 +207,8 @@ func ScanRepository(repo Repository) (BlobList, error) {
 
 				name, err := repo.GetBlobName(oid.String())
 				if err != nil {
-					fmt.Println("get blob name fail, but will continue to try to get next one")
-					continue
+					fmt.Printf("run GetBlobName error: %s\n", err)
+					os.Exit(1)
 				}
 
 				if len(repo.opts.types) != 0 || repo.opts.types != "*" {
