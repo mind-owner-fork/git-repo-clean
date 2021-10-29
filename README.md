@@ -160,8 +160,7 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 具体检测方法是查看`git reflog`命令的结果，是否只包含一项。如果超过一项，则会被认为不是刚克隆的仓库。
 
 **技术原理**
-见 [doc](docs/technical.md)
-
+见 [docs/technical.md](docs/technical.md)
 
 
 

@@ -78,7 +78,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			os.Exit(1)
 		}
 
-		if repo.opts.verbose {
+		if repo.opts.verbose && len(bloblist) != 0 {
 			fmt.Println("根据选择扫描出的详细信息，分别为：文件ID，文件大小，文件名")
 			fmt.Println("同一个文件，因为版本不同，ID号不同，因此可能有多个同名文件")
 			for _, item := range bloblist {
@@ -96,7 +96,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 
 	if len(first_target) == 0 && len(final_target) == 0 && !(repo.opts.help || repo.opts.version || len(args) == 0) {
-		fmt.Println("根据你所选条件，没有匹配到任何文件，请调整筛选条件再试一试")
+		fmt.Println("根据你所选择的筛选条件，没有匹配到任何文件，请调整筛选条件再试一试")
 		os.Exit(1)
 	}
 
@@ -108,6 +108,10 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		if repo.opts.verbose {
 			fmt.Println("扫描结束...")
 		}
+		os.Exit(1)
+	}
+
+	if len(final_target) == 0 {
 		os.Exit(1)
 	}
 

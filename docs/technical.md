@@ -349,29 +349,14 @@ blob后面会紧跟一个commit，可以是多个blob跟一个commit
 
 **NOTE**
 
-+ 全局mark_id处理问题，mark_id, hash_id
-+ 考虑到流式处理，不用对mark_id做减法，每次都顺序做加法
-
-> 原始id序号为：A:1, B:2, C:3
-> 加上过滤筛选条件后，按顺序A还是为1，B需要被过滤，跳过，C则自动加1，变为2
-> commitD 依赖B，则commitD 也会修改。
-
-> Blob, Commit, Reset, Tag, Filechange类型数据，底层都嵌套有`GitElements`结构，其中有`dumped`这个字段，
++ Blob, Commit, Reset, Tag, Filechange类型数据，底层都嵌套有`GitElements`结构，其中有`dumped`这个字段，
 一旦检测到改字段为`false`，则意味着改类型需要被过滤，整个条数据不再写入流中，同时直接跳到下一行继续解析其它类型数据。
 
-> 只有要dump到输入流中时的mark ID才是实际顺序的ID，所以可以在实际dump时才NewID(),否则始终记录的是原始顺序ID。
++ 只有要dump到输入流中时的mark ID才是实际顺序的ID，所以可以在实际dump时才NewID(),否则始终记录的是原始顺序ID。
 
-+ 使用 `git -c core.quotepath false`处理文件名：
-
-true:
++ 需要使用 `git -c core.quotepath`配置处理文件名：
 ```bash
-reset refs/heads/master
-commit refs/heads/master
-mark :2
-author A U Thor <author@example.com> 1112354055 +0200
-committer C O Mitter <committer@example.com> 1112354055 +0200
-data 8
-Initial
+# git -c core.quotepath true
 M 100644 :1 "Name and a\nLF"
 M 100644 :1 "Name and an\tHT"
 M 100644 :1 "Name\""
@@ -385,15 +370,8 @@ M 100644 :1 "\346\277\261\351\207\216/file"
 M 100644 :1 "\346\277\261\351\207\216\347\264\224"
 ```
 
-false:
 ```bash
-reset refs/heads/master
-commit refs/heads/master
-mark :2
-author A U Thor <author@example.com> 1112354055 +0200
-committer C O Mitter <committer@example.com> 1112354055 +0200
-data 8
-Initial
+# git -c core.quotepath false
 M 100644 :1 "Name and a\nLF"
 M 100644 :1 "Name and an\tHT"
 M 100644 :1 "Name\""
@@ -407,13 +385,8 @@ M 100644 :1 濱野/file
 M 100644 :1 濱野純
 ```
 
-对于filechange的类型：
++ 对于FileChange的类型说明：
 ```bash
-blob
-mark :1
-data 4
-foo
-
 reset refs/heads/main
 commit refs/heads/main
 mark :2
@@ -450,13 +423,15 @@ D "subdir/path with \"quote\""
 D "subdir/path with \\backslash"
 D "subdir/path with space"
 ```
+上面出现了三种类型，对应了三种文件的操作:
+> + 增加文件，格式为：M fileType id path
+> + 重命名文件, 格式为: R oldpath newpath
+> + 删除文件，格式为：D file path
 
-增加文件，格式为：M fileType id path
-重命名文件, 格式为: R oldpath newpath
-删除文件，格式为：D file path
+Git中实际上还有A(Added),C(Copied)等等，但是在这里都不考虑。因为M,R,D组合就能够实现A,C所代表的意思。[参考](https://git-scm.com/docs/git-fast-export#Documentation/git-fast-export.txt--M)
 
 
-**特殊commit**
++ 对于commit的一些说明
 
 ```bash
 #提交的commit如下：
@@ -488,7 +463,6 @@ from :42
 大小为30
 
 最后应该插入一个LF换行，否则影响下一行读取的内容。
-
 
 以上情况已经能够识别和处理，但是在这种情况下还有一种更特殊的情况，即第一个commit就带有这个特殊的message，同时，修改文件为0。
 即：这种特殊情况就是，commit data 之后，既没有parents(from, merge)，也没有filechanges，同时commit message包含伪filechanges信息。
