@@ -586,7 +586,7 @@ func parse_filechange(line string) FileChange {
 	return FileChange{}
 }
 
-func (iter *FEOutPutIter) parseBlob(op Options, line string) *Blob {
+func (iter *FEOutPutIter) parseBlob(line string) *Blob {
 	// go to next line
 	newline, _ := iter.Next()
 
@@ -796,8 +796,8 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 }
 
 func (filter *RepoFilter) Parser() {
-	if filter.opts.verbose {
-		fmt.Println("开始清理文件数据，请稍等...")
+	if filter.repo.opts.verbose {
+		PrintGreen("开始清理指定文件，请稍等...")
 	}
 
 	iter, err := filter.repo.NewFastExportIter()
@@ -822,7 +822,7 @@ func (filter *RepoFilter) Parser() {
 		if matches := Match("feature done\n", line); len(matches) != 0 {
 			continue
 		} else if matches := Match("blob\n", line); len(matches) != 0 {
-			blob := iter.parseBlob(filter.opts, line)
+			blob := iter.parseBlob(line)
 			filter.tweak_blob(blob)
 
 			if blob.ele.base.dumped {

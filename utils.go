@@ -6,6 +6,13 @@ import (
 	"strings"
 )
 
+const (
+	FORMAT_RED    = "\033[31m%s\033[0m\n"
+	FORMAT_GREEN  = "\033[32m%s\033[0m\n"
+	FORMAT_YELLOW = "\033[33m%s\033[0m\n"
+	FORMAT_BLUE   = "\033[34m%s\033[0m\n"
+)
+
 // Convert number to bytes according to Uint
 // e.g. 10 Kib => (10 * 1024) bytes
 // valid unit: b, B, k, K, m, M, g, G
@@ -31,4 +38,20 @@ func UnitConvert(input string) (uint64, error) {
 		err := fmt.Errorf("expected format: --limit=<n>k|m|g, but you are: --limit=%s", input)
 		return 0, err
 	}
+}
+
+func PrintRed(msg string) {
+	fmt.Printf(FORMAT_RED, msg)
+}
+
+func PrintGreen(msg string) {
+	fmt.Printf(FORMAT_GREEN, msg)
+}
+
+func PrintYellow(msg string) {
+	fmt.Printf(FORMAT_YELLOW, msg)
+}
+
+func PrintBlue(msg string) {
+	fmt.Printf(FORMAT_BLUE, msg)
 }

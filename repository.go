@@ -127,7 +127,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 	var blobs []HistoryRecord
 
 	if repo.opts.verbose {
-		fmt.Println("开始扫描...")
+		PrintGreen("开始扫描...")
 	}
 
 	// get reference iter
@@ -320,7 +320,7 @@ func (repo *Repository) Close() error {
 
 func (repo *Repository) CleanUp() {
 	// clean up
-	fmt.Println("clean up the repository...")
+	PrintGreen("文件清理完毕，开始清理仓库...")
 
 	fmt.Println("running git reset --hard")
 	cmd1 := repo.GitCommand("reset", "--hard")
