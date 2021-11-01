@@ -1,3 +1,4 @@
 git-clean-repo
 git-clean-repo.exe
 vendor
+releases/

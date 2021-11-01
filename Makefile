@@ -12,8 +12,26 @@ GOFLAGS := -ldflags "$(GO_LDFLAGS)"
 
 .PHONY: all
 all:
-	go build -o ${TARGET} $(GOFLAGS)
+	go build -o bin/${TARGET} $(GOFLAGS)
+
+
+.PHONY: release
+release:
+
+release:
+	mkdir -p releases
+	$(call RELEASE_BUILD,linux,amd64)
+	$(call RELEASE_BUILD,linux,386)
+	$(call RELEASE_BUILD,darwin,amd64)
+	$(call RELEASE_BUILD,windows,amd64,.exe)
+	$(call RELEASE_BUILD,windows,386,.exe)
+
+RELEASE_BUILD = GOOS=$(1) GOARCH=$(2) \
+	go build \
+	 $(GOFLAGS) \
+	-o ./releases/git-clean-repo-$(1)-$(2)$(3)
 
 .PHONY: clean
 clean:
-	rm -f git-clean-repo
+	rm -f bin/git-clean-repo
+	rm -rf releases/*
