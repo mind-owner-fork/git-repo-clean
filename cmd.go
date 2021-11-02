@@ -47,7 +47,7 @@ func (op *Options) PreCmd() {
 	}{}
 
 	// perform the questions
-	err := survey.Ask(qs, &answers, survey.WithHelpInput('!'))
+	err := survey.Ask(qs, &answers, survey.WithHelpInput('?'))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -71,7 +71,7 @@ func PostCmd(list BlobList) []string {
 		PageSize: 10,
 		Help:     "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择",
 	}
-	survey.AskOne(prompt, &selected, survey.WithHelpInput('!'))
+	survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
 
 	return selected
 }
@@ -86,7 +86,7 @@ func DoubleCheckCmd(list []string) []string {
 		Help:     "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择",
 	}
 
-	survey.AskOne(prompt, &selected, survey.WithHelpInput('!'))
+	survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
 
 	return selected
 }
