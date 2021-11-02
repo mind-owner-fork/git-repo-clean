@@ -116,3 +116,11 @@ func (op *Options) ParseOptions(args []string) error {
 	}
 	return nil
 }
+
+func (op *Options) Standalone() bool {
+	if op.help || op.verbose || op.version || op.force || op.scan || op.delete {
+		return false
+	} else {
+		return true
+	}
+}
