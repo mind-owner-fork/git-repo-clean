@@ -665,9 +665,10 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 
 		if match := Match("from :"+ref_re, string(tail_msg)); len(match) > 0 {
 			// get a from parent in extra_msg
-			fromid, _ := strconv.Atoi(match[1])
-			parents = append(parents, int32(fromid))
-			orig_parents = append(orig_parents, int32(fromid))
+			// must use parse_parent_ref() method to parse it, otherwise will get a dump error in some case.
+			orig_ref, from_id := parse_parent_ref("from", string(tail_msg))
+			orig_parents = append(orig_parents, orig_ref)
+			parents = append(parents, from_id)
 			used = true
 		} else {
 			used = false
