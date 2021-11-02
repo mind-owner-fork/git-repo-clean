@@ -16,7 +16,7 @@ Git >= 2.15.0
 + 安装
 
 对于Linux环境
-> sudo cp git-clean-repo $(git --exec-path)
+> sudo cp bin/git-clean-repo $(git --exec-path)
 
 对于Windows环境，类似的，将编译生成的可执行文件git-clean-repo放到系统$PATH路径中即可
 
