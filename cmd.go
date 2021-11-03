@@ -10,7 +10,7 @@ var qs = []*survey.Question{
 	{
 		Name: "fileType",
 		Prompt: &survey.Input{
-			Message: "选择要扫描的文件的类型:",
+			Message: "选择要扫描的文件的类型，如：zip, png:",
 			Default: "*",
 			Help:    "默认无类型，即查找所有类型。如果想指定类型，则直接输入类型后缀名即可, 不需要加'.'",
 		},
@@ -20,7 +20,7 @@ var qs = []*survey.Question{
 	{
 		Name: "fileSize",
 		Prompt: &survey.Input{
-			Message: "选择要扫描文件的最低大小:",
+			Message: "选择要扫描文件的最低大小，如：1M, 1g:",
 			Default: "1M",
 			Help:    "大小数值需要单位，如: 10K. 可选单位有B,K,M,G, 且不区分大小写",
 		},
@@ -29,7 +29,7 @@ var qs = []*survey.Question{
 	{
 		Name: "fileNumber",
 		Prompt: &survey.Input{
-			Message: "选择要显示扫描结果的数量:",
+			Message: "选择要显示扫描结果的数量，默认3:",
 			Default: "3",
 			Help:    "默认显示前3个，单页最大显示为10行，所以最好不超过10",
 		},

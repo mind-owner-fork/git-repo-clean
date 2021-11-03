@@ -798,7 +798,7 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 
 func (filter *RepoFilter) Parser() {
 	if filter.repo.opts.verbose {
-		PrintGreen("开始清理指定文件，请稍等...")
+		PrintGreen("开始从提交历史中清理指定的文件...(如果仓库过大，执行时间会比较长，请耐心等待)")
 	}
 
 	iter, err := filter.repo.NewFastExportIter()

@@ -15,6 +15,11 @@ import (
 	"github.com/github/git-sizer/git"
 )
 
+const (
+	GCLink  = "https://gitee.com/help/articles/4173"
+	LFSLink = "https://gitee.com/help/articles/4235"
+)
+
 type Repository struct {
 	git.Repository
 	path   string
@@ -25,7 +30,7 @@ type Repository struct {
 
 type HistoryRecord struct {
 	oid        string
-	objectSize uint32
+	objectSize int32
 	objectName string
 }
 
@@ -127,7 +132,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 	var blobs []HistoryRecord
 
 	if repo.opts.verbose {
-		PrintGreen("开始扫描...")
+		PrintGreen("开始扫描...(如果仓库过大，扫描时间会比较长，请耐心等待)")
 	}
 
 	// get reference iter
@@ -224,7 +229,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 					}
 				}
 				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{oid.String(), uint32(objectSize), name})
+				blobs = append(blobs, HistoryRecord{oid.String(), int32(objectSize), name})
 				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize
@@ -320,7 +325,7 @@ func (repo *Repository) Close() error {
 
 func (repo *Repository) CleanUp() {
 	// clean up
-	PrintGreen("文件清理完毕，开始清理仓库...")
+	PrintGreen("文件清理完毕，开始清理仓库，请耐心等待...")
 
 	fmt.Println("running git reset --hard")
 	cmd1 := repo.GitCommand("reset", "--hard")

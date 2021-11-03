@@ -55,3 +55,52 @@ func PrintYellow(msg string) {
 func PrintBlue(msg string) {
 	fmt.Printf(FORMAT_BLUE, msg)
 }
+
+func PrintPlain(msg string) {
+	fmt.Println(msg)
+}
+
+func ShowScanResult(list BlobList) {
+	PrintYellow("扫描完成，同一个文件因为版本不同可能会存在多个，这些是占用 Git 仓库存储的主要原因")
+	PrintYellow("请根据需要，通过其对应的Blob ID进行选择性删除，如果确认文件可以全部删除，全选即可")
+
+	// if maxNameLen = 58 maxUTF8NameLen = 34, then ActualLen = (58-34)/2
+	maxNameLen, maxUTF8NameLen := maxLenBlobName(list)
+	ActualLen := maxUTF8NameLen + (maxNameLen-maxUTF8NameLen)/2
+
+	maxSizeLen := maxLenBlobSize(list)
+
+	fmt.Printf("|-%-*s | %-*s------ | %-*s-|\n", 40, strings.Repeat("-", 40), maxSizeLen, strings.Repeat("-", maxSizeLen), ActualLen, strings.Repeat("-", ActualLen))
+	fmt.Printf("| %-*s | %-*s bytes | %-*s |\n", 40, "Blob ID", maxSizeLen, "SIZE", ActualLen, "File Name")
+	fmt.Printf("|-%-*s | %-*s------ | %-*s-|\n", 40, strings.Repeat("-", 40), maxSizeLen, strings.Repeat("-", maxSizeLen), ActualLen, strings.Repeat("-", ActualLen))
+	for _, item := range list {
+		d := len(item.objectName) - len([]rune(item.objectName))
+		if d != 0 {
+			fmt.Printf("| %.*s | %.*d bytes | %-*s |\n", 40, item.oid, maxSizeLen, item.objectSize, ActualLen-d/2, item.objectName)
+		} else {
+			fmt.Printf("| %.*s | %.*d bytes | %-*s |\n", 40, item.oid, maxSizeLen, item.objectSize, ActualLen, item.objectName)
+		}
+		fmt.Printf("|-%-*s | %-*s------ | %-*s-|\n", 40, strings.Repeat("-", 40), maxSizeLen, strings.Repeat("-", maxSizeLen), ActualLen, strings.Repeat("-", ActualLen))
+	}
+}
+
+func maxLenBlobName(list BlobList) (int, int) {
+	// fix Chinese Character issue: a Chinese Character is 3 bytes, but a English Letter is 1 byte.
+	// s1 := "abcd" b1 := []byte(s1) fmt.Println(b1) // [97 98 99 100]
+	// s2 := "中文" b2 := []byte(s2) fmt.Println(b2) // [228 184 173 230 150 135]
+	// r3 := []rune(s2)  fmt.Println(r3) // [20013 25991]
+	var maxNameLen = 0
+	var maxUTF8NameLen = 0
+	for _, item := range list {
+		if len(item.objectName) > maxNameLen {
+			maxNameLen = len(item.objectName)
+			maxUTF8NameLen = len([]rune(item.objectName))
+		}
+	}
+	return maxNameLen, maxUTF8NameLen
+}
+
+func maxLenBlobSize(list BlobList) int {
+	// the first one is the biggest one
+	return len(strconv.Itoa(int(list[0].objectSize)))
+}

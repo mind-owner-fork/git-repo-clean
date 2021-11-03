@@ -79,11 +79,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		}
 
 		if repo.opts.verbose && len(bloblist) != 0 {
-			PrintBlue("根据选择扫描出的详细信息，分别为：文件ID，文件大小，文件名")
-			PrintBlue("同一个文件，因为版本不同，ID号不同，因此可能有多个同名文件")
-			for _, item := range bloblist {
-				fmt.Printf("%s  %d 字节  %s\n", item.oid, item.objectSize, item.objectName)
-			}
+			ShowScanResult(bloblist)
 		}
 
 		if repo.opts.interact {
@@ -125,13 +121,17 @@ func NewFilter(args []string) (*RepoFilter, error) {
 }
 
 func Prompt() {
-	PrintGreen("清理仓库已经完成！")
-	PrintGreen("由于仓库历史部分已经更改，提交到远程仓库时需要加'--focre'强制提交:")
-	PrintGreen("    git push origin --all --force")
-	PrintGreen("    git push origin --tags --force")
-	PrintGreen("提交成功后，需要在仓库管理页面点击'存储库GC', 刷新你的远程仓库容量")
-	PrintGreen("如果有其他人使用远程仓库协同开发，需要使用新的远程仓库源，同时避免")
-	PrintGreen("将已删除的文件再次推送到仓库中。")
+	PrintGreen("本地仓库清理完成！")
+	PrintYellow("由于本地仓库的历史已经被修改，如果没有新的提交，建议先完成如下工作：")
+	PrintYellow("1. 更新远程仓库。将本地清理后的仓库推送到远程仓库：")
+	PrintYellow("    git push origin --all --force")
+	PrintYellow("    git push origin --tags --force")
+	PrintYellow("2. 清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC(Garbage Collection)操作")
+	PrintYellow("(如果是 Gitee 仓库，请查阅GC帮助文档: https://gitee.com/help/articles/4173)")
+	PrintYellow("3. 处理关联仓库。处理具有同一个远程仓库的其他副本仓库，确保不会将同样的文件再次提交到远程仓库。请参阅 https://yyyy")
+	PrintPlain("完成以上三步后，恭喜你，所有的清理工作已经完成！")
+	PrintPlain("如果有大文件的存储需求，请使用Git-LFS功能，避免仓库体积再次膨胀")
+	PrintPlain("(Gitee LFS 的使用请参阅：https://gitee.com/help/articles/4235)")
 }
 
 func main() {
