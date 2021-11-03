@@ -83,7 +83,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		}
 
 		if repo.opts.interact {
-			first_target = PostCmd(bloblist)
+			first_target = MultiSelectCmd(bloblist)
 		} else {
 			for _, item := range bloblist {
 				final_target = append(final_target, item.oid)
@@ -97,7 +97,11 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 
 	if repo.opts.interact {
-		final_target = DoubleCheckCmd(first_target)
+		var ok = false
+		ok, final_target = Confirm(first_target)
+		if !ok {
+			os.Exit(1)
+		}
 	}
 
 	if !repo.opts.delete {

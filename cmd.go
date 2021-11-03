@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -57,16 +58,17 @@ func (op *Options) PreCmd() {
 	op.types = answers.FileType
 }
 
-func PostCmd(list BlobList) []string {
+func MultiSelectCmd(list BlobList) []string {
 
 	selected := []string{}
 	options := []string{}
 
 	for _, target := range list {
-		options = append(options, target.oid)
+		opt := target.oid + ": " + target.objectName + "\n"
+		options = append(options, opt)
 	}
 	prompt := &survey.MultiSelect{
-		Message:  "请选择你要删除的文件(可多选):",
+		Message:  "请选择你要删除的文件(可多选):\n",
 		Options:  options,
 		PageSize: 10,
 		Help:     "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择",
@@ -76,17 +78,23 @@ func PostCmd(list BlobList) []string {
 	return selected
 }
 
-func DoubleCheckCmd(list []string) []string {
-	selected := []string{}
+func Confirm(list []string) (bool, []string) {
+	ok := false
+	results := []string{}
 
-	prompt := &survey.MultiSelect{
-		Message:  "以下是你要删除的文件ID，确定要删除吗?",
-		Options:  list,
-		PageSize: 10,
-		Help:     "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择",
+	prompt := &survey.Confirm{
+		Message: "以上是你要删除的文件，确定要删除吗?\n",
+	}
+	for _, item := range list {
+		fmt.Println(item)
+	}
+	survey.AskOne(prompt, &ok)
+
+	// turn back to name oid only
+	for _, item := range list {
+		name := strings.Split(item, ":")[0]
+		results = append(results, name)
 	}
 
-	survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
-
-	return selected
+	return ok, results
 }
