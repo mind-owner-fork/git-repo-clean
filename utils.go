@@ -69,7 +69,15 @@ func ShowScanResult(list BlobList) {
 	maxNameLen, maxUTF8NameLen := maxLenBlobName(list)
 	ActualLen := maxUTF8NameLen + (maxNameLen-maxUTF8NameLen)/2
 
+	// fix for too short file name
+	if ActualLen < 9 {
+		ActualLen = 9
+	}
 	maxSizeLen := maxLenBlobSize(list)
+	// fix for too small file size
+	if maxSizeLen < 4 {
+		maxSizeLen = 4
+	}
 
 	fmt.Printf("|-%-*s | %-*s------ | %-*s-|\n", 40, strings.Repeat("-", 40), maxSizeLen, strings.Repeat("-", maxSizeLen), ActualLen, strings.Repeat("-", ActualLen))
 	fmt.Printf("| %-*s | %-*s bytes | %-*s |\n", 40, "Blob ID", maxSizeLen, "SIZE", ActualLen, "File Name")
