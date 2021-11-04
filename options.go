@@ -28,6 +28,7 @@ like delete operation(--delete) or interaction with the user
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
   -s, --scan		scan the Git repository objects
+  -b, --branch		set the branch to scan, default is master
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
   -t, --type		set the file type to filter from Git repository
@@ -56,7 +57,7 @@ type Options struct {
 	scan     bool
 	delete   bool
 	force    bool
-	ranges   string
+	branch   string
 	limit    string
 	number   uint32
 	types    string
@@ -75,6 +76,8 @@ func (op *Options) init(args []string) error {
 	flags.StringVarP(&op.path, "path", "p", ".", "Git repository path, default is '.'")
 	// default is to scan repo
 	flags.BoolVarP(&op.scan, "scan", "s", false, "scan the Git repository objects")
+	// default branch is master, when set to 'all', means sacn all branches
+	flags.StringVarP(&op.branch, "branch", "b", "master", "set the branch to scan")
 	// default file threshold is 1M
 	flags.StringVarP(&op.limit, "limit", "l", "1m", "set the file size limitation")
 	// default to show top 3 largest file

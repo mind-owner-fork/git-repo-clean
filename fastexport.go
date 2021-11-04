@@ -16,6 +16,11 @@ type FEOutPutIter struct {
 }
 
 func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
+
+	if repo.opts.branch == "all" {
+		repo.opts.branch = "--all"
+	}
+
 	args := []string{
 		"-C",
 		repo.path,
@@ -27,10 +32,9 @@ func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
 		"--fake-missing-tagger",
 		"--tag-of-filtered-object=rewrite",
 		"--use-done-feature",
-		"--mark-tags",
-		"--reencode=yes",
-		"--all",
-		// "-M", // *
+		"--mark-tags",    // git >= 2.24.0
+		"--reencode=yes", // git >= 2.23.0
+		repo.opts.branch,
 	}
 	cmd := repo.GitCommand(args...)
 	out, err := cmd.StdoutPipe()

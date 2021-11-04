@@ -3,12 +3,12 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/github/git-sizer/counts"
@@ -252,10 +252,8 @@ func IsBare(gitbin, path string) (bool, error) {
 			"could not run 'git rev-parse --is-bare-repository': %s", err,
 		)
 	}
-	if string(bytes.TrimSpace(out)) == "true" {
-		return true, errors.New("this appears to be a bare clone; please operating in a normal repository")
-	}
-	return false, nil
+
+	return string(bytes.TrimSpace(out)) == "true", nil
 }
 
 // check if the current repository is shallow repo, need Git version 2.15.0 or newer
@@ -267,10 +265,8 @@ func IsShallow(gitbin, path string) (bool, error) {
 			"could not run 'git rev-parse --is-shallow-repository': %s", err,
 		)
 	}
-	if string(bytes.TrimSpace(out)) == "true" {
-		return true, errors.New("this appears to be a shallow clone; full clone required")
-	}
-	return false, nil
+
+	return string(bytes.TrimSpace(out)) == "true", nil
 }
 
 // check if the current repository is flesh clone.
@@ -282,8 +278,8 @@ func IsFresh(gitbin, path string) (bool, error) {
 			"could not run 'git reflog show': %s", err,
 		)
 	}
-	num := strings.Count(string(out), "\n")
-	return num < 2, nil
+
+	return strings.Count(string(out), "\n") < 2, nil
 }
 
 // check if Git-LFS has installed in host machine
@@ -293,10 +289,44 @@ func HasLFSEnv(gitbin, path string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("could not run 'git lfs version': %s", err)
 	}
-	if strings.Contains(string(out), "git-lfs") {
-		return true, nil
+
+	return strings.Contains(string(out), "git-lfs"), nil
+}
+
+// get git version string
+func GitVersion(gitbin, path string) (string, error) {
+	cmd := exec.Command(gitbin, "-C", path, "version")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("could not run 'git version': %s", err)
 	}
-	return false, nil
+
+	return strings.Split(string(out), " ")[2], nil
+}
+
+// convert version string to int number for compare. e.g. convert 2.33.0 to 2330
+func GitVersionConvert(version string) int {
+	var vstr string
+	dict := strings.Split(version, ".")
+	if len(dict) == 3 {
+		vstr = dict[0] + dict[1] + dict[2]
+	}
+	vstr = strings.TrimSuffix(vstr, "\n")
+	ret, err := strconv.Atoi(vstr)
+	if err != nil {
+		return 0
+	}
+	return ret
+}
+
+// get current branch
+func GetCurrentBranch(gitbin, path string) (string, error) {
+	cmd := exec.Command(gitbin, "-C", path, "symbolic-ref", "HEAD", "--short")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("could not run 'git symbolic-ref HEAD --short': %s", err)
+	}
+	return strings.TrimSuffix(string(out), "\n"), nil
 }
 
 func NewRepository(path string) (*Repository, error) {

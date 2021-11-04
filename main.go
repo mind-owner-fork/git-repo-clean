@@ -29,17 +29,35 @@ func InitContext(args []string) *Repository {
 		os.Exit(1)
 	}
 
+	version, err := GitVersion(gitBin, op.path)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	// Git version should >= 2.24.0
+	if GitVersionConvert(version) < 2240 {
+		PrintRed("Sorry, this tool requires Git version at least 2.24.0")
+		os.Exit(1)
+	}
+
+	cur, err := GetCurrentBranch(gitBin, op.path)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	op.branch = cur
+
 	if fresh, err := IsFresh(gitBin, op.path); err == nil && !fresh && op.Standalone() && len(args) != 0 {
 		PrintYellow("不支持在不是刚克隆的仓库中进行重写操作，请确保已经将仓库进行备份")
 		PrintYellow("备份请参考执行： git clone --no-local 原始仓库地址 备份仓库地址")
 		PrintYellow("如果确实想继续进行任何操作，也可以使用'--force'强制执行文件删除")
 		os.Exit(1)
 	}
-	if bare, err := IsBare(gitBin, op.path); err != nil || bare {
+	if bare, _ := IsBare(gitBin, op.path); bare {
 		fmt.Println("Couldn't support running in bare repository")
 		os.Exit(1)
 	}
-	if shallow, err := IsShallow(gitBin, op.path); err != nil || shallow {
+	if shallow, _ := IsShallow(gitBin, op.path); shallow {
 		fmt.Println("Couldn't support running in shallow repository")
 		os.Exit(1)
 	}
