@@ -1,26 +1,11 @@
 package main
 
 import (
-	"io"
 	"strconv"
-
-	mapset "github.com/deckarep/golang-set"
-)
-
-//  Global OID and ID tables
-var (
-	IDs             = NewIDs()
-	Id_hash         = make(map[int32]string)
-	Hash_id         = make(map[string]int32)
-	SKIPPED_COMMITS = mapset.NewSet()
 )
 
 type RepoFilter struct {
 	repo    *Repository
-	opts    Options
-	input   io.PipeWriter
-	output  io.PipeReader
-	parser  RepoParser
 	targets []string // blob oid string array
 }
 
@@ -71,7 +56,7 @@ func filter_filechange(commit *Commit) {
 
 		if filechange.changetype == "M" {
 			id, _ := strconv.Atoi(filechange.blob_id)
-			if _, ok := Id_hash[int32(id)]; !ok {
+			if _, ok := ID_HASH[int32(id)]; !ok {
 				continue
 			}
 		}

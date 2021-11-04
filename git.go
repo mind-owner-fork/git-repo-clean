@@ -8,6 +8,15 @@ import (
 	"path/filepath"
 
 	"github.com/cli/safeexec"
+	mapset "github.com/deckarep/golang-set"
+)
+
+//  Global OID and ID tables
+var (
+	IDs             = NewIDs()
+	ID_HASH         = make(map[int32]string)
+	HASH_ID         = make(map[string]int32)
+	SKIPPED_COMMITS = mapset.NewSet()
 )
 
 /*Ids*/

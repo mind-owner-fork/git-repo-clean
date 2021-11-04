@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/github/git-sizer/git"
@@ -92,7 +91,11 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 
 	if len(first_target) == 0 && len(final_target) == 0 && !(repo.opts.help || repo.opts.version || len(args) == 0) {
-		PrintRed("根据你所选择的筛选条件，没有匹配到任何文件，请调整筛选条件再试一试")
+		PrintRed("根据你所选择的筛选条件，没有扫描到任何文件，请调整筛选条件再试一次")
+		os.Exit(1)
+	}
+
+	if !repo.opts.delete {
 		os.Exit(1)
 	}
 
@@ -104,23 +107,12 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		}
 	}
 
-	if !repo.opts.delete {
-		if repo.opts.verbose {
-			PrintGreen("扫描结束...")
-		}
-		os.Exit(1)
-	}
-
 	if len(final_target) == 0 {
 		os.Exit(1)
 	}
 
-	Preader, Pwriter := io.Pipe()
-
 	return &RepoFilter{
 		repo:    repo,
-		input:   *Pwriter,
-		output:  *Preader,
 		targets: final_target}, nil
 }
 
@@ -130,9 +122,10 @@ func Prompt() {
 	PrintYellow("1. 更新远程仓库。将本地清理后的仓库推送到远程仓库：")
 	PrintYellow("    git push origin --all --force")
 	PrintYellow("    git push origin --tags --force")
-	PrintYellow("2. 清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC(Garbage Collection)操作")
+	PrintYellow("2. 清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作")
 	PrintYellow("(如果是 Gitee 仓库，请查阅GC帮助文档: https://gitee.com/help/articles/4173)")
-	PrintYellow("3. 处理关联仓库。处理具有同一个远程仓库的其他副本仓库，确保不会将同样的文件再次提交到远程仓库。请参阅 https://yyyy")
+	PrintYellow("3. 处理关联仓库。处理具有同一个远程仓库的其他副本仓库，确保不会将同样的文件再次提交到远程仓库")
+	PrintYellow("请参阅详细文档 https://yyyy")
 	PrintPlain("完成以上三步后，恭喜你，所有的清理工作已经完成！")
 	PrintPlain("如果有大文件的存储需求，请使用Git-LFS功能，避免仓库体积再次膨胀")
 	PrintPlain("(Gitee LFS 的使用请参阅：https://gitee.com/help/articles/4235)")

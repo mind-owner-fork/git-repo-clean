@@ -15,11 +15,6 @@ import (
 	"github.com/github/git-sizer/git"
 )
 
-const (
-	GCLink  = "https://gitee.com/help/articles/4173"
-	LFSLink = "https://gitee.com/help/articles/4235"
-)
-
 type Repository struct {
 	git.Repository
 	path   string
@@ -115,7 +110,7 @@ func (repo Repository) GetFilechange(parent_hash, commit_hash string) []FileChan
 		if info[4] == "D" {
 			filechanges = append(filechanges, NewFileChange("D", "", "", filepath))
 		} else if info[4] == "A" || info[4] == "M" || info[4] == "T" {
-			id := Hash_id[info[3]]
+			id := HASH_ID[info[3]]
 			filechanges = append(filechanges, NewFileChange("M", info[1], string(id), filepath))
 		} else {
 			// un-support type
@@ -132,7 +127,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 	var blobs []HistoryRecord
 
 	if repo.opts.verbose {
-		PrintGreen("开始扫描...(如果仓库过大，扫描时间会比较长，请耐心等待)")
+		PrintGreen("开始扫描(如果仓库过大，扫描时间会比较长，请耐心等待)...")
 	}
 
 	// get reference iter
@@ -291,6 +286,19 @@ func IsFresh(gitbin, path string) (bool, error) {
 	return num < 2, nil
 }
 
+// check if Git-LFS has installed in host machine
+func HasLFSEnv(gitbin, path string) (bool, error) {
+	cmd := exec.Command(gitbin, "-C", path, "lfs", "version")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("could not run 'git lfs version': %s", err)
+	}
+	if strings.Contains(string(out), "git-lfs") {
+		return true, nil
+	}
+	return false, nil
+}
+
 func NewRepository(path string) (*Repository, error) {
 	// Find the `git` executable to be used:
 	gitBin, err := findGitBin()
@@ -325,7 +333,7 @@ func (repo *Repository) Close() error {
 
 func (repo *Repository) CleanUp() {
 	// clean up
-	PrintGreen("文件清理完毕，开始清理仓库，请耐心等待...")
+	PrintGreen("文件清理完毕，开始清理仓库...")
 
 	fmt.Println("running git reset --hard")
 	cmd1 := repo.GitCommand("reset", "--hard")
@@ -364,5 +372,4 @@ func (repo *Repository) CleanUp() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 }

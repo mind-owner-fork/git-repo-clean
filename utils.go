@@ -61,8 +61,9 @@ func PrintPlain(msg string) {
 }
 
 func ShowScanResult(list BlobList) {
-	PrintYellow("扫描完成，同一个文件因为版本不同可能会存在多个，这些是占用 Git 仓库存储的主要原因")
-	PrintYellow("请根据需要，通过其对应的Blob ID进行选择性删除，如果确认文件可以全部删除，全选即可")
+	PrintGreen("扫描完成!")
+	PrintYellow("注意，同一个文件因为版本不同可能会存在多个，这些是占用 Git 仓库存储的主要原因")
+	PrintYellow("请根据需要，通过其对应的ID进行选择性删除，如果确认文件可以全部删除，全选即可。")
 
 	// if maxNameLen = 58 maxUTF8NameLen = 34, then ActualLen = (58-34)/2
 	maxNameLen, maxUTF8NameLen := maxLenBlobName(list)
@@ -80,7 +81,6 @@ func ShowScanResult(list BlobList) {
 		} else {
 			fmt.Printf("| %.*s | %.*d bytes | %-*s |\n", 40, item.oid, maxSizeLen, item.objectSize, ActualLen, item.objectName)
 		}
-		fmt.Printf("|-%-*s | %-*s------ | %-*s-|\n", 40, strings.Repeat("-", 40), maxSizeLen, strings.Repeat("-", maxSizeLen), ActualLen, strings.Repeat("-", ActualLen))
 	}
 }
 

@@ -76,8 +76,8 @@ func NewBlob(size_ int64, data_ []byte, hash_id_ string) Blob {
 
 func (blob Blob) dump(writer io.WriteCloser) {
 	blob.ele.base.dumped = true
-	Hash_id[blob.original_oid] = blob.ele.id
-	Id_hash[blob.ele.id] = blob.original_oid
+	HASH_ID[blob.original_oid] = blob.ele.id
+	ID_HASH[blob.ele.id] = blob.original_oid
 
 	mark_line := fmt.Sprintf("mark :%d\n", blob.ele.id)
 	oid_line := fmt.Sprintf("original-oid %s\n", blob.original_oid)
@@ -284,8 +284,8 @@ func (commit *Commit) dump(writer io.WriteCloser) {
 
 	commit.ele.base.dumped = true
 
-	Hash_id[commit.original_oid] = commit.ele.id
-	Id_hash[commit.ele.id] = commit.original_oid
+	HASH_ID[commit.original_oid] = commit.ele.id
+	ID_HASH[commit.ele.id] = commit.original_oid
 
 	commit_line := fmt.Sprintf("commit%s\n", commit.branch)
 	mark_line := fmt.Sprintf("mark :%d\n", commit.ele.id)
@@ -415,8 +415,8 @@ func NewTag(tag_name_ string, from_ref_ int32, original_oid_, tagger_ string, si
 
 func (tag *Tag) dump(writer io.WriteCloser) {
 	tag.ele.base.dumped = true
-	Hash_id[tag.original_oid] = tag.ele.id
-	Id_hash[tag.ele.id] = tag.original_oid
+	HASH_ID[tag.original_oid] = tag.ele.id
+	ID_HASH[tag.ele.id] = tag.original_oid
 
 	tag_line := fmt.Sprintf("tag%s\n", tag.tag_name)
 	mark_line := fmt.Sprintf("mark :%d\n", tag.ele.id)
@@ -798,7 +798,7 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 
 func (filter *RepoFilter) Parser() {
 	if filter.repo.opts.verbose {
-		PrintGreen("开始从提交历史中清理指定的文件...(如果仓库过大，执行时间会比较长，请耐心等待)")
+		PrintGreen("开始从历史中清理指定的文件(如果仓库过大，执行时间会比较长，请耐心等待)...")
 	}
 
 	iter, err := filter.repo.NewFastExportIter()
