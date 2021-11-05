@@ -30,20 +30,6 @@ type Helper_info struct {
 	has_filechange hasFilechange
 }
 
-type blob_callback func(interface{}) interface{}
-type commit_callback func(interface{}) interface{}
-type reset_callback func(interface{}) interface{}
-type tag_callback func(interface{}) interface{}
-
-type RepoParser struct {
-	blob_callback
-	commit_callback
-	reset_callback
-	tag_callback
-	in  io.PipeWriter
-	out io.PipeReader
-}
-
 func Match(pattern string, str string) []string {
 	re := regexp.MustCompile(pattern)
 	return re.FindStringSubmatch(str)

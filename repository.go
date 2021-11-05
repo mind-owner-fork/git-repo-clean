@@ -237,7 +237,6 @@ func ScanRepository(repo Repository) (BlobList, error) {
 		case "tree":
 		case "commit":
 		case "tag":
-			PrintGreen("parsed tree, commit, tag, which are not expected")
 			continue
 		default:
 			err = fmt.Errorf("expected blob object type, but got: %s", objectType)
