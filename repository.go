@@ -234,10 +234,27 @@ func ScanRepository(repo Repository) (BlobList, error) {
 					blobs = blobs[:repo.opts.number]
 				}
 			}
+		case "tree":
+		case "commit":
+		case "tag":
+			PrintGreen("parsed tree, commit, tag, which are not expected")
+			continue
 		default:
 			err = fmt.Errorf("expected blob object type, but got: %s", objectType)
+			return empty, err
 		}
 
+	}
+
+	err = <-errChan
+	if err != nil {
+		return empty, err
+	}
+
+	err = iter.Close()
+	iter = nil
+	if err != nil {
+		return empty, err
 	}
 	return blobs, err
 }

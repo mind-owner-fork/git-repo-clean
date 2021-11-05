@@ -11,8 +11,6 @@ import (
 // return a Writer for stream pipeline to feed data into this process
 func (repo *Repository) FastImportOut() (io.WriteCloser, *exec.Cmd, error) {
 	args := []string{
-		"-C",
-		repo.path,
 		"-c",
 		"core.ignorecase=false",
 		"fast-import",

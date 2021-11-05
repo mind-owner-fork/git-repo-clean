@@ -22,8 +22,6 @@ func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
 	}
 
 	args := []string{
-		"-C",
-		repo.path,
 		"-c",
 		"core.quotepath=false",
 		"fast-export",
