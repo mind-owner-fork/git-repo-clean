@@ -45,7 +45,11 @@ func InitContext(args []string) *Repository {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	op.branch = cur
+	if op.branch == "" {
+		op.branch = cur
+	} else if op.branch == "all" {
+		op.branch = "--all"
+	}
 
 	if fresh, err := IsFresh(gitBin, op.path); err == nil && !fresh && op.Standalone() && len(args) != 0 {
 		PrintYellow("不支持在不是刚克隆的仓库中进行重写操作，请确保已经将仓库进行备份")

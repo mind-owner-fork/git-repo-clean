@@ -32,6 +32,7 @@ Git >= 2.24.0
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
   -s, --scan		scan the Git repository objects
+  -b, --branch		set the branch to scan, default is master
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
   -t, --type		set the file type to filter from Git repository
@@ -43,10 +44,14 @@ Git >= 2.24.0
 **命令行式用法:**
 
 `git clean-repo --scan --limit=10m --type=jpg --number=5`
-> 在仓库中使用命令行，扫描仓库文件，文件最小为10M，类型为jpg，显示前5个结果
+> 在仓库中使用命令行，扫描仓库当前分支的文件，文件最小为10M，类型为jpg，显示前5个结果
 
 `git clean-repo --scan --limit=10m --type=jpg --number=5 --delete`
-> 加上`--delete`选项，则会批量删除扫描出的文件，并重写相关提交历史
+> 加上`--delete`选项，则会批量删除当前分支扫描出的文件，并重写相关提交历史
+
+以上操作是假设在当前目录提交了大文件，然后需要在该分支进行删除。这个时候扫描的是当前分支的数据，而不是全部分支的数据，
+这样做是为了加快扫描速度。如果想要清理其他分支的数据或者所有分支的数据，可以使用`--branch`选项，如`--branch=all`则
+可以进行全扫描，会把所有分支上筛选出的数据清理掉。
 
 
 **交互式用法:**

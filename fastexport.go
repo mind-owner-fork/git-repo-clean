@@ -17,10 +17,6 @@ type FEOutPutIter struct {
 
 func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
 
-	if repo.opts.branch == "all" {
-		repo.opts.branch = "--all"
-	}
-
 	args := []string{
 		"-c",
 		"core.quotepath=false",
