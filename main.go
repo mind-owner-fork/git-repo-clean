@@ -151,7 +151,7 @@ func Prompt() {
 	PrintYellow("2. 清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作")
 	PrintYellow("(如果是 Gitee 仓库，请查阅GC帮助文档: https://gitee.com/help/articles/4173)")
 	PrintYellow("3. 处理关联仓库。处理具有同一个远程仓库的其他副本仓库，确保不会将同样的文件再次提交到远程仓库")
-	PrintYellow("请参阅详细文档 https://yyyy")
+	PrintYellow("请参阅详细文档 https://gitee.com/oschina/git-clean-repo/blob/main/docs/repo-update.md")
 	PrintPlain("完成以上三步后，恭喜你，所有的清理工作已经完成！")
 	PrintPlain("如果有大文件的存储需求，请使用Git-LFS功能，避免仓库体积再次膨胀")
 	PrintPlain("(Gitee LFS 的使用请参阅：https://gitee.com/help/articles/4235)")
