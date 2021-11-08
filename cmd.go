@@ -61,15 +61,15 @@ func (op *Options) SurveyCmd() {
 func MultiSelectCmd(list BlobList) []string {
 
 	selected := []string{}
-	options := []string{}
+	targets := []string{}
 
-	for _, target := range list {
-		opt := target.oid + ": " + target.objectName + "\n"
-		options = append(options, opt)
+	for _, item := range list {
+		ele := item.oid + ": " + item.objectName + "\n"
+		targets = append(targets, ele)
 	}
 	prompt := &survey.MultiSelect{
 		Message:  "请选择你要删除的文件(可多选):\n",
-		Options:  options,
+		Options:  targets,
 		PageSize: 10,
 		Help:     "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择",
 	}

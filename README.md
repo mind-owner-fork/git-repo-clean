@@ -3,14 +3,16 @@
 `git clean-repo`是用Golang开发的具备Git仓库大文件扫描，清理，并重写commit提交记录功能的Git拓展工具。
 
 ## 依赖环境：
-Golang >= 1.15
-Git >= 2.24.0
++ Golang >= 1.15
+
++ Git >= 2.24.0
 
 ## 安装
 + 下载源码
 > git clone https://gitee.com/oschina/git-clean-repo
 
 + 进入源码目录，编译
+> cd git-clean-repo
 > make
 
 + 安装
@@ -18,7 +20,11 @@ Git >= 2.24.0
 对于Linux环境
 > sudo cp bin/git-clean-repo $(git --exec-path)
 
-对于Windows环境，类似的，将编译生成的可执行文件git-clean-repo放到系统$PATH路径中即可
+类似的，对于Windows环境，将编译生成的可执行文件`git-clean-repo`的路径放到系统$PATH路径中，
+或者复制该可执行文件到`C:\Windows\system32`目录下即可。
+
+安装完成后，执行如下命令检测是否安装成功：
+> git clean-repo --version[-V]
 
 
 ## 使用
@@ -32,7 +38,7 @@ Git >= 2.24.0
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
   -s, --scan		scan the Git repository objects
-  -b, --branch		set the branch to scan, default is master
+  -b, --branch		set the branch to scan, default is current branch
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
   -t, --type		set the file type to filter from Git repository
@@ -53,6 +59,8 @@ Git >= 2.24.0
 这样做是为了加快扫描速度。如果想要清理其他分支的数据或者所有分支的数据，可以使用`--branch`选项，如`--branch=all`则
 可以进行全扫描，会把所有分支上筛选出的数据清理掉。
 
+`git clean-repo --scan --limit=10m --type=jpg --number=5 --delete --branch=all`
+> 加上`--branch`选项，则会扫描所有分支的文件再执行删除，并重写相关提交历史
 
 **交互式用法:**
 
@@ -62,9 +70,9 @@ Git >= 2.24.0
 进入交互模式后，首先提示如下：
 ```bash
 $ git clean-repo -i
-? 选择要扫描的文件的类型: *
-? 选择要扫描文件的最低大小: 1M
-? 选择要显示扫描结果的数量: (3)
+? 选择要扫描的文件的类型，如：zip, png:
+? 选择要扫描文件的最低大小，如：1M, 1g:
+? 选择要显示扫描结果的数量，默认3:
 ```
 第一个问题，文件类型选择，默认`*`表示所有类型
 第二个问题，指定文件大小的限制，默认1M。 注意，需要有单位，可选单位有B, K, M, G，不区分大小写
@@ -73,21 +81,21 @@ $ git clean-repo -i
 用户选择好了三个条件后，便开始扫描仓库，对于较大的仓库，这可能会花一段时间。
 
 ```bash
-开始扫描...
-根据选择扫描出的详细信息，分别为：文件ID，文件大小，文件名
-同一个文件，因为版本不同，ID号不同，因此可能有多个同名文件
+开始扫描(如果仓库过大，扫描时间会比较长，请耐心等待)...
+扫描完成!
+注意，同一个文件因为版本不同可能会存在多个，这些是占用 Git 仓库存储的主要原因
+请根据需要，通过其对应的ID进行选择性删除，如果确认文件可以全部删除，全选即可。
 079266398882a970242daaab4c53956da2a3f2b6  954371 字节  po/bg.po
 29ba1c82fed9ee7837b6d84f4966fce2724f5c1f  940063 字节  po/bg.po
 26998105879cc2113cb8e5dfed2bdec02820ab48  920035 字节  po/bg.po
 ? 请选择你要删除的文件(可多选):  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter, ? for more help]
-> [ ]  po/bg.po
-  [ ]  po/bg.po
-  [ ]  po/bg.po
+> [ ]  079266398882a970242daaab4c53956da2a3f2b6: po/bg.po
+  [ ]  29ba1c82fed9ee7837b6d84f4966fce2724f5c1f: po/bg.po
+  [ ]  26998105879cc2113cb8e5dfed2bdec02820ab48: po/bg.po
 ```
-继续选择需要删除的文件即可。
+箭头`>`指向当前可选的文件，通过键盘的上下方向键可选择需要删除的文件，向右按键可以全选，相反向左按键则是全取消。
 
 选择后便进入执行阶段，同样地，根据仓库大小情况，可能需要等待一段时间。
-
 
 
 
@@ -96,12 +104,14 @@ $ git clean-repo -i
 
 选中完成后，会有二次确认：
 ```bash
-? 请选择你要删除的文件(可多选): po/bg.po, po/bg.po, po/bg.po
-? 以下是你要删除的文件ID，确定要删除吗?  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
-> [ ]  po/bg.po
-  [ ]  po/bg.po
-  [ ]  po/bg.po
+? 请选择你要删除的文件(可多选):
+079266398882a970242daaab4c53956da2a3f2b6: po/bg.po
+29ba1c82fed9ee7837b6d84f4966fce2724f5c1f: po/bg.po
+26998105879cc2113cb8e5dfed2bdec02820ab48: po/bg.po
+? 以上是你要删除的文件，确定要删除吗?
+(y/N)
 ```
+可以选择y, yes, 或者n, no, 均不区分大小写。
 
 <!--
 **LFS使用流程**
@@ -130,7 +140,7 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 然后强制推送到远程仓库 -->
 
 
-**代码结构**
+## 代码结构
 
 + main.go       | 程序主入口
 + options.go    | 程序选项参数处理
@@ -141,6 +151,7 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 + parser.go     | 仓库数据解析
 + filter.go     | 仓库数据过滤
 + git.go        | Git对象相关
++ utils.go      | 一些有用帮助函数
 
 
 ## TODO
@@ -153,23 +164,19 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 - [ ] 考虑重写历史对签名的影响
 - [ ] 考虑重写历史对PR的影响
 
-**NOTE**
+## NOTE
 + 目前只关注文件本身，所以扫描时只关注blob类型对象
-+ 考虑到有种情况是扫描出来的大文件(blob)只存在历史中，此时如果想删除，指定文件名是找不到该文件的。因此，实际在做文件删除时，应该指定为blob hash值，也就是虽然看起来用户选择的是文件名，实际上使用它对应的blob hash。
-+ 由于需要先将大文件扫描处理，交给用户选择，所以整个过程需要经过两次扫描。一次是根据用户选项，筛选出符合条件的文件，二是在删除重写历史时，使用fast-export进行扫描。
-+ fast-export的输出结果需要结构化解析，然后才方便过滤
-+ 需要提示说明同一个文件多次出现在扫描结果中的现象：同一个大文件存在不同版本，他们的文件名相同，但OID不同。
-在删除时，有两种情况：一是根据文件名，一次性删除其所有版本(delete by name)，二是根据OID不同，一次删除一个版本(delete by oid)。
++ 考虑到有种情况是扫描出来的大文件(blob)只存在历史中，此时如果想删除，指定文件名是找不到该文件的。因此，实际在做文件删除时，应该指定为blob hash值，也就是虽然看起来用户选择的是文件名，实际上使用它对应的blob hash ID。
 + 为了防止用户没有对仓库进行备份，当用户在进行删除重、写历史操作时，有一种策略是首先进行`fresh clone safety check`，即检查正在操作的仓库是不是刚克隆的，如果不是新鲜克隆的，则很有可能该仓库是单例仓库，没有副本，没有原始仓库，所以进行一些操作是非常危险的，此时需要提示用户正在非副本仓库中进行危险操作。不是完全拒绝的，用户还可以使用选项`--force`强制进行操作 ([参考](https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/docs/html/git-filter-repo.html#FRESHCLONE))。
 虽然这种检测不是绝对准确的，但它是有用的。
 具体检测方法是查看`git reflog`命令的结果，是否只包含一项。如果超过一项，则会被认为不是刚克隆的仓库。
 
-**技术原理**
+## 技术原理
 见 [docs/technical.md](docs/technical.md)
 
 
 
-**测试项：**
+## 测试
 
 + 普通仓库
 
@@ -189,7 +196,7 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 
 极端情况下，在仓库中加入一个文件大小为1216179567 byte(1.2G)的压缩文件, 作为仓库最近一次提交(最后被扫描)，从仓库删除，最快不到10s。
 ```bash
-$ time git clean-repo -s -v --limit=1g -n=3
+$ time git clean-repo --scan --verobse --limit=1g --number=3 --delete
 Start to scan repository:
 [0]: 449a189d6fb67b3dc0cfcce086847fc93ac86fd0 1216179567 gitaly-dev.tar.gz
 git clean-repo -s -v --limit=1g -n=3  9.87s user 7.62s system 150% cpu 11.651 total

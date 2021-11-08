@@ -51,8 +51,8 @@ func InitContext(args []string) *Repository {
 
 	if fresh, err := IsFresh(gitBin, op.path); err == nil && !fresh && !op.force {
 		PrintYellow("不支持在不是刚克隆的仓库中进行重写操作，请确保已经将仓库进行备份")
-		PrintYellow("备份请参考执行： git clone --no-local 原始仓库地址 备份仓库地址")
-		PrintYellow("如果确实想继续进行任何操作，也可以使用'--force'强制执行文件删除")
+		PrintYellow("备份请参考： git clone --no-local <原始仓库路径> <备份仓库路径>")
+		PrintYellow("如果确定继续进行操作，也可以使用'--force'参数强制执行")
 		os.Exit(1)
 	}
 	if bare, _ := IsBare(gitBin, op.path); bare {
@@ -102,10 +102,21 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			ShowScanResult(bloblist)
 		}
 
+		if len(bloblist) == 0 {
+			PrintRed("根据你所选择的筛选条件，没有扫描到任何文件，请调整筛选条件再试一次")
+			os.Exit(1)
+		}
+
 		if repo.opts.interact {
 			first_target = MultiSelectCmd(bloblist)
 			if len(bloblist) != 0 && len(first_target) == 0 {
 				PrintRed("您没有选择任何文件，请至少选择一个文件")
+				os.Exit(1)
+			}
+			var ok = false
+			ok, final_target = Confirm(first_target)
+			if !ok {
+				PrintRed("操作已中止，请重新确认文件后再次尝试")
 				os.Exit(1)
 			}
 		} else {
@@ -115,25 +126,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		}
 	}
 
-	if len(first_target) == 0 && len(final_target) == 0 {
-		PrintRed("根据你所选择的筛选条件，没有扫描到任何文件，请调整筛选条件再试一次")
-		os.Exit(1)
-	}
-
 	if !repo.opts.delete {
-		os.Exit(1)
-	}
-
-	if repo.opts.interact {
-		var ok = false
-		ok, final_target = Confirm(first_target)
-		if !ok {
-			PrintRed("操作已中止，请重新确认文件后再次尝试")
-			os.Exit(1)
-		}
-	}
-
-	if len(final_target) == 0 {
 		os.Exit(1)
 	}
 
