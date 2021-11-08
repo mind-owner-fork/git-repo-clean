@@ -294,7 +294,6 @@ func IsFresh(gitbin, path string) (bool, error) {
 			"could not run 'git reflog show': %s", err,
 		)
 	}
-
 	return strings.Count(string(out), "\n") < 2, nil
 }
 

@@ -36,17 +36,6 @@ like delete operation(--delete) or interaction with the user
   -f, --force		force to perform history rewrite even the repository haven't backup
   -d, --delete		execute file cleanup and history rewrite process
 
-Git Large File Storage(LFS) replaces large files such as
-multi-media file, executable file with text pointers inside Git,
-while storing the file contents on a remote server like Gitee.
-So please make sure you have installed git-lfs in your local first.
-To download it, clik: https://github.com/git-lfs/git-lfs/releases
-If you let LFS tool to handle your large file in your repo,
-git-clean-repo will config it to track the file you scanned before.
-
-  -L, --lfs		use LFS server to storage local large file
-			must followed by --add option
-
 `
 
 type Options struct {
@@ -62,7 +51,7 @@ type Options struct {
 	number   uint32
 	types    string
 	interact bool
-	lfs      bool
+	// lfs      bool
 }
 
 func (op *Options) init(args []string) error {
@@ -84,10 +73,13 @@ func (op *Options) init(args []string) error {
 	flags.Uint32VarP(&op.number, "number", "n", 3, "set the number of results to show")
 	// default is null, which means all type
 	flags.StringVarP(&op.types, "type", "t", "", "set the file type to filter from Git repository")
-	flags.BoolVarP(&op.delete, "delete", "d", false, "execute file cleanup and history rewrite process")
-	flags.BoolVarP(&op.force, "force", "f", false, "force to perform history rewrite even the repository haven't backup")
+	// interactive with user end
 	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
-	flags.BoolVarP(&op.lfs, "lfs", "L", false, "use LFS server to storage local large file, must followed by --add option")
+	// perform delete files action
+	flags.BoolVarP(&op.delete, "delete", "d", false, "execute file cleanup and history rewrite process")
+	// to ignore fresh clone check
+	flags.BoolVarP(&op.force, "force", "f", false, "force to perform history rewrite even the repository haven't backup")
+	// flags.BoolVarP(&op.lfs, "lfs", "L", false, "use LFS server to storage local large file, must followed by --add option")
 
 	err := flags.Parse(args)
 	if err != nil {
@@ -113,17 +105,23 @@ func (op *Options) ParseOptions(args []string) error {
 	}
 	if op.help || len(args) == 0 {
 		usage()
+		os.Exit(1)
 	}
 	if op.version {
 		fmt.Printf("Build version: %s\n", BuildVersion)
+		os.Exit(1)
+	}
+	if len(args) == 1 && op.SingleOpts() {
+		PrintRed("请指定筛选条件")
+		os.Exit(1)
 	}
 	return nil
 }
 
-func (op *Options) Standalone() bool {
-	if op.help || op.verbose || op.version || op.force || op.scan || op.delete {
-		return false
-	} else {
+func (op *Options) SingleOpts() bool {
+	if op.verbose || op.force || op.scan || op.delete {
 		return true
+	} else {
+		return false
 	}
 }

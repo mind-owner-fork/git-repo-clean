@@ -37,7 +37,7 @@ var qs = []*survey.Question{
 	},
 }
 
-func (op *Options) PreCmd() {
+func (op *Options) SurveyCmd() {
 
 	// the answers will be written to this struct
 	// you can tag fields to match a specific name
@@ -85,9 +85,7 @@ func Confirm(list []string) (bool, []string) {
 	prompt := &survey.Confirm{
 		Message: "以上是你要删除的文件，确定要删除吗?\n",
 	}
-	for _, item := range list {
-		fmt.Println(item)
-	}
+
 	survey.AskOne(prompt, &ok)
 
 	// turn back to name oid only

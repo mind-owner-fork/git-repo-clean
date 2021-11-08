@@ -13,9 +13,7 @@ func InitContext(args []string) *Repository {
 		fmt.Println("Parse Option error")
 		os.Exit(1)
 	}
-	if op.interact {
-		op.PreCmd()
-	}
+
 	repo, err := git.NewRepository(op.path)
 	if err != nil {
 		fmt.Println("couldn't open Git repository")
@@ -51,7 +49,7 @@ func InitContext(args []string) *Repository {
 		op.branch = "--all"
 	}
 
-	if fresh, err := IsFresh(gitBin, op.path); err == nil && !fresh && op.Standalone() && len(args) != 0 {
+	if fresh, err := IsFresh(gitBin, op.path); err == nil && !fresh && !op.force {
 		PrintYellow("不支持在不是刚克隆的仓库中进行重写操作，请确保已经将仓库进行备份")
 		PrintYellow("备份请参考执行： git clone --no-local 原始仓库地址 备份仓库地址")
 		PrintYellow("如果确实想继续进行任何操作，也可以使用'--force'强制执行文件删除")
@@ -91,6 +89,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		repo.opts.scan = true
 		repo.opts.delete = true
 		repo.opts.verbose = true
+		repo.opts.SurveyCmd()
 	}
 	if repo.opts.scan {
 		bloblist, err := ScanRepository(*repo)
@@ -105,6 +104,10 @@ func NewFilter(args []string) (*RepoFilter, error) {
 
 		if repo.opts.interact {
 			first_target = MultiSelectCmd(bloblist)
+			if len(bloblist) != 0 && len(first_target) == 0 {
+				PrintRed("您没有选择任何文件，请至少选择一个文件")
+				os.Exit(1)
+			}
 		} else {
 			for _, item := range bloblist {
 				final_target = append(final_target, item.oid)
@@ -112,7 +115,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		}
 	}
 
-	if len(first_target) == 0 && len(final_target) == 0 && !(repo.opts.help || repo.opts.version || len(args) == 0) {
+	if len(first_target) == 0 && len(final_target) == 0 {
 		PrintRed("根据你所选择的筛选条件，没有扫描到任何文件，请调整筛选条件再试一次")
 		os.Exit(1)
 	}
@@ -125,6 +128,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		var ok = false
 		ok, final_target = Confirm(first_target)
 		if !ok {
+			PrintRed("操作已中止，请重新确认文件后再次尝试")
 			os.Exit(1)
 		}
 	}
