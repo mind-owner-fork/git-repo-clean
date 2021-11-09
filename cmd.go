@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -15,8 +17,17 @@ var qs = []*survey.Question{
 			Default: "*",
 			Help:    "默认无类型，即查找所有类型。如果想指定类型，则直接输入类型后缀名即可, 不需要加'.'",
 		},
-		Validate:  survey.Required,
-		Transform: survey.Title,
+		Validate: func(ans interface{}) error {
+			str, ok := ans.(string)
+			if !ok || len(str) > 10 {
+				return errors.New("抱歉，输入的类型名过长，超过10个字符")
+			}
+			match, _ := regexp.MatchString(`^[A-Za-z]+[.]?[A-Za-z]+$`, str)
+			if !match && str != "*" {
+				return errors.New("类型必须是字母，中间可以包含'.'，但是开头不需要包含'.'")
+			}
+			return nil
+		},
 	},
 	{
 		Name: "fileSize",
@@ -25,14 +36,35 @@ var qs = []*survey.Question{
 			Default: "1M",
 			Help:    "大小数值需要单位，如: 10K. 可选单位有B,K,M,G, 且不区分大小写",
 		},
-		Validate: survey.Required,
+		Validate: func(ans interface{}) error {
+			str, ok := ans.(string)
+			if !ok {
+				return errors.New("input error")
+			}
+			match, _ := regexp.MatchString(`^[1-9]+[0-9]*[bBkKmMgG]$`, str)
+			if !match {
+				return errors.New("必须以数字+单位字符(b,k,m,g)组合，且单位不区分大小写")
+			}
+			return nil
+		},
 	},
 	{
 		Name: "fileNumber",
 		Prompt: &survey.Input{
-			Message: "选择要显示扫描结果的数量，默认3:",
+			Message: "选择要显示扫描结果的数量，默认值是3:",
 			Default: "3",
 			Help:    "默认显示前3个，单页最大显示为10行，所以最好不超过10",
+		},
+		Validate: func(ans interface{}) error {
+			str, ok := ans.(string)
+			if !ok {
+				return errors.New("input error")
+			}
+			match, _ := regexp.MatchString(`^[1-9]+[0-9]*$`, str)
+			if !match {
+				return errors.New("必须是纯数字")
+			}
+			return nil
 		},
 	},
 }
