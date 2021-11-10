@@ -440,6 +440,15 @@ func parse_ref_line(reftype, line string) (refname string) {
 // parent ref types are: from or merge
 func parse_parent_ref(reftype, line string) (orig_ref, ref int32) {
 	matches := Match(reftype+" :"+ref_re, line)
+
+	// from 0000000000000000000000000000000000000000
+	if len(line) == 46 {
+		if line[5:len(line)-1] == "0000000000000000000000000000000000000000" {
+			// mark to delete
+			PrintRed("处理过程中断，因为仓库中存在嵌套式tag(nested tag)，建议使用'--branch=<branch>'参数指定单个分支")
+			os.Exit(1)
+		}
+	}
 	if len(matches) == 0 {
 		// don't matched parent ref line
 		return 0, 0
