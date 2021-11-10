@@ -67,8 +67,6 @@ func filter_filechange(commit *Commit) {
 }
 
 func (filter *RepoFilter) tweak_reset(reset *Reset) {
-	Lasted_commit[reset.ref] = reset.from
-	Lasted_orig_commit[reset.ref] = reset.from
 	if SKIPPED_COMMITS.Contains(reset.from) == true {
 		reset.base.dumped = false
 		reset.base.skip()

@@ -463,7 +463,7 @@ func parse_mark(line string) (idx int32) {
 	return 0
 }
 
-func parse_original_id(line string) (oid string) {
+func parse_original_oid(line string) (oid string) {
 	matches := Match("original-oid "+oid_re, line)
 	if len(matches) == 0 {
 		fmt.Println("no match original-oid")
@@ -484,6 +484,54 @@ func parse_datasize(line string) int64 {
 		return -1
 	}
 	return size
+}
+
+// author, commiter, tagger
+func parse_user(usertype, line string) (use string) {
+	matches := Match(usertype+" "+user_re, line)
+	if len(matches) == 0 {
+		return ""
+	}
+	if len(matches[0]) != 0 {
+		// return whole match line
+		return matches[0]
+	}
+	return ""
+}
+
+// file mode can be: M(modify), D(delete), C(copy), R(rename), A(add)
+// here we only handle M,D and R mode
+// #FIXME: fix file path format in different OS platform
+func parse_filechange(line string) FileChange {
+	arr := strings.Split(line, " ")
+	types := arr[0]
+	if types == "M" { // pattern: M mode :id path
+		mode := arr[1]
+
+		var parent_id string
+		if strings.HasPrefix(arr[2], ":") {
+			parent_id = strings.Split(arr[2], ":")[1]
+			orig, _ := strconv.Atoi(parent_id)
+			IDs.translate(int32(orig))
+		} else { // pattern: M mode hash1-id path
+			parent_id = arr[2]
+		}
+		path := strings.TrimSuffix(arr[3], "\n")
+
+		filechange := NewFileChange("M", mode, parent_id, path)
+		return filechange
+	} else if types == "D" { // pattern: D path
+		path := strings.TrimSuffix(arr[1], "\n")
+		filechange := NewFileChange("D", "", "", path)
+		return filechange
+	} else if types == "R" { // pattern: R old new
+		old_path := arr[1]
+		new_path := strings.TrimSuffix(arr[2], "\n")
+		filechange := NewFileChange("R", "", old_path, new_path)
+		return filechange
+	}
+
+	return FileChange{}
 }
 
 // parse raw blob data, return data size, data and err
@@ -524,54 +572,6 @@ func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, ex
 	return sum, writer.Bytes(), extra_msg
 }
 
-// author, commiter, tagger
-func parse_user(usertype, line string) (use string) {
-	matches := Match(usertype+" "+user_re, line)
-	if len(matches) == 0 {
-		return ""
-	}
-	if len(matches[0]) != 0 {
-		// return whole match line
-		return matches[0]
-	}
-	return ""
-}
-
-// file mode can be: M(modify), D(delete), C(copy), R(rename), A(add)
-// here we only handle M,D and R mode
-// #FIXME: fix file path format in different OS platform
-func parse_filechange(line string) FileChange {
-	arr := strings.Split(line, " ")
-	types := arr[0]
-	if types == "M" { // pattern: M mode :id path
-		mode := arr[1]
-
-		var parent_id string
-		if strings.HasPrefix(arr[2], ":") {
-			parent_id = strings.Split(arr[2], ":")[1]
-			tmp, _ := strconv.Atoi(parent_id)
-			IDs.translate(int32(tmp))
-		} else { // pattern: M mode hash1-id path
-			parent_id = arr[2]
-		}
-		path := strings.TrimSuffix(arr[3], "\n")
-
-		filechange := NewFileChange("M", mode, parent_id, path)
-		return filechange
-	} else if types == "D" { // pattern: D path
-		path := strings.TrimSuffix(arr[1], "\n")
-		filechange := NewFileChange("D", "", "", path)
-		return filechange
-	} else if types == "R" { // pattern: R old new
-		old_path := arr[1]
-		new_path := strings.TrimSuffix(arr[2], "\n")
-		filechange := NewFileChange("R", "", old_path, new_path)
-		return filechange
-	}
-
-	return FileChange{}
-}
-
 func (iter *FEOutPutIter) parseBlob(line string) *Blob {
 	// go to next line
 	newline, _ := iter.Next()
@@ -583,7 +583,7 @@ func (iter *FEOutPutIter) parseBlob(line string) *Blob {
 	}
 
 	newline, _ = iter.Next()
-	original_oid := parse_original_id(newline)
+	original_oid := parse_original_oid(newline)
 	if len(original_oid) == 0 {
 		fmt.Println("DEBUG: parse blob error: original oid should not empty")
 		return &Blob{}
@@ -619,7 +619,7 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 	}
 
 	newline, _ = iter.Next()
-	orign_oid := parse_original_id(newline)
+	original_oid := parse_original_oid(newline)
 
 	newline, _ = iter.Next()
 	author := parse_user("author", newline)
@@ -652,8 +652,8 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 		if match := Match("from :"+ref_re, string(tail_msg)); len(match) > 0 {
 			// get a from parent in extra_msg
 			// must use parse_parent_ref() method to parse it, otherwise will get a dump error in some case.
-			orig_ref, from_id := parse_parent_ref("from", string(tail_msg))
-			orig_parents = append(orig_parents, orig_ref)
+			old_id, from_id := parse_parent_ref("from", string(tail_msg))
+			orig_parents = append(orig_parents, old_id)
 			parents = append(parents, from_id)
 			used = true
 		} else {
@@ -667,15 +667,15 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 
 	// from parent
 	if strings.HasPrefix(newline, "from") {
-		orig_ref, from_id := parse_parent_ref("from", newline)
-		orig_parents = append(orig_parents, orig_ref)
+		old_id, from_id := parse_parent_ref("from", newline)
+		orig_parents = append(orig_parents, old_id)
 		parents = append(parents, from_id)
 		newline, _ = iter.Next()
 	}
 	// merge parents
 	for strings.HasPrefix(newline, "merge") {
-		orig_ref, merge_id := parse_parent_ref("merge", newline)
-		orig_parents = append(orig_parents, orig_ref)
+		old_id, merge_id := parse_parent_ref("merge", newline)
+		orig_parents = append(orig_parents, old_id)
 		parents = append(parents, merge_id)
 		newline, _ = iter.Next()
 	}
@@ -706,7 +706,7 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 		newline, _ = iter.Next()
 	}
 
-	commit := NewCommit(orign_oid, branch, author, commiter, int32(len(msg)),
+	commit := NewCommit(original_oid, branch, author, commiter, int32(len(msg)),
 		msg, parents, file_changes)
 
 	if mark_id > 0 {
@@ -740,6 +740,9 @@ func (iter *FEOutPutIter) parseReset(line string) *Reset {
 	}
 	reset := NewReset(ref, parent_id)
 
+	Lasted_commit[reset.ref] = reset.from
+	Lasted_orig_commit[reset.ref] = reset.from
+
 	return &reset
 }
 
@@ -756,7 +759,7 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 	_, parent_id := parse_parent_ref("from", newline)
 
 	newline, _ = iter.Next()
-	orig_id := parse_original_id(newline)
+	original_oid := parse_original_oid(newline)
 
 	newline, _ = iter.Next()
 	tagger := parse_user("tagger", newline)
@@ -767,7 +770,7 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 	newline, _ = iter.Next()
 	actual_size, msg, _ := iter.parse_data(newline, size)
 
-	tag := NewTag(tag_name, parent_id, orig_id, tagger, int32(actual_size), msg)
+	tag := NewTag(tag_name, parent_id, original_oid, tagger, int32(actual_size), msg)
 
 	// the parsed mark id from original source data is old id,
 	// cause the new id is generated by IDs.New() in NewTag()
