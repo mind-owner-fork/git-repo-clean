@@ -4,13 +4,14 @@
 
 ####  背景
 
-假设远程服务器端存在一个仓库repo-server, 开发者A和B分别克隆了repo-a, repo-b进行分布式协同开发。
+假设远程服务器端存在一个仓库`repo-server`, 开发者A和B分别克隆了`repo-a`, `repo-b`进行分布式协同开发。
 
-开发者A在本地repo_a中提交了一些commit，但是提交中不小心包含了比较大的非代码文件，这导致了仓库超出了最大容量限额，于是推送失败。于是他选择使用git-clean-repo工具清理提交历史中的大文件。
+开发者A在本地`repo_a`中提交了一些commit，但是提交中不小心包含了比较大的非代码文件，这导致了仓库超出了最大容量限额，于是推送失败。于是他选择使用`git-clean-repo`工具清理提交历史中的大文件。
 
-清理完成后，按照提示运行`git push origin --all --force`命令顺利推送到远程仓库。
+清理完成后，按照提示第一步运行`git push origin --all --force`命令顺利推送到远程仓库`repo-server`，接着执行提示中的第二步去Web端进行GC操作
+(如果仓库托管在Gitee.com上，则GC页面在：https://gitee.com/$(user-name/repo-name)/settings#git-gc)
 
-
+接着就是进行第三步，这个步骤也是必要的，因为远程服务端仓库更新后，本地相关仓库如果步更新，则会出现推送失败问题：
 
 #### 问题
 
@@ -50,20 +51,34 @@ From gitee.com:cactusinhand/my-repo
 Successfully rebased and updated refs/heads/master.
 ```
 
-这个命令会把远程所有的新增的数据fetch下来，并进行rebase操作。结果看起来就是repo_b的提交线性地在repo_a的提交(远程仓库的最新提交)之后，成功之后开发者B就可以正常推送他的提交了。
+这个命令会把远程所有的新增的数据fetch下来，并进行rebase操作。结果看起来就是repo_b的提交线性地在repo_a的提交(远程仓库的最新提交)之后，成功之后开发者B就可以正常推送他的本地提交了。
 
 ```bash
+# 此时本地repo_b的新提交基于远程最新的提交之上
 $ git status
 On branch master
 Your branch is ahead of 'origin/master' by 1 commit.
   (use "git push" to publish your local commits)
 
 nothing to commit, working tree clean
+
+# repo_b正常向远程推送
+$ git push origin --all
+Enter passphrase for key '/home/git/.ssh/id_ed25519':
+Enumerating objects: 4, done.
+Counting objects: 100% (4/4), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 1.95 KiB | 1.95 MiB/s, done.
+Total 3 (delta 1), reused 1 (delta 0), pack-reused 0
+remote: Powered by GITEE.COM [GNK-6.2]
+To gitee.com:cactusinhand/my-repo.git
+   0c105b3..4cb405c  master -> master
 ```
 
 
 
-为了展示更为复杂一点的情况，上面的过程表明远程有两个分支master, test进行了更新。
+为了展示更为复杂一点的情况，上面的过程中`repo_a`向远程更新了两个分支：master, test。
 
 因为当前分支(即master分支)已经rebase更新成功，这个时候需要切换到test分支继续rebase操作：
 
