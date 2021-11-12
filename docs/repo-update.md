@@ -6,7 +6,7 @@
 
 假设远程服务器端存在一个仓库`repo-server`, 开发者A和B分别克隆了`repo-a`, `repo-b`进行分布式协同开发。
 
-开发者A在本地`repo_a`中提交了一些commit，但是提交中不小心包含了比较大的非代码文件，这导致了仓库超出了最大容量限额，于是推送失败。于是他选择使用`git-clean-repo`工具清理提交历史中的大文件。
+开发者A在本地`repo_a`中提交了一些commit，但是提交中不小心包含了比较大的非代码文件，这导致了仓库超出了最大容量限额，于是推送失败。于是他选择使用`git-repo-clean`工具清理提交历史中的大文件。
 
 清理完成后，按照提示第一步运行`git push origin --all --force`命令顺利推送到远程仓库`repo-server`，接着执行提示中的第二步去Web端进行GC操作
 (如果仓库托管在Gitee.com上，则GC页面在：https://gitee.com/$(user-name/repo-name)/settings#git-gc)

@@ -1,5 +1,5 @@
-git-clean-repo
-git-clean-repo.exe
+git-repo-clean
+git-repo-clean.exe
 vendor
 releases/
 bin/

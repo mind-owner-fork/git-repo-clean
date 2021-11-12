@@ -1,4 +1,4 @@
-module gitee.com/oscstudio/git-clean-repo
+module gitee.com/oscstudio/git-repo-clean
 
 go 1.15
 

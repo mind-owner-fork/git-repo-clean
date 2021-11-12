@@ -1,6 +1,6 @@
 ## 介绍
 
-`git clean-repo`是用Golang开发的具备Git仓库大文件扫描，清理，并重写commit提交记录功能的Git拓展工具。
+`git repo-clean`是用Golang开发的具备Git仓库大文件扫描，清理，并重写commit提交记录功能的Git拓展工具。
 
 ## 依赖环境：
 + Golang >= 1.15
@@ -9,22 +9,22 @@
 
 ## 安装
 + 下载源码
-> git clone https://gitee.com/oschina/git-clean-repo
+> git clone https://gitee.com/oschina/git-repo-clean
 
 + 进入源码目录，编译
-> cd git-clean-repo
+> cd git-repo-clean
 > make
 
 + 安装
 
 对于Linux环境
-> sudo cp bin/git-clean-repo $(git --exec-path)
+> sudo cp bin/git-repo-clean $(git --exec-path)
 
-类似的，对于Windows环境，将编译生成的可执行文件`git-clean-repo`的路径放到系统$PATH路径中，
+类似的，对于Windows环境，将编译生成的可执行文件`git-repo-clean`的路径放到系统$PATH路径中，
 或者复制该可执行文件到`C:\Windows\system32`目录下即可。
 
 安装完成后，执行如下命令检测是否安装成功：
-> git clean-repo --version[-V]
+> git repo-clean --version[-V]
 
 
 ## 使用
@@ -34,7 +34,7 @@
 目前选项有如下：
 ```bash
   -v, --verbose		show process information
-  -V, --version		show git-clean-repo version number
+  -V, --version		show git-repo-clean version number
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
   -s, --scan		scan the Git repository objects
@@ -49,27 +49,27 @@
 
 **命令行式用法:**
 
-`git clean-repo --scan --limit=10m --type=jpg --number=5`
+`git repo-clean --scan --limit=10m --type=jpg --number=5`
 > 在仓库中使用命令行，扫描仓库当前分支的文件，文件最小为10M，类型为jpg，显示前5个结果
 
-`git clean-repo --scan --limit=10m --type=jpg --number=5 --delete`
+`git repo-clean --scan --limit=10m --type=jpg --number=5 --delete`
 > 加上`--delete`选项，则会批量删除当前分支扫描出的文件，并重写相关提交历史
 
 以上操作是假设在当前目录提交了大文件，然后需要在该分支进行删除。这个时候扫描的是当前分支的数据，而不是全部分支的数据，
 这样做是为了加快扫描速度。如果想要清理其他分支的数据或者所有分支的数据，可以使用`--branch`选项，如`--branch=all`则
 可以进行全扫描，会把所有分支上筛选出的数据清理掉。
 
-`git clean-repo --scan --limit=10m --type=jpg --number=5 --delete --branch=all`
+`git repo-clean --scan --limit=10m --type=jpg --number=5 --delete --branch=all`
 > 加上`--branch`选项，则会扫描所有分支的文件再执行删除，并重写相关提交历史
 
 **交互式用法:**
 
-`git clean-repo -i[--interactive]`
+`git repo-clean -i[--interactive]`
 > 使用`-i` 选项进入交互式模式，此模式下，默认打开的开关有`--sacn`, `--delete`, `--verbose`
 
 进入交互模式后，首先提示如下：
 ```bash
-$ git clean-repo -i
+$ git repo-clean -i
 ? 选择要扫描的文件的类型，如：zip, png:
 ? 选择要扫描文件的最低大小，如：1M, 1g:
 ? 选择要显示扫描结果的数量，默认3:
@@ -199,9 +199,9 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 
 极端情况下，在仓库中加入一个文件大小为1216179567 byte(1.2G)的压缩文件, 作为仓库最近一次提交(最后被扫描)，从仓库删除，最快不到10s。
 ```bash
-$ time git clean-repo --scan --verobse --limit=1g --number=3 --delete
+$ time git repo-clean --scan --verobse --limit=1g --number=3 --delete
 Start to scan repository:
 [0]: 449a189d6fb67b3dc0cfcce086847fc93ac86fd0 1216179567 gitaly-dev.tar.gz
-git clean-repo -s -v --limit=1g -n=3  9.87s user 7.62s system 150% cpu 11.651 total
+git repo-clean -s -v --limit=1g -n=3  9.87s user 7.62s system 150% cpu 11.651 total
 ```
 以上是理想情况，即在仓库历史中没有加入其它二进制文件，否则过程也会比较长，这取决于仓库中的数据大小。

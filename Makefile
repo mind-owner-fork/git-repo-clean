@@ -1,4 +1,4 @@
-TARGET := git-clean-repo
+TARGET := git-repo-clean
 
 VERSION := 0.0.1
 
@@ -29,9 +29,9 @@ release:
 RELEASE_BUILD = GOOS=$(1) GOARCH=$(2) \
 	go build \
 	 $(GOFLAGS) \
-	-o ./releases/git-clean-repo-$(1)-$(2)$(3)
+	-o ./releases/git-repo-clean-$(1)-$(2)$(3)
 
 .PHONY: clean
 clean:
-	rm -f bin/git-clean-repo
+	rm -f bin/git-repo-clean
 	rm -rf releases/*

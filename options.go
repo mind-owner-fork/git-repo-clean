@@ -10,21 +10,21 @@ import (
 
 var BuildVersion string
 
-const Usage = `usage: git clean-repo [options]
+const Usage = `usage: git repo-clean [options]
 
 ********************* Important! **********************
 *** The rewrite command is a destructive operation ****
 *** Please backup your repo before do any operation ***
 *******************************************************
 
-git clean-repo have two stage, one is to scan your Git
+git repo-clean have two stage, one is to scan your Git
 repository, by using --scan and some other options followed
 by it, the next stage is to perform some operations in repo,
 like delete operation(--delete) or interaction with the user
 (--interactive)
 
   -v, --verbose		show process information
-  -V, --version		show git-clean-repo version number
+  -V, --version		show git-repo-clean version number
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
   -s, --scan		scan the Git repository objects
@@ -56,10 +56,10 @@ type Options struct {
 
 func (op *Options) init(args []string) error {
 
-	flags := pflag.NewFlagSet("git-clean-repo", pflag.ContinueOnError)
+	flags := pflag.NewFlagSet("git-repo-clean", pflag.ContinueOnError)
 
 	flags.BoolVarP(&op.verbose, "verbose", "v", false, "show process information")
-	flags.BoolVarP(&op.version, "version", "V", false, "show git-clean-repo version number")
+	flags.BoolVarP(&op.version, "version", "V", false, "show git-repo-clean version number")
 	flags.BoolVarP(&op.help, "help", "h", false, "show usage information")
 
 	flags.StringVarP(&op.path, "path", "p", ".", "Git repository path, default is '.'")
