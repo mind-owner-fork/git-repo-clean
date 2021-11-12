@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -261,8 +262,11 @@ func GitVersion(gitbin, path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not run 'git version': %s", err)
 	}
-
-	return strings.Split(string(out), " ")[2], nil
+	matches := Match("[0-9]+.[0-9]+.[0-9]?", string(out))
+	if len(matches) == 0 {
+		return "", errors.New("match git version wrong")
+	}
+	return matches[0], nil
 }
 
 // convert version string to int number for compare. e.g. convert 2.33.0 to 2330
