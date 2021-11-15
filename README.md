@@ -8,23 +8,30 @@
 + Git >= 2.24.0
 
 ## 安装
-+ 下载源码
-> git clone https://gitee.com/oschina/git-repo-clean
 
-+ 进入源码目录，编译
-> cd git-repo-clean
-> make
++ 二进制包安装
+
+下载链接：https://gitee.com/oschina/git-repo-clean/releases/
+
++ 源码编译安装
+
+```bash
+$ git clone https://gitee.com/oschina/git-repo-clean
+# 进入源码目录，编译
+$ cd git-repo-clean
+$ make
+```
 
 + 安装
 
 对于Linux环境
-> sudo cp bin/git-repo-clean $(git --exec-path)
+> sudo cp git-repo-clean $(git --exec-path)
 
-类似的，对于Windows环境，将编译生成的可执行文件`git-repo-clean`的路径放到系统$PATH路径中，
+类似的，对于Windows环境，将可执行文件`git-repo-clean`的路径放到系统$PATH路径中，
 或者复制该可执行文件到`C:\Windows\system32`目录下即可。
 
 安装完成后，执行如下命令检测是否安装成功：
-> git repo-clean --version[-V]
+> git repo-clean --version
 
 
 ## 使用
@@ -49,20 +56,24 @@
 
 **命令行式用法:**
 
-`git repo-clean --scan --limit=10m --type=jpg --number=5`
-> 在仓库中使用命令行，扫描仓库当前分支的文件，文件最小为10M，类型为jpg，显示前5个结果
+![命令行式用法](docs/images/git-repo-clean-command-line.gif)
 
-`git repo-clean --scan --limit=10m --type=jpg --number=5 --delete`
+`git repo-clean --scan --limit=1G --type=tar.gz --number=1`
+> 在仓库中使用命令行，扫描仓库当前分支的文件，文件最小为1G，类型为tar.gz，显示前1个结果
+
+`git repo-clean --scan --limit=1G --type=tar.gz --number=1 --delete`
 > 加上`--delete`选项，则会批量删除当前分支扫描出的文件，并重写相关提交历史
 
 以上操作是假设在当前目录提交了大文件，然后需要在该分支进行删除。这个时候扫描的是当前分支的数据，而不是全部分支的数据，
 这样做是为了加快扫描速度。如果想要清理其他分支的数据或者所有分支的数据，可以使用`--branch`选项，如`--branch=all`则
 可以进行全扫描，会把所有分支上筛选出的数据清理掉。
 
-`git repo-clean --scan --limit=10m --type=jpg --number=5 --delete --branch=all`
+`git repo-clean --scan --limit=1G --type=tar.gz --number=1 --delete --branch=all`
 > 加上`--branch`选项，则会扫描所有分支的文件再执行删除，并重写相关提交历史
 
 **交互式用法:**
+
+![交互式用法](docs/images/git-repo-clean-interactive.gif)
 
 `git repo-clean -i[--interactive]`
 > 使用`-i` 选项进入交互式模式，此模式下，默认打开的开关有`--sacn`, `--delete`, `--verbose`
@@ -169,6 +180,7 @@ git lfs可以跟踪仓库中新加入的文件，而不会追踪历史提交中�
 
 ## NOTE
 + 目前只关注文件本身，所以扫描时只关注blob类型对象
++ 从Git 2.32.0起，`git-rev-list`具备`--filter=object:type`选项，在扫描时能够过滤特定类型，这样能够加快处理过程，后续考虑使用较新的Git版本。
 + 考虑到有种情况是扫描出来的大文件(blob)只存在历史中，此时如果想删除，指定文件名是找不到该文件的。因此，实际在做文件删除时，应该指定为blob hash值，也就是虽然看起来用户选择的是文件名，实际上使用它对应的blob hash ID。
 + 为了防止用户没有对仓库进行备份，当用户在进行删除重、写历史操作时，有一种策略是首先进行`fresh clone safety check`，即检查正在操作的仓库是不是刚克隆的，如果不是新鲜克隆的，则很有可能该仓库是单例仓库，没有副本，没有原始仓库，所以进行一些操作是非常危险的，此时需要提示用户正在非副本仓库中进行危险操作。不是完全拒绝的，用户还可以使用选项`--force`强制进行操作 ([参考](https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/docs/html/git-filter-repo.html#FRESHCLONE))。
 虽然这种检测不是绝对准确的，但它是有用的。
