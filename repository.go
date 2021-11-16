@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"path/filepath"
+
 	"github.com/github/git-sizer/counts"
 	"github.com/github/git-sizer/git"
 )
@@ -26,7 +28,7 @@ type Repository struct {
 
 type HistoryRecord struct {
 	oid        string
-	objectSize int32
+	objectSize uint32
 	objectName string
 }
 
@@ -171,7 +173,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 					}
 				}
 				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{oid.String(), int32(objectSize), name})
+				blobs = append(blobs, HistoryRecord{oid.String(), uint32(objectSize), name})
 				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize
@@ -294,6 +296,105 @@ func GetCurrentBranch(gitbin, path string) (string, error) {
 	return strings.TrimSuffix(string(out), "\n"), nil
 }
 
+// get current status
+func GetCurrentStatus(gitbin, path string) {
+	cmd := exec.Command(gitbin, "-C", path, "status", "-z")
+	out, err := cmd.Output()
+	if err != nil {
+		PrintRed("执行 'git status' 出错！")
+	}
+	st := string(out)
+	if st == "" {
+		PrintGreen("git status clean")
+	}
+	fmt.Println(st)
+}
+
+func GetDatabaseSize(gitbin, path string) string {
+	path = filepath.Join(path, ".git")
+	cmd := exec.Command("du", "-hs", path)
+	out, err := cmd.Output()
+	if err != nil {
+		PrintRed("执行 'du -hs .git' 出错！")
+	}
+	return strings.TrimSuffix(string(out), "\n")
+}
+
+// get repo GC url if the repo is hosted on Gitee.com
+func GetGiteeGCWeb(gitbin, path string) string {
+	cmd := exec.Command(gitbin, "-C", path, "config", "--get", "remote.origin.url")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	url := string(out)
+	if url == "" {
+		return ""
+	}
+	if strings.Contains(url, "gitee.com") {
+		if strings.HasPrefix(url, "git@") {
+			url = strings.TrimPrefix(url, "git@")
+			url = "https://" + strings.Replace(url, ":", "/", 1)
+		}
+		url = strings.TrimSuffix(url, ".git\n") + "/settings#git-gc"
+	} else {
+		return ""
+	}
+	return url
+}
+
+func (repo *Repository) BackUp(gitbin, path string) {
+	PrintGreen("开始准备仓库数据")
+	// #TODO specify backup directory by option
+	dst := "../backup.bak"
+	// check if the same directory exist
+	_, err := os.Stat(dst)
+	if err == nil {
+		ok := AskForOverride()
+		if !ok {
+			PrintYellow("已取消备份")
+			return
+		} else {
+			os.RemoveAll(dst)
+		}
+	}
+	PrintGreen("开始备份...")
+	cmd := exec.Command(gitbin, "-C", path, "clone", "--quiet", "--no-local", path, dst)
+	out, err := cmd.Output()
+	fmt.Println(string(out))
+	if err != nil {
+		PrintRed("克隆错误")
+		fmt.Println(err)
+		return
+	}
+	abs_path, err := filepath.Abs(dst)
+	if err != nil {
+		PrintRed("run filepach.Abs error")
+	}
+	fmter := fmt.Sprintf("备份完毕! 备份文件路径为：%s\n", abs_path)
+	PrintGreen(fmter)
+}
+
+func (repo *Repository) PushRepo(gitbin, path string) error {
+	cmd := exec.Command(gitbin, "-C", path, "push", "origin", "--all", "--force", "--porcelain")
+	out1, err := cmd.Output()
+	if err != nil {
+		PrintRed("推送失败，可能是没有权限推送，或者该仓库没有设置远程仓库")
+		return err
+	}
+	PrintYellow(strings.TrimSuffix(string(out1), "\n"))
+
+	cmd2 := exec.Command(gitbin, "-C", path, "push", "origin", "--tags", "--force")
+	out2, err := cmd2.Output()
+	if err != nil {
+		PrintRed("推送失败，可能网络不稳定，或者该仓库没有设置远程仓库'")
+		return err
+	}
+	PrintYellow(strings.TrimSuffix(string(out2), "\n"))
+	PrintYellow("Done")
+	return nil
+}
+
 func NewRepository(path string) (*Repository, error) {
 	// Find the `git` executable to be used:
 	gitBin, err := findGitBin()
@@ -331,7 +432,7 @@ func (repo *Repository) CleanUp() {
 	PrintGreen("文件清理完毕，开始清理仓库...")
 
 	fmt.Println("running git reset --hard")
-	cmd1 := repo.GitCommand("reset", "--hard")
+	cmd1 := exec.Command(repo.gitBin, "-C", repo.path, "reset", "--hard")
 	cmd1.Stdout = os.Stdout
 	err := cmd1.Start()
 	if err != nil {
@@ -343,7 +444,7 @@ func (repo *Repository) CleanUp() {
 	}
 
 	fmt.Println("running git reflog expire --expire=now --all")
-	cmd2 := repo.GitCommand("reflog", "expire", "--expire=now", "--all")
+	cmd2 := exec.Command(repo.gitBin, "-C", repo.path, "reflog", "expire", "--expire=now", "--all")
 	cmd2.Stderr = os.Stderr
 	cmd2.Stdout = os.Stdout
 	err = cmd2.Start()
@@ -356,7 +457,7 @@ func (repo *Repository) CleanUp() {
 	}
 
 	fmt.Println("running git gc --prune=now")
-	cmd3 := repo.GitCommand("gc", "--prune=now")
+	cmd3 := exec.Command(repo.gitBin, "-C", repo.path, "gc", "--prune=now")
 	cmd3.Stderr = os.Stderr
 	cmd3.Stdout = os.Stdout
 	err = cmd3.Start()

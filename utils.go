@@ -60,8 +60,10 @@ func PrintPlain(msg string) {
 	fmt.Println(msg)
 }
 
-func ShowScanResult(list BlobList) {
+func (repo Repository) ShowScanResult(list BlobList) {
 	PrintGreen("扫描完成!")
+	fmt.Print(fmt.Sprintf("\033[33m%s\033[0m", "当前仓库大小："))
+	PrintYellow(GetDatabaseSize(repo.gitBin, repo.path))
 	PrintYellow("注意，同一个文件因为版本不同可能会存在多个，这些是占用 Git 仓库存储的主要原因")
 	PrintYellow("请根据需要，通过其对应的ID进行选择性删除，如果确认文件可以全部删除，全选即可。")
 
@@ -78,7 +80,7 @@ func ShowScanResult(list BlobList) {
 	if maxSizeLen < 4 {
 		maxSizeLen = 4
 	}
-
+	fmt.Println()
 	fmt.Printf("|-%-*s | %-*s------ | %-*s-|\n", 40, strings.Repeat("-", 40), maxSizeLen, strings.Repeat("-", maxSizeLen), ActualLen, strings.Repeat("-", ActualLen))
 	fmt.Printf("| %-*s | %-*s bytes | %-*s |\n", 40, "Blob ID", maxSizeLen, "SIZE", ActualLen, "File Name")
 	fmt.Printf("|-%-*s | %-*s------ | %-*s-|\n", 40, strings.Repeat("-", 40), maxSizeLen, strings.Repeat("-", maxSizeLen), ActualLen, strings.Repeat("-", ActualLen))
@@ -90,6 +92,7 @@ func ShowScanResult(list BlobList) {
 			fmt.Printf("| %.*s | %.*d bytes | %-*s |\n", 40, item.oid, maxSizeLen, item.objectSize, ActualLen, item.objectName)
 		}
 	}
+	fmt.Println()
 }
 
 func maxLenBlobName(list BlobList) (int, int) {
