@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/github/git-sizer/git"
 )
@@ -13,7 +14,9 @@ func InitContext(args []string) *Repository {
 		fmt.Println("Parse Option error")
 		os.Exit(1)
 	}
-
+	if len(args) == 0 {
+		op.interact = true
+	}
 	repo, err := git.NewRepository(op.path)
 	if err != nil {
 		fmt.Println("couldn't open Git repository")
@@ -49,12 +52,6 @@ func InitContext(args []string) *Repository {
 		op.branch = "--all"
 	}
 
-	if fresh, err := IsFresh(gitBin, op.path); err == nil && !fresh && !op.force {
-		PrintYellow("不支持在不是刚克隆的仓库中进行重写操作，请确保已经将仓库进行备份")
-		PrintYellow("备份请参考： git clone --no-local <原始仓库路径> <备份仓库路径>")
-		PrintYellow("如果确定继续进行操作，也可以使用'--force'参数强制执行")
-		os.Exit(1)
-	}
 	if bare, _ := IsBare(gitBin, op.path); bare {
 		fmt.Println("Couldn't support running in bare repository")
 		os.Exit(1)
@@ -89,7 +86,10 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		repo.opts.scan = true
 		repo.opts.delete = true
 		repo.opts.verbose = true
-		repo.opts.SurveyCmd()
+
+		if err := repo.opts.SurveyCmd(); err != nil {
+			os.Exit(1)
+		}
 	}
 	if repo.opts.scan {
 		bloblist, err := ScanRepository(*repo)
@@ -99,7 +99,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		}
 
 		if repo.opts.verbose && len(bloblist) != 0 {
-			ShowScanResult(bloblist)
+			repo.ShowScanResult(bloblist)
 		}
 
 		if len(bloblist) == 0 {
@@ -135,19 +135,49 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		targets: final_target}, nil
 }
 
-func Prompt() {
+func Prompt(repo Repository) {
 	PrintGreen("本地仓库清理完成！")
-	PrintYellow("由于本地仓库的历史已经被修改，如果没有新的提交，建议先完成如下工作：")
-	PrintYellow("1. 更新远程仓库。将本地清理后的仓库推送到远程仓库：")
-	PrintYellow("    git push origin --all --force")
-	PrintYellow("    git push origin --tags --force")
-	PrintYellow("2. 清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作")
-	PrintYellow("(如果是 Gitee 仓库，请查阅GC帮助文档: https://gitee.com/help/articles/4173)")
-	PrintYellow("3. 处理关联仓库。处理具有同一个远程仓库的其他副本仓库，确保不会将同样的文件再次提交到远程仓库")
-	PrintYellow("请参阅详细文档 https://gitee.com/oschina/git-repo-clean/blob/main/docs/repo-update.md")
+	fmt.Print(fmt.Sprintf("\033[32m%s\033[0m", "当前仓库大小："))
+	PrintGreen(GetDatabaseSize(repo.gitBin, repo.path))
+	var pushed bool
+	if AskForUpdate() {
+		PrintPlain("将会执行如下两条命令，远端的的提交将会被覆盖:")
+		PrintGreen("git push origin --all --force")
+		PrintGreen("git push origin --tags --force")
+		err := repo.PushRepo(repo.gitBin, repo.path)
+		if err == nil {
+			pushed = true
+		}
+	}
+	PrintPlain("由于本地仓库的历史已经被修改，如果没有新的提交，建议先完成如下工作：\n")
+	if pushed {
+		PrintGreen("1. (已完成！)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
+		PrintGreen("    git push origin --all --force")
+		PrintGreen("    git push origin --tags --force")
+		fmt.Println()
+	} else {
+		PrintRed("1. (待完成)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
+		PrintRed("    git push origin --all --force")
+		PrintRed("    git push origin --tags --force")
+		fmt.Println()
+	}
+	PrintRed("2. (待完成)清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作")
+	url := GetGiteeGCWeb(repo.gitBin, repo.path)
+	if url != "" {
+		url_fmter1 := fmt.Sprintf(FORMAT_YELLOW, url)
+		fmter1 := fmt.Sprintf("如果是 Gitee 仓库，且有管理权限，请点击链接: %s", url_fmter1)
+		PrintRed(strings.TrimSuffix(fmter1, "\n"))
+	}
+	fmt.Println()
+	PrintRed("3. (待完成)处理关联仓库。处理同一个远程仓库下clone的其它仓库，确保不会将同样的文件再次提交到远程仓库")
+	url_fmter2 := fmt.Sprintf(FORMAT_YELLOW, "https://gitee.com/oschina/git-repo-clean/blob/main/docs/repo-update.md")
+	fmter2 := fmt.Sprintf("详细文档请参阅: %s", url_fmter2)
+	PrintRed(fmter2)
 	PrintPlain("完成以上三步后，恭喜你，所有的清理工作已经完成！")
 	PrintPlain("如果有大文件的存储需求，请使用Git-LFS功能，避免仓库体积再次膨胀")
-	PrintPlain("(Gitee LFS 的使用请参阅：https://gitee.com/help/articles/4235)")
+	url_fmter3 := fmt.Sprintf(FORMAT_YELLOW, "https://gitee.com/help/articles/4235")
+	fmter3 := fmt.Sprintf("Gite LFS 的使用请参阅：%s", url_fmter3)
+	PrintPlain(strings.TrimSuffix(fmter3, "\n"))
 }
 
 func main() {
@@ -156,8 +186,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "init repo filter error")
 		os.Exit(1)
 	}
+	// repo backup
+	if AskForBackUp() {
+		filter.repo.BackUp(filter.repo.gitBin, filter.repo.path)
+	}
+	// filter data
 	filter.Parser()
 
 	filter.repo.CleanUp()
-	Prompt()
+	Prompt(*filter.repo)
 }

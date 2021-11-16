@@ -33,6 +33,11 @@ $ make
 安装完成后，执行如下命令检测是否安装成功：
 > git repo-clean --version
 
+注：在`Mac OS`上进行配置之后可能无法执行，需要授权，具体方式为：
+**System Preferences** -> **Security & Privacy**
+点击 Allow Anyway 始终允许即可:
+![mac](docs/images/mac_setting.png)
+
 
 ## 使用
 
@@ -50,7 +55,6 @@ $ make
   -n, --number		set the number of results to show
   -t, --type		set the file type to filter from Git repository
   -i, --interactive 	enable interactive operation
-  -f, --force		force to perform history rewrite even the repository haven't backup
   -d, --delete		execute file cleanup and history rewrite process
 ```
 
@@ -78,7 +82,9 @@ $ make
 `git repo-clean -i[--interactive]`
 > 使用`-i` 选项进入交互式模式，此模式下，默认打开的开关有`--sacn`, `--delete`, `--verbose`
 
-进入交互模式后，首先提示如下：
+> 输入`git repo-clean`也可以直接进入交互模式
+
+<!-- 进入交互模式后，首先提示如下：
 ```bash
 $ git repo-clean -i
 ? 选择要扫描的文件的类型，如：zip, png:
@@ -122,7 +128,7 @@ $ git repo-clean -i
 ? 以上是你要删除的文件，确定要删除吗?
 (y/N)
 ```
-可以选择y, yes, 或者n, no, 均不区分大小写。
+可以选择y, yes, 或者n, no, 均不区分大小写。 -->
 
 <!--
 **LFS使用流程**
@@ -217,3 +223,7 @@ Start to scan repository:
 git repo-clean -s -v --limit=1g -n=3  9.87s user 7.62s system 150% cpu 11.651 total
 ```
 以上是理想情况，即在仓库历史中没有加入其它二进制文件，否则过程也会比较长，这取决于仓库中的数据大小。
+
+
+## Licensing
+git repo-clean is licensed under [Mulan PSL v2](LICENSE)

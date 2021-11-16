@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -69,7 +68,7 @@ var qs = []*survey.Question{
 	},
 }
 
-func (op *Options) SurveyCmd() {
+func (op *Options) SurveyCmd() error {
 
 	// the answers will be written to this struct
 	// you can tag fields to match a specific name
@@ -82,12 +81,13 @@ func (op *Options) SurveyCmd() {
 	// perform the questions
 	err := survey.Ask(qs, &answers, survey.WithHelpInput('?'))
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return err
 	}
 	op.limit = answers.Threshold
 	op.number = answers.ShowNum
 	op.types = answers.FileType
+
+	return nil
 }
 
 func MultiSelectCmd(list BlobList) []string {
@@ -127,4 +127,37 @@ func Confirm(list []string) (bool, []string) {
 	}
 
 	return ok, results
+}
+
+func AskForBackUp() bool {
+	ok := false
+
+	prompt := &survey.Confirm{
+		Message: "在删除你的文件之前，是否需要备份仓库?\n",
+	}
+	survey.AskOne(prompt, &ok)
+
+	return ok
+}
+
+func AskForOverride() bool {
+	ok := false
+
+	prompt := &survey.Confirm{
+		Message: "当前目录下存在同名文件夹，是否需要覆盖(回答否，则取消备份)?\n",
+	}
+	survey.AskOne(prompt, &ok)
+
+	return ok
+}
+
+func AskForUpdate() bool {
+	ok := false
+
+	prompt := &survey.Confirm{
+		Message: "你的本地提交历史已经更改，是否现在强制推送到远程仓库？\n",
+	}
+	survey.AskOne(prompt, &ok)
+
+	return ok
 }

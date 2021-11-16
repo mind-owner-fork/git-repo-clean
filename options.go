@@ -17,6 +17,11 @@ const Usage = `usage: git repo-clean [options]
 *** Please backup your repo before do any operation ***
 *******************************************************
 
+git repo-clean is a tool to scan Git repository metadata,
+and filter out specify file by its type, size, and delete
+those files completely from the repo, and will rewrite the
+commit history relatived to those files.
+
 git repo-clean have two stage, one is to scan your Git
 repository, by using --scan and some other options followed
 by it, the next stage is to perform some operations in repo,
@@ -31,9 +36,9 @@ like delete operation(--delete) or interaction with the user
   -b, --branch		set the branch to scan, default is current branch
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
-  -t, --type		set the file type to filter from Git repository
+  -t, --type		set the file name suffix to filter from Git repository
   -i, --interactive 	enable interactive operation
-  -f, --force		force to perform history rewrite even the repository haven't backup
+  -f, --force		force to execute file delete and history rewrite
   -d, --delete		execute file cleanup and history rewrite process
 
 `
@@ -45,7 +50,6 @@ type Options struct {
 	path     string
 	scan     bool
 	delete   bool
-	force    bool
 	branch   string
 	limit    string
 	number   uint32
@@ -78,7 +82,7 @@ func (op *Options) init(args []string) error {
 	// perform delete files action
 	flags.BoolVarP(&op.delete, "delete", "d", false, "execute file cleanup and history rewrite process")
 	// to ignore fresh clone check
-	flags.BoolVarP(&op.force, "force", "f", false, "force to perform history rewrite even the repository haven't backup")
+	// flags.BoolVarP(&op.force, "force", "f", false, "force to execute history rewrite even the repository haven't backup")
 	// flags.BoolVarP(&op.lfs, "lfs", "L", false, "use LFS server to storage local large file, must followed by --add option")
 
 	err := flags.Parse(args)
@@ -103,7 +107,7 @@ func (op *Options) ParseOptions(args []string) error {
 		fmt.Printf("option format error: %s\n", err)
 		os.Exit(1)
 	}
-	if op.help || len(args) == 0 {
+	if op.help {
 		usage()
 		os.Exit(1)
 	}
@@ -119,7 +123,7 @@ func (op *Options) ParseOptions(args []string) error {
 }
 
 func (op *Options) SingleOpts() bool {
-	if op.verbose || op.force || op.scan || op.delete {
+	if op.verbose || op.scan || op.delete {
 		return true
 	} else {
 		return false
