@@ -16,7 +16,7 @@ func (repo *Repository) FastImportOut() (io.WriteCloser, *exec.Cmd, error) {
 		"fast-import",
 		"--quiet",
 		"--force",
-		"--date-format=raw-permissive",
+		// "--date-format=raw-permissive", // 2.28.0
 	}
 	cmd := repo.GitCommand(args...)
 

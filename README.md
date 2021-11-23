@@ -108,6 +108,7 @@ $ make
 - [x] 提供选项给git-fast-export，对特定分支进行筛选，而不是所有分支
 - [ ] 考虑重写历史对签名的影响
 - [ ] 考虑重写历史对PR的影响
+- [ ] 使用libgit2实现git操作
 
 ## BUG
 + 如果仓库中存在nested tag, 则在清理过程中会出现错误，如：`error: multiple updates for ref 'refs/tags/v1.0.1-pointer' not allowed`, 这会导致文件删除失败。暂时处理方式是一旦检测到这种情况，就退出程序，并显示警告信息。
