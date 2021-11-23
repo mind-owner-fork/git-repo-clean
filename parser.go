@@ -510,7 +510,6 @@ func parse_user(usertype, line string) (use string) {
 
 // file mode can be: M(modify), D(delete), C(copy), R(rename), A(add)
 // here we only handle M,D and R mode
-// #FIXME: fix file path format in different OS platform
 func parse_filechange(line string) FileChange {
 	arr := strings.Split(line, " ")
 	types := arr[0]
@@ -813,8 +812,6 @@ func (filter *RepoFilter) Parser() {
 	if err != nil {
 		fmt.Println("run git-fast-import process failed")
 	}
-	// this is for test
-	// input, err := os.Create(".git/fast-export.out")
 
 	for {
 		line, _ := iter.Next()
