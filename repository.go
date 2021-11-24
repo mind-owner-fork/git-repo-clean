@@ -76,7 +76,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 	var blobs []HistoryRecord
 
 	if repo.opts.verbose {
-		PrintGreen("开始扫描(如果仓库过大，扫描时间会比较长，请耐心等待)...")
+		PrintLocalWithGreenln("start scanning")
 	}
 
 	// get reference iter
@@ -156,7 +156,8 @@ func ScanRepository(repo Repository) (BlobList, error) {
 
 				name, err := repo.GetBlobName(oid.String())
 				if err != nil {
-					fmt.Printf("run GetBlobName error: %s\n", err)
+					ft := LocalPrinter().Sprintf("run GetBlobName error: %s", err)
+					PrintRedln(ft)
 					os.Exit(1)
 				}
 
@@ -188,7 +189,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 		case "tag":
 			continue
 		default:
-			err = fmt.Errorf("expected blob object type, but got: %s", objectType)
+			err = fmt.Errorf(LocalPrinter().Sprintf("expected blob object type, but got: %s", objectType))
 			return empty, err
 		}
 
@@ -213,8 +214,8 @@ func IsBare(gitbin, path string) (bool, error) {
 	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--is-bare-repository")
 	out, err := cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf(
-			"could not run 'git rev-parse --is-bare-repository': %s", err,
+		return false, fmt.Errorf(LocalPrinter().Sprintf(
+			"could not run 'git rev-parse --is-bare-repository': %s", err),
 		)
 	}
 
@@ -226,8 +227,8 @@ func IsShallow(gitbin, path string) (bool, error) {
 	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--is-shallow-repository")
 	out, err := cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf(
-			"could not run 'git rev-parse --is-shallow-repository': %s", err,
+		return false, fmt.Errorf(LocalPrinter().Sprintf(
+			"could not run 'git rev-parse --is-shallow-repository': %s", err),
 		)
 	}
 
@@ -239,8 +240,8 @@ func IsFresh(gitbin, path string) (bool, error) {
 	cmd := exec.Command(gitbin, "-C", path, "reflog", "show")
 	out, err := cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf(
-			"could not run 'git reflog show': %s", err,
+		return false, fmt.Errorf(LocalPrinter().Sprintf(
+			"could not run 'git reflog show': %s", err),
 		)
 	}
 	return strings.Count(string(out), "\n") < 2, nil
@@ -251,7 +252,7 @@ func HasLFSEnv(gitbin, path string) (bool, error) {
 	cmd := exec.Command(gitbin, "-C", path, "lfs", "version")
 	out, err := cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf("could not run 'git lfs version': %s", err)
+		return false, fmt.Errorf(LocalPrinter().Sprintf("could not run 'git lfs version': %s", err))
 	}
 
 	return strings.Contains(string(out), "git-lfs"), nil
@@ -262,11 +263,11 @@ func GitVersion(gitbin, path string) (string, error) {
 	cmd := exec.Command(gitbin, "-C", path, "version")
 	out, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("could not run 'git version': %s", err)
+		return "", fmt.Errorf(LocalPrinter().Sprintf("could not run 'git version': %s", err))
 	}
 	matches := Match("[0-9]+.[0-9]+.[0-9]?", string(out))
 	if len(matches) == 0 {
-		return "", errors.New("match git version wrong")
+		return "", errors.New(LocalPrinter().Sprintf("match git version wrong"))
 	}
 	return matches[0], nil
 }
@@ -291,7 +292,7 @@ func GetCurrentBranch(gitbin, path string) (string, error) {
 	cmd := exec.Command(gitbin, "-C", path, "symbolic-ref", "HEAD", "--short")
 	out, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("could not run 'git symbolic-ref HEAD --short': %s", err)
+		return "", fmt.Errorf(LocalPrinter().Sprintf("could not run 'git symbolic-ref HEAD --short': %s", err))
 	}
 	return strings.TrimSuffix(string(out), "\n"), nil
 }
@@ -301,11 +302,11 @@ func GetCurrentStatus(gitbin, path string) {
 	cmd := exec.Command(gitbin, "-C", path, "status", "-z")
 	out, err := cmd.Output()
 	if err != nil {
-		PrintRed("执行 'git status' 出错！")
+		PrintLocalWithRedln("could not run 'git status'")
 	}
 	st := string(out)
 	if st == "" {
-		PrintGreen("git status clean")
+		PrintLocalWithGreenln("git status clean")
 	}
 	fmt.Println(st)
 }
@@ -315,7 +316,7 @@ func GetDatabaseSize(gitbin, path string) string {
 	cmd := exec.Command("du", "-hs", path)
 	out, err := cmd.Output()
 	if err != nil {
-		PrintRed("执行 'du -hs .git' 出错！")
+		PrintLocalWithRedln("could not run 'du -hs .git'")
 	}
 	return strings.TrimSuffix(string(out), "\n")
 }
@@ -344,7 +345,7 @@ func GetGiteeGCWeb(gitbin, path string) string {
 }
 
 func (repo *Repository) BackUp(gitbin, path string) {
-	PrintGreen("开始准备仓库数据")
+	PrintLocalWithGreenln("start preparing repository data")
 	// #TODO specify backup directory by option
 	dst := "../backup.bak"
 	// check if the same directory exist
@@ -352,46 +353,46 @@ func (repo *Repository) BackUp(gitbin, path string) {
 	if err == nil {
 		ok := AskForOverride()
 		if !ok {
-			PrintYellow("已取消备份")
+			PrintLocalWithYellowln("backup canceled")
 			return
 		} else {
 			os.RemoveAll(dst)
 		}
 	}
-	PrintGreen("开始备份...")
+	PrintLocalWithGreen("start backup")
 	cmd := exec.Command(gitbin, "-C", path, "clone", "--quiet", "--no-local", path, dst)
 	out, err := cmd.Output()
 	fmt.Println(string(out))
 	if err != nil {
-		PrintRed("克隆错误")
+		PrintLocalWithRedln("clone error")
 		fmt.Println(err)
 		return
 	}
 	abs_path, err := filepath.Abs(dst)
 	if err != nil {
-		PrintRed("run filepach.Abs error")
+		PrintLocalWithRedln("run filepach.Abs error")
 	}
-	fmter := fmt.Sprintf("备份完毕! 备份文件路径为：%s\n", abs_path)
-	PrintGreen(fmter)
+	ft := LocalPrinter().Sprintf("backup done! Backup file path is: %s", abs_path)
+	PrintGreenln(ft)
 }
 
 func (repo *Repository) PushRepo(gitbin, path string) error {
 	cmd := exec.Command(gitbin, "-C", path, "push", "origin", "--all", "--force", "--porcelain")
 	out1, err := cmd.Output()
 	if err != nil {
-		PrintRed("推送失败，可能是没有权限推送，或者该仓库没有设置远程仓库")
+		PrintLocalWithRedln("Push failed")
 		return err
 	}
-	PrintYellow(strings.TrimSuffix(string(out1), "\n"))
+	PrintYellowln(strings.TrimSuffix(string(out1), "\n"))
 
 	cmd2 := exec.Command(gitbin, "-C", path, "push", "origin", "--tags", "--force")
 	out2, err := cmd2.Output()
 	if err != nil {
-		PrintRed("推送失败，可能网络不稳定，或者该仓库没有设置远程仓库'")
+		PrintLocalWithRedln("Push failed")
 		return err
 	}
-	PrintYellow(strings.TrimSuffix(string(out2), "\n"))
-	PrintYellow("Done")
+	PrintYellowln(strings.TrimSuffix(string(out2), "\n"))
+	PrintLocalWithYellowln("Done")
 	return nil
 }
 
@@ -429,7 +430,7 @@ func (repo *Repository) Close() error {
 
 func (repo *Repository) CleanUp() {
 	// clean up
-	PrintGreen("文件清理完毕，开始清理仓库...")
+	PrintLocalWithGreenln("file cleanup is complete. Start cleaning the repository")
 
 	fmt.Println("running git reset --hard")
 	cmd1 := exec.Command(repo.gitBin, "-C", repo.path, "reset", "--hard")

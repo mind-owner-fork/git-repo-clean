@@ -12,18 +12,18 @@ var qs = []*survey.Question{
 	{
 		Name: "fileType",
 		Prompt: &survey.Input{
-			Message: "选择要扫描的文件的类型，如：zip, png:",
+			Message: LocalSprintf("select the type of file to scan"),
 			Default: "*",
-			Help:    "默认无类型，即查找所有类型。如果想指定类型，则直接输入类型后缀名即可, 不需要加'.'",
+			Help:    LocalSprintf("default is all types. If you want to specify a type, you can directly enter the type suffix without prefix '.'"),
 		},
 		Validate: func(ans interface{}) error {
 			str, ok := ans.(string)
 			if !ok || len(str) > 10 {
-				return errors.New("抱歉，输入的类型名过长，超过10个字符")
+				return errors.New(LocalSprintf("filetype error one"))
 			}
 			match, _ := regexp.MatchString(`^[A-Za-z]+[.]?[A-Za-z]+$`, str)
 			if !match && str != "*" {
-				return errors.New("类型必须是字母，中间可以包含'.'，但是开头不需要包含'.'")
+				return errors.New(LocalSprintf("filetype error two"))
 			}
 			return nil
 		},
@@ -31,18 +31,18 @@ var qs = []*survey.Question{
 	{
 		Name: "fileSize",
 		Prompt: &survey.Input{
-			Message: "选择要扫描文件的最低大小，如：1M, 1g:",
+			Message: LocalSprintf("select the minimum size of the file to scan"),
 			Default: "1M",
-			Help:    "大小数值需要单位，如: 10K. 可选单位有B,K,M,G, 且不区分大小写",
+			Help:    LocalSprintf("the size value needs units, such as 10K. The optional units are B, K, m and G, and are not case sensitive"),
 		},
 		Validate: func(ans interface{}) error {
 			str, ok := ans.(string)
 			if !ok {
-				return errors.New("input error")
+				return errors.New(LocalSprintf("filesize error one"))
 			}
 			match, _ := regexp.MatchString(`^[1-9]+[0-9]*[bBkKmMgG]$`, str)
 			if !match {
-				return errors.New("必须以数字+单位字符(b,k,m,g)组合，且单位不区分大小写")
+				return errors.New(LocalSprintf("filesize error two"))
 			}
 			return nil
 		},
@@ -50,18 +50,18 @@ var qs = []*survey.Question{
 	{
 		Name: "fileNumber",
 		Prompt: &survey.Input{
-			Message: "选择要显示扫描结果的数量，默认值是3:",
+			Message: LocalSprintf("select the number of scan results to display"),
 			Default: "3",
-			Help:    "默认显示前3个，单页最大显示为10行，所以最好不超过10",
+			Help:    LocalSprintf("the default display is the first 3. The maximum page size is 10 rows, so it is best not to exceed 10."),
 		},
 		Validate: func(ans interface{}) error {
 			str, ok := ans.(string)
 			if !ok {
-				return errors.New("input error")
+				return errors.New(LocalSprintf("filenumber error one"))
 			}
 			match, _ := regexp.MatchString(`^[1-9]+[0-9]*$`, str)
 			if !match {
-				return errors.New("必须是纯数字")
+				return errors.New(LocalSprintf("filenumber error two"))
 			}
 			return nil
 		},
@@ -100,10 +100,10 @@ func MultiSelectCmd(list BlobList) []string {
 		targets = append(targets, ele)
 	}
 	prompt := &survey.MultiSelect{
-		Message:  "请选择你要删除的文件(可多选):\n",
+		Message:  LocalSprintf("multi select message") + "\n",
 		Options:  targets,
 		PageSize: 10,
-		Help:     "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择",
+		Help:     LocalSprintf("multi select help info"),
 	}
 	survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
 
@@ -115,7 +115,7 @@ func Confirm(list []string) (bool, []string) {
 	results := []string{}
 
 	prompt := &survey.Confirm{
-		Message: "以上是你要删除的文件，确定要删除吗?\n",
+		Message: LocalSprintf("confirm message") + "\n",
 	}
 
 	survey.AskOne(prompt, &ok)
@@ -133,7 +133,7 @@ func AskForBackUp() bool {
 	ok := false
 
 	prompt := &survey.Confirm{
-		Message: "在删除你的文件之前，是否需要备份仓库?\n",
+		Message: LocalSprintf("ask for backup message") + "\n",
 	}
 	survey.AskOne(prompt, &ok)
 
@@ -144,7 +144,7 @@ func AskForOverride() bool {
 	ok := false
 
 	prompt := &survey.Confirm{
-		Message: "当前目录下存在同名文件夹，是否需要覆盖(回答否，则取消备份)?\n",
+		Message: LocalSprintf("ask for override message") + "\n",
 	}
 	survey.AskOne(prompt, &ok)
 
@@ -155,7 +155,7 @@ func AskForUpdate() bool {
 	ok := false
 
 	prompt := &survey.Confirm{
-		Message: "你的本地提交历史已经更改，是否现在强制推送到远程仓库？\n",
+		Message: LocalSprintf("ask for update message") + "\n",
 	}
 	survey.AskOne(prompt, &ok)
 
