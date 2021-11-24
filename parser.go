@@ -167,7 +167,7 @@ func (fc *FileChange) dump(writer io.WriteCloser) {
 		// writer.Write([]byte(filepath_))
 	} else {
 		// unhandle filechange type
-		fmt.Println("unsupported filechange type")
+		PrintLocalWithRedln("unsupported filechange type")
 		return
 	}
 }
@@ -445,7 +445,7 @@ func parse_parent_ref(reftype, line string) (orig_ref, ref int32) {
 	if len(line) == 46 {
 		if line[5:len(line)-1] == "0000000000000000000000000000000000000000" {
 			// mark to delete
-			PrintRed("处理过程中断，因为仓库中存在嵌套式tag(nested tag)，建议使用'--branch=<branch>'参数指定单个分支")
+			PrintLocalWithRedln("nested tags error")
 			os.Exit(1)
 		}
 	}
@@ -463,7 +463,7 @@ func parse_parent_ref(reftype, line string) (orig_ref, ref int32) {
 func parse_mark(line string) (idx int32) {
 	matches := Match("mark :"+idx_re, line)
 	if len(matches) == 0 {
-		fmt.Println("no match mark id")
+		PrintLocalWithRedln("no match mark id")
 		return 0
 	}
 	if idx, err := strconv.Atoi(matches[1]); err == nil {
@@ -475,7 +475,7 @@ func parse_mark(line string) (idx int32) {
 func parse_original_oid(line string) (oid string) {
 	matches := Match("original-oid "+oid_re, line)
 	if len(matches) == 0 {
-		fmt.Println("no match original-oid")
+		PrintLocalWithRedln("no match original-oid")
 		return ""
 	}
 	// single oid string
@@ -485,7 +485,7 @@ func parse_original_oid(line string) (oid string) {
 func parse_datasize(line string) int64 {
 	matches := Match("data "+idx_re, line)
 	if len(matches) == 0 {
-		fmt.Println("no match data size")
+		PrintLocalWithRedln("no match data size")
 		return -1
 	}
 	size, err := strconv.ParseInt(matches[1], 10, 64)
@@ -562,7 +562,7 @@ func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, ex
 				fmt.Println(err)
 			}
 			if n != len(newline) {
-				fmt.Println("failed to write data")
+				PrintLocalWithRedln("failed to write data")
 			}
 			sum += int64(n)
 			if sum == size {
@@ -622,7 +622,7 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 	newline, _ := iter.Next()
 	mark_id := parse_mark(newline)
 	if mark_id == 0 {
-		fmt.Println("no match mark id")
+		PrintLocalWithRedln("no match mark id")
 		return &Commit{}, &Helper_info{}
 	}
 
@@ -761,7 +761,7 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 	newline, _ := iter.Next()
 	mark_id := parse_mark(newline)
 	if mark_id == 0 {
-		fmt.Println("no match mark id")
+		PrintLocalWithRedln("no match mark id")
 	}
 	newline, _ = iter.Next()
 	_, parent_id := parse_parent_ref("from", newline)
@@ -795,7 +795,7 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 
 func (filter *RepoFilter) Parser() {
 	if filter.repo.opts.verbose {
-		PrintGreen("开始从历史中清理指定的文件(如果仓库过大，执行时间会比较长，请耐心等待)...")
+		PrintLocalWithGreenln("start to clean up specified files")
 	}
 
 	iter, err := filter.repo.NewFastExportIter()
@@ -810,7 +810,7 @@ func (filter *RepoFilter) Parser() {
 		cmd.Wait()
 	}()
 	if err != nil {
-		fmt.Println("run git-fast-import process failed")
+		PrintLocalWithRedln("run git-fast-import process failed")
 	}
 
 	for {

@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	FORMAT_RED    = "\033[31m%s\033[0m\n"
-	FORMAT_GREEN  = "\033[32m%s\033[0m\n"
-	FORMAT_YELLOW = "\033[33m%s\033[0m\n"
-	FORMAT_BLUE   = "\033[34m%s\033[0m\n"
+	FORMAT_RED    = "\033[31m%s\033[0m"
+	FORMAT_GREEN  = "\033[32m%s\033[0m"
+	FORMAT_YELLOW = "\033[33m%s\033[0m"
+	FORMAT_BLUE   = "\033[34m%s\033[0m"
 )
 
 // Convert number to bytes according to Uint
@@ -35,7 +35,7 @@ func UnitConvert(input string) (uint64, error) {
 	} else if strings.ToLower(u) == "g" {
 		return cv * 1024 * 1024 * 1024, nil
 	} else {
-		err := fmt.Errorf("expected format: --limit=<n>k|m|g, but you are: --limit=%s", input)
+		err := fmt.Errorf("expected format: --limit=<n>b|k|m|g, but you are: --limit=%s", input)
 		return 0, err
 	}
 }
@@ -57,15 +57,39 @@ func PrintBlue(msg string) {
 }
 
 func PrintPlain(msg string) {
+	fmt.Print(msg)
+}
+
+func PrintRedln(msg string) {
+	fmt.Printf(FORMAT_RED, msg)
+	fmt.Println()
+}
+
+func PrintGreenln(msg string) {
+	fmt.Printf(FORMAT_GREEN, msg)
+	fmt.Println()
+}
+
+func PrintYellowln(msg string) {
+	fmt.Printf(FORMAT_YELLOW, msg)
+	fmt.Println()
+}
+
+func PrintBlueln(msg string) {
+	fmt.Printf(FORMAT_BLUE, msg)
+	fmt.Println()
+}
+
+func PrintPlainln(msg string) {
 	fmt.Println(msg)
 }
 
 func (repo Repository) ShowScanResult(list BlobList) {
-	PrintGreen("扫描完成!")
-	fmt.Print(fmt.Sprintf("\033[33m%s\033[0m", "当前仓库大小："))
-	PrintYellow(GetDatabaseSize(repo.gitBin, repo.path))
-	PrintYellow("注意，同一个文件因为版本不同可能会存在多个，这些是占用 Git 仓库存储的主要原因")
-	PrintYellow("请根据需要，通过其对应的ID进行选择性删除，如果确认文件可以全部删除，全选即可。")
+	PrintLocalWithGreenln("scan done!")
+	PrintLocalWithPlain("current repository size")
+	PrintLocalWithYellowln(GetDatabaseSize(repo.gitBin, repo.path))
+	PrintLocalWithYellowln("note that there may be multiple versions of the same file")
+	PrintLocalWithYellowln("please delete selectively according to its Blob ID")
 
 	// if maxNameLen = 58 maxUTF8NameLen = 34, then ActualLen = (58-34)/2
 	maxNameLen, maxUTF8NameLen := maxLenBlobName(list)

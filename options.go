@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -22,12 +21,7 @@ and filter out specify file by its type, size, and delete
 those files completely from the repo, and will rewrite the
 commit history relatived to those files.
 
-git repo-clean have two stage, one is to scan your Git
-repository, by using --scan and some other options followed
-by it, the next stage is to perform some operations in repo,
-like delete operation(--delete) or interaction with the user
-(--interactive)
-
+Options:
   -v, --verbose		show process information
   -V, --version		show git-repo-clean version number
   -h, --help		show usage information
@@ -40,6 +34,81 @@ like delete operation(--delete) or interaction with the user
   -i, --interactive 	enable interactive operation
   -f, --force		force to execute file delete and history rewrite
   -d, --delete		execute file cleanup and history rewrite process
+
+These options can provide users with two ways of using: 
+interactive way, command line way.
+
+Interactive way:
+  Execute "git repo clean" or "git repo clean -i" to enter the interactive interface.
+  The program interacts with the user through question and answer, making the whole process
+  of file filtering, backup, deletion and history rewrite easier for the user.
+  
+Command-Line way:
+  You can apply various options on the command line to realize functions, such as:
+
+  To scan only files with file type tar.gz and its size greater than 1G in the repo: 
+    git repo-clean --scan --limit=1G --type=tar.gz
+
+  When you need to delete specified files, add --delete option and execute:
+    git repo-clean --scan --limit=1G --type=tar.gz --delete
+
+  If the same file exists in multiple branches, or the same file still exists after
+  the previous deletion, you can use the --branch option to delete it from all branches:
+    git repo-clean --scan --limit=1G --type=tar.gz --delete --branch=all
+
+  If there are too many scanning results according to the specified conditions, 
+  you can limit the number of results by --number option:
+    git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
+
+`
+const Usage_ZH = `用法: git repo-clean [选项]
+
+********************* 重要! *****************
+*** 该历史重写过程是不可逆的破坏性的操作 ***
+*** 请在做任何操作之前先备份您的仓库数据 ***
+*********************************************
+
+git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件类型
+以及大小来过滤出文件，并且从仓库中完全删除掉这些指定文件的工具
+，它将重写跟删除的文件相关的提交以及之后的提交的历史。
+
+选项：
+  -v, --verbose		显示处理的详细过程
+  -V, --version		显示 git-repo-clean 版本号
+  -h, --help		显示使用信息
+  -p, --path		指定Git仓库的路径, 默认是当前目录，即'.'
+  -s, --scan		扫描the Git仓库数据
+  -b, --branch		设置扫描分支, 默认是当前分支
+  -l, --limit		设置扫描文件阈值, 比如: '--limit=10m'
+  -n, --number		设置显示扫描结果的数量
+  -t, --type		设置扫描文件后缀名，即文件类型
+  -i, --interactive 	开启交互式操作
+  -f, --force		强制执行文件删除和历史重写
+  -d, --delete		执行文件删除和历史重写过程
+
+
+这些选项主要可以给用户提供两种使用方法：交互式、命令行式
+
+交互式用法:
+  直接执行git repo-clean或git repo-clean -i进入交互式界面
+  程序与用户通过问答的方式进行交互，使得用户在处理文件筛选、
+  备份、删除、历史重写的整个过程变得更加简单。
+
+命令行式用法：
+  用户可以在命令行中通过指定各种选项的参数，来实现功能，例如：
+
+  为了只扫描仓库中文件类型为tar.gz，且大小超过1G的文件，执行：
+    git repo-clean --scan --limit=1G --type=tar.gz
+
+  当需要删除指定文件时，需要加上--delete选项，执行：
+    git repo-clean --scan --limit=1G --type=tar.gz --delete
+
+  如果相同文件存在多个分支中，或者发现前一次删除之后，相同的
+  文件仍然存在，则可以使用--branch选项，从所有分支删除，执行：
+    git repo-clean --scan --limit=1G --type=tar.gz --delete --branch=all
+
+  如果根据指定条件，扫描结果过多，可以通过--number限制结果数量，执行：
+    git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
 
 `
 
@@ -99,12 +168,13 @@ func (op *Options) init(args []string) error {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, Usage)
+	LocalFprintf(os.Stderr, "help info")
 }
 
 func (op *Options) ParseOptions(args []string) error {
 	if err := op.init(args); err != nil {
-		fmt.Printf("option format error: %s\n", err)
+		ft := LocalPrinter().Sprintf("option format error: %s", err)
+		PrintRedln(ft)
 		os.Exit(1)
 	}
 	if op.help {
@@ -112,11 +182,12 @@ func (op *Options) ParseOptions(args []string) error {
 		os.Exit(1)
 	}
 	if op.version {
-		fmt.Printf("Build version: %s\n", BuildVersion)
+		ft := LocalPrinter().Sprintf("build version: %s", BuildVersion)
+		PrintGreenln(ft)
 		os.Exit(1)
 	}
 	if len(args) == 1 && op.SingleOpts() {
-		PrintRed("请指定筛选条件")
+		PrintLocalWithRedln("please specify filter condition")
 		os.Exit(1)
 	}
 	return nil
