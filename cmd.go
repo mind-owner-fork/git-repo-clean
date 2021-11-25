@@ -2,10 +2,12 @@ package main
 
 import (
 	"errors"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
 var qs = []*survey.Question{
@@ -21,7 +23,7 @@ var qs = []*survey.Question{
 			if !ok || len(str) > 10 {
 				return errors.New(LocalSprintf("filetype error one"))
 			}
-			match, _ := regexp.MatchString(`^[A-Za-z]+[.]?[A-Za-z]+$`, str)
+			match, _ := regexp.MatchString(`^[A-Za-z]*[.]?[A-Za-z]*$`, str)
 			if !match && str != "*" {
 				return errors.New(LocalSprintf("filetype error two"))
 			}
@@ -105,8 +107,13 @@ func MultiSelectCmd(list BlobList) []string {
 		PageSize: 10,
 		Help:     LocalSprintf("multi select help info"),
 	}
-	survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
-
+	err := survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 	return selected
 }
 
@@ -118,7 +125,13 @@ func Confirm(list []string) (bool, []string) {
 		Message: LocalSprintf("confirm message") + "\n",
 	}
 
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	// turn back to name oid only
 	for _, item := range list {
@@ -135,7 +148,13 @@ func AskForBackUp() bool {
 	prompt := &survey.Confirm{
 		Message: LocalSprintf("ask for backup message") + "\n",
 	}
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	return ok
 }
@@ -146,7 +165,13 @@ func AskForOverride() bool {
 	prompt := &survey.Confirm{
 		Message: LocalSprintf("ask for override message") + "\n",
 	}
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	return ok
 }
@@ -157,7 +182,13 @@ func AskForUpdate() bool {
 	prompt := &survey.Confirm{
 		Message: LocalSprintf("ask for update message") + "\n",
 	}
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	return ok
 }

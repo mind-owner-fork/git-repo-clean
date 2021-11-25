@@ -125,7 +125,7 @@ func initEnglish() {
 	message.SetString(language.English, "ask for backup message", "Do you want to back up the repository before deleting your files ?")
 	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you want to overwrite it (if no, will cancel the backup) ?")
 	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to force push to the remote repository now ?")
-
+	message.SetString(language.English, "process interrupted", "process interrupted")
 }
 
 func initChinese() {
@@ -221,6 +221,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "ask for backup message", "在删除你的文件之前，是否需要备份仓库?")
 	message.SetString(language.Chinese, "ask for override message", "当前目录下存在同名文件夹，是否需要覆盖(回答否，则取消备份)?")
 	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在强制推送到远程仓库？")
+	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
 }
 
