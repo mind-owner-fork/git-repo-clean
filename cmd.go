@@ -2,17 +2,19 @@ package main
 
 import (
 	"errors"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
 var qs = []*survey.Question{
 	{
 		Name: "fileType",
 		Prompt: &survey.Input{
-			Message: LocalSprintf("select the type of file to scan"),
+			Message: LocalSprintf("select the type of file to scan, such as zip, png:"),
 			Default: "*",
 			Help:    LocalSprintf("default is all types. If you want to specify a type, you can directly enter the type suffix without prefix '.'"),
 		},
@@ -21,7 +23,7 @@ var qs = []*survey.Question{
 			if !ok || len(str) > 10 {
 				return errors.New(LocalSprintf("filetype error one"))
 			}
-			match, _ := regexp.MatchString(`^[A-Za-z]+[.]?[A-Za-z]+$`, str)
+			match, _ := regexp.MatchString(`^[a-zA-Z1-9]+[.]?[a-zA-Z1-9]*$|^[a-zA-Z1-9]+$`, str)
 			if !match && str != "*" {
 				return errors.New(LocalSprintf("filetype error two"))
 			}
@@ -31,7 +33,7 @@ var qs = []*survey.Question{
 	{
 		Name: "fileSize",
 		Prompt: &survey.Input{
-			Message: LocalSprintf("select the minimum size of the file to scan"),
+			Message: LocalSprintf("select the minimum size of the file to scan, such as 1m, 1G"),
 			Default: "1M",
 			Help:    LocalSprintf("the size value needs units, such as 10K. The optional units are B, K, m and G, and are not case sensitive"),
 		},
@@ -50,7 +52,7 @@ var qs = []*survey.Question{
 	{
 		Name: "fileNumber",
 		Prompt: &survey.Input{
-			Message: LocalSprintf("select the number of scan results to display"),
+			Message: LocalSprintf("select the number of scan results to display, the default is 3"),
 			Default: "3",
 			Help:    LocalSprintf("the default display is the first 3. The maximum page size is 10 rows, so it is best not to exceed 10."),
 		},
@@ -105,8 +107,13 @@ func MultiSelectCmd(list BlobList) []string {
 		PageSize: 10,
 		Help:     LocalSprintf("multi select help info"),
 	}
-	survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
-
+	err := survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 	return selected
 }
 
@@ -118,7 +125,13 @@ func Confirm(list []string) (bool, []string) {
 		Message: LocalSprintf("confirm message") + "\n",
 	}
 
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	// turn back to name oid only
 	for _, item := range list {
@@ -135,7 +148,13 @@ func AskForBackUp() bool {
 	prompt := &survey.Confirm{
 		Message: LocalSprintf("ask for backup message") + "\n",
 	}
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	return ok
 }
@@ -146,7 +165,13 @@ func AskForOverride() bool {
 	prompt := &survey.Confirm{
 		Message: LocalSprintf("ask for override message") + "\n",
 	}
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	return ok
 }
@@ -157,7 +182,13 @@ func AskForUpdate() bool {
 	prompt := &survey.Confirm{
 		Message: LocalSprintf("ask for update message") + "\n",
 	}
-	survey.AskOne(prompt, &ok)
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
 
 	return ok
 }

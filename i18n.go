@@ -100,19 +100,19 @@ func initEnglish() {
 	message.SetString(language.English, "file cleanup is complete. Start cleaning the repository", "File cleanup is complete. Start cleaning the repository...")
 
 	// cmd.go
-	message.SetString(language.English, "select the type of file to scan", "Select the type of file to scan, such as zip, png:")
+	message.SetString(language.English, "select the type of file to scan, such as zip, png:", "Select the type of file to scan, such as zip, png:")
 	message.SetString(language.English, "default is all types. If you want to specify a type, you can directly enter the type suffix without prefix '.'",
 		"Default is all types. If you want to specify a type, you can directly enter the type suffix without prefix '.'")
 	message.SetString(language.English, "filetype error one", "Sorry, the type name you entered is too long, more than 10 characters")
 	message.SetString(language.English, "filetype error two", "The type must be a letter. It can contain '.' in the middle, but it doesn't need to contain '.' at the beginning")
 
-	message.SetString(language.English, "select the minimum size of the file to scan", "Select the minimum size of the file to scan, such as 1m, 1G:")
+	message.SetString(language.English, "select the minimum size of the file to scan, such as 1m, 1G", "Select the minimum size of the file to scan, such as 1m, 1G:")
 	message.SetString(language.English, "the size value needs units, such as 10K. The optional units are B, K, m and G, and are not case sensitive",
 		"The size value needs units, such as 10K. The optional units are B, K, m and G, and are not case sensitive")
 	message.SetString(language.English, "filesize error one", "input error")
 	message.SetString(language.English, "filesize error two", "Must be a combination of numbers + unit characters (B, K, m, g), and the units are not case sensitive")
 
-	message.SetString(language.English, "select the number of scan results to display", "Select the number of scan results to display. The default value is 3:")
+	message.SetString(language.English, "select the number of scan results to display, the default is 3", "Select the number of scan results to display. The default value is 3:")
 	message.SetString(language.English, "the default display is the first 3. The maximum page size is 10 rows, so it is best not to exceed 10.",
 		"The default display is the first 3. The maximum page size is 10 rows, so it is best not to exceed 10.")
 	message.SetString(language.English, "filenumber error one", "input error")
@@ -125,7 +125,7 @@ func initEnglish() {
 	message.SetString(language.English, "ask for backup message", "Do you want to back up the repository before deleting your files ?")
 	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you want to overwrite it (if no, will cancel the backup) ?")
 	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to force push to the remote repository now ?")
-
+	message.SetString(language.English, "process interrupted", "process interrupted")
 }
 
 func initChinese() {
@@ -199,17 +199,17 @@ func initChinese() {
 	message.SetString(language.Chinese, "file cleanup is complete. Start cleaning the repository", "文件清理完毕，开始清理仓库...")
 
 	// cmd.go
-	message.SetString(language.Chinese, "select the type of file to scan", "选择要扫描的文件的类型，如：zip, png:")
+	message.SetString(language.Chinese, "select the type of file to scan, such as zip, png:", "选择要扫描的文件的类型，如：zip, png:")
 	message.SetString(language.Chinese, "filetype help message", "默认无类型，即查找所有类型。如果想指定类型，则直接输入类型后缀名即可, 不需要加'.'")
 	message.SetString(language.Chinese, "filetype error one", "抱歉，输入的类型名过长，超过10个字符")
 	message.SetString(language.Chinese, "filetype error two", "类型必须是字母，中间可以包含'.'，但是开头不需要包含'.'")
 
-	message.SetString(language.Chinese, "select the minimum size of the file to scan", "选择要扫描文件的最低大小，如：1M, 1g:")
+	message.SetString(language.Chinese, "select the minimum size of the file to scan, such as 1m, 1G", "选择要扫描文件的最低大小，如：1M, 1g:")
 	message.SetString(language.Chinese, "filesize help message", "大小数值需要单位，如: 10K. 可选单位有B,K,M,G, 且不区分大小写")
 	message.SetString(language.Chinese, "filesize error one", "输入错误")
 	message.SetString(language.Chinese, "filesize error two", "必须以数字+单位字符(b,k,m,g)组合，且单位不区分大小写")
 
-	message.SetString(language.Chinese, "select the number of scan results to display", "选择要显示扫描结果的数量，默认值是3:")
+	message.SetString(language.Chinese, "select the number of scan results to display, the default is 3", "选择要显示扫描结果的数量，默认值是3:")
 	message.SetString(language.Chinese, "filenumber help message", "默认显示前3个，单页最大显示为10行，所以最好不超过10。")
 	message.SetString(language.Chinese, "filenumber error one", "输入错误")
 	message.SetString(language.Chinese, "filenumber error two", "必须是纯数字")
@@ -221,6 +221,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "ask for backup message", "在删除你的文件之前，是否需要备份仓库?")
 	message.SetString(language.Chinese, "ask for override message", "当前目录下存在同名文件夹，是否需要覆盖(回答否，则取消备份)?")
 	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在强制推送到远程仓库？")
+	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
 }
 
