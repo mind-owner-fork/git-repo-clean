@@ -35,7 +35,7 @@ type HistoryRecord struct {
 type BlobList []HistoryRecord
 
 func (repo Repository) GetBlobName(oid string) (string, error) {
-	cmd := exec.Command(repo.gitBin, "rev-list", "--objects", "--all")
+	cmd := exec.Command(repo.gitBin, "-C", repo.path, "rev-list", "--objects", "--all")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", err

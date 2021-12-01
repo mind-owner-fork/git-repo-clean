@@ -51,7 +51,7 @@ func initEnglish() {
 	message.SetString(language.English, "help info", Usage)
 	message.SetString(language.English, "option format error: %s", "Option format error: %s")
 	message.SetString(language.English, "build version: %s", "Build version: %s")
-	message.SetString(language.English, "please specify filter condition", "Please specify filter condition.")
+	message.SetString(language.English, "single parameter is invalid", "This single parameter is invalid, please combine with other parameter.")
 	// parser.go
 	message.SetString(language.English, "unsupported filechange type", "Unsupported filechange type")
 	message.SetString(language.English, "nested tags error",
@@ -158,7 +158,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "help info", Usage_ZH)
 	message.SetString(language.Chinese, "option format error: %s", "选项格式错误: %s")
 	message.SetString(language.Chinese, "build version: %s", "编译版本: %s")
-	message.SetString(language.Chinese, "please specify filter condition", "请指定筛选条件")
+	message.SetString(language.Chinese, "single parameter is invalid", "该单项参数无效，请结合其它参数使用")
 	// parser.go
 	message.SetString(language.Chinese, "unsupported filechange type", "不支持的filechange类型")
 	message.SetString(language.Chinese, "nested tags error", "处理过程中断，因为仓库中存在嵌套式tag，建议使用'--branch=<branch>'参数指定单个分支。")

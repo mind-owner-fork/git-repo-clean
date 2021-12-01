@@ -97,8 +97,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			PrintRedln(ft)
 			os.Exit(1)
 		}
-
-		if repo.opts.verbose && len(bloblist) != 0 {
+		if len(bloblist) != 0 {
 			repo.ShowScanResult(bloblist)
 		}
 

@@ -77,7 +77,7 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   -V, --version		显示 git-repo-clean 版本号
   -h, --help		显示使用信息
   -p, --path		指定Git仓库的路径, 默认是当前目录，即'.'
-  -s, --scan		扫描the Git仓库数据
+  -s, --scan		扫描Git仓库数据
   -b, --branch		设置扫描分支, 默认是当前分支
   -l, --limit		设置扫描文件阈值, 比如: '--limit=10m'
   -n, --number		设置显示扫描结果的数量
@@ -187,14 +187,14 @@ func (op *Options) ParseOptions(args []string) error {
 		os.Exit(1)
 	}
 	if len(args) == 1 && op.SingleOpts() {
-		PrintLocalWithRedln("please specify filter condition")
+		PrintLocalWithRedln("single parameter is invalid")
 		os.Exit(1)
 	}
 	return nil
 }
 
 func (op *Options) SingleOpts() bool {
-	if op.verbose || op.scan || op.delete {
+	if op.verbose || op.scan || op.delete || op.path != "" {
 		return true
 	} else {
 		return false
