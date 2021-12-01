@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	colorable "github.com/mattn/go-colorable"
 )
 
 const (
@@ -40,20 +42,22 @@ func UnitConvert(input string) (uint64, error) {
 	}
 }
 
+var out = colorable.NewColorableStdout()
+
 func PrintRed(msg string) {
-	fmt.Printf(FORMAT_RED, msg)
+	fmt.Fprintf(out, FORMAT_RED, msg)
 }
 
 func PrintGreen(msg string) {
-	fmt.Printf(FORMAT_GREEN, msg)
+	fmt.Fprintf(out, FORMAT_GREEN, msg)
 }
 
 func PrintYellow(msg string) {
-	fmt.Printf(FORMAT_YELLOW, msg)
+	fmt.Fprintf(out, FORMAT_YELLOW, msg)
 }
 
 func PrintBlue(msg string) {
-	fmt.Printf(FORMAT_BLUE, msg)
+	fmt.Fprintf(out, FORMAT_BLUE, msg)
 }
 
 func PrintPlain(msg string) {
@@ -61,22 +65,22 @@ func PrintPlain(msg string) {
 }
 
 func PrintRedln(msg string) {
-	fmt.Printf(FORMAT_RED, msg)
+	fmt.Fprintf(out, FORMAT_RED, msg)
 	fmt.Println()
 }
 
 func PrintGreenln(msg string) {
-	fmt.Printf(FORMAT_GREEN, msg)
+	fmt.Fprintf(out, FORMAT_GREEN, msg)
 	fmt.Println()
 }
 
 func PrintYellowln(msg string) {
-	fmt.Printf(FORMAT_YELLOW, msg)
+	fmt.Fprintf(out, FORMAT_YELLOW, msg)
 	fmt.Println()
 }
 
 func PrintBlueln(msg string) {
-	fmt.Printf(FORMAT_BLUE, msg)
+	fmt.Fprintf(out, FORMAT_BLUE, msg)
 	fmt.Println()
 }
 
