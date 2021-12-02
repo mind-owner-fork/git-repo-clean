@@ -9,7 +9,7 @@ fast-export
     |
     | output stream
     |
-    ---> parser(blob, commit, directives...)
+    ---> parser(blob, commit, reset, tag...)
             |
             |
             |
@@ -20,12 +20,6 @@ fast-export
                     ---> fast-import
 ```
 
-+ parser的解析数据类型很多，这些类型取决于fast-export的输出内容，且根据fast-export使用的选项不同而不同。
-但是，最好考虑到所有可能出现的数据类型。
-
-+ filter目前考虑blob类型和commit类型，过滤维度包括blob size, blob oid, blob name等。
-
-<!-- + export和import中间需要临时文件缓存内容, 也是给解析过滤处理空间。 -->
 
 **git fast-export 输出分析**
 
@@ -77,7 +71,7 @@ data 21
 from :4
 M 100644 :5 README.md
 
-reset refs/remotes/origin/main                                 # 表示追踪的远程分支为main
+reset refs/remotes/origin/main                                 # 表示远程分支为main
 from :6                                                        # 表示远程分支的commit对应本地序号6的commit
 ```
 > 测试仓库: https://gitee.com/cactusinhand/fast-export-test.git
@@ -85,10 +79,6 @@ from :6                                                        # 表示远程分
 
 
 **部分选项说明**
-
-**--full-tree** 选项会在输出中的每个commit中标记一个deleteall`指令`，后面跟着这个commit中修改过的文件
-
-（而不仅是列出于该提交的第一个父提交相同的文件）
 
 **--show-original-ids** 选项 会在输出中加入original-oid <SHA1SUM>`指令`, 这个对于重写commit历史，或者通过ID裁剪blob有帮助
 
@@ -98,7 +88,7 @@ from :6                                                        # 表示远程分
 ---
 tag的处理情况有点特殊：
 
-对于轻量级tag，首次引入时的变化是：
+对于轻量级tag，相当于只是一个引用，在这里即是`reset`, 在仓库中首次加入tag时的变化是：
 ```diff
 diff --git a/tmp b/tmp
 index 4100964..d9ffcc7 100644
@@ -114,94 +104,13 @@ index 4100964..d9ffcc7 100644
 (END)
 ```
 
-之后在进行commit提交，则变化如下：
-```diff
-diff --git a/tmp b/tmp
-index d9ffcc7..16fe281 100644
---- a/tmp
-+++ b/tmp
-@@ -3,8 +3,8 @@ mark :1
- data 9
- "file a"
 
--reset refs/heads/main
--commit refs/heads/main
-+reset refs/tags/v1.0.a
-+commit refs/tags/v1.0.a
- mark :2
- author Li Linchao <lilinchao@oschina.cn> 1633931981 +0800
- committer Li Linchao <lilinchao@oschina.cn> 1633931981 +0800
-@@ -12,6 +12,17 @@ data 11
- add file a
- M 100644 :1 a.txt
-
--reset refs/tags/v1.0.a
-+blob
-+mark :3
-+data 9
-+"file b"
-+
-+commit refs/heads/main
-+mark :4
-+author Li Linchao <lilinchao@oschina.cn> 1633932075 +0800
-+committer Li Linchao <lilinchao@oschina.cn> 1633932075 +0800
-+data 11
-+add file b
- from :2
-+M 100644 :3 b.txt
-
-(END)
-```
-
-再次进行commit提交：
-```diff
-diff --git a/tmp b/tmp
-index 16fe281..b1ca763 100644
---- a/tmp
-+++ b/tmp
-@@ -26,3 +26,17 @@ add file b
- from :2
- M 100644 :3 b.txt
-
-+blob
-+mark :5
-+data 9
-+"file c"
-+
-+commit refs/heads/main
-+mark :6
-+author Li Linchao <lilinchao@oschina.cn> 1633932124 +0800
-+committer Li Linchao <lilinchao@oschina.cn> 1633932124 +0800
-+data 11
-+add file c
-+from :4
-+M 100644 :5 c.txt
-+
-(END)
-```
-
-继续加上轻量级tag：
-```diff
-diff --git a/tmp b/tmp
-index b1ca763..e384d3d 100644
---- a/tmp
-+++ b/tmp
-@@ -40,3 +40,6 @@ add file c
- from :4
- M 100644 :5 c.txt
-
-+reset refs/tags/v1.0.c
-+from :6
-+
-(END)
-```
-
-所以`reset`是一段commit范围内的基准，reset会重置commit所在的引用。
+同时`reset`是一段commit范围内的基准，reset会重置commit所在的引用。
 
 如果一个commit没有parent，则会在它前面加上reset字段, 该reset即为当前分支名
 
 
-对于标注型tag， 则会在最后加上tag的详细信息，类似于commit：
+对于标注型tag， 则会在输入流的最后加上tag的详细信息，类似于commit：
 ```diff
 diff --git a/tag.txt b/tag.txt
 index e06b3ce..46f05fa 100644
@@ -224,15 +133,6 @@ index e06b3ce..46f05fa 100644
 
 
 ---
-
-blob类型数据包含的字段：
-
-+ blob
-+ mark
-+ data
-+ original-oid
-
-如果删除blob, 则也会涉及到commit， 所以也要解析commit
 
 fast-export输出流中，commit类型数据包含的字段：
 
@@ -343,14 +243,12 @@ $ git reset --hard
 过滤过程就是删除指定的blob，以及对应的commit，并且更新所有的mark序号(否则fast-import解析出错，达不到预期的效果)。
 
 通过使用`--show-original-ids`选项，可以得到所有对象的oid, 然后可以进行过滤。
-blob后面会紧跟一个commit，可以是多个blob跟一个commit
-
 
 
 **NOTE**
 
 + Blob, Commit, Reset, Tag, Filechange类型数据，底层都嵌套有`GitElements`结构，其中有`dumped`这个字段，
-一旦检测到改字段为`false`，则意味着改类型需要被过滤，整个条数据不再写入流中，同时直接跳到下一行继续解析其它类型数据。
+一旦检测到改字段为`false`，则意味着改类型需要被过滤，整条数据不再写入流中，同时直接跳到下一行继续解析其它类型数据。
 
 + 只有要dump到输入流中时的mark ID才是实际顺序的ID，所以可以在实际dump时才NewID(),否则始终记录的是原始顺序ID。
 
@@ -466,3 +364,4 @@ from :42
 
 以上情况已经能够识别和处理，但是在这种情况下还有一种更特殊的情况，即第一个commit就带有这个特殊的message，同时，修改文件为0。
 即：这种特殊情况就是，commit data 之后，既没有parents(from, merge)，也没有filechanges，同时commit message包含伪filechanges信息。
+以上情况需要特殊处理。

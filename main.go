@@ -164,20 +164,17 @@ func Prompt(repo Repository) {
 	url := GetGiteeGCWeb(repo.gitBin, repo.path)
 	if url != "" {
 		PrintLocalWithRed("gitee GC page link")
-		url_fmter1 := fmt.Sprintf(FORMAT_YELLOW, url)
-		fmt.Println(url_fmter1)
+		PrintYellowln(url)
 	}
 	fmt.Println()
 	PrintLocalWithRedln("3. (Undo)")
 	PrintLocalWithRed("for detailed documentation, see")
-	url_fmter2 := fmt.Sprintf(FORMAT_YELLOW, "https://gitee.com/oschina/git-repo-clean/blob/main/docs/repo-update.md")
-	fmt.Println(url_fmter2)
+	PrintYellowln("https://gitee.com/oschina/git-repo-clean/blob/main/docs/repo-update.md")
 	fmt.Println()
 	PrintLocalWithPlainln("suggest operations done")
 	PrintLocalWithPlainln("introduce GIT LFS")
 	PrintLocalWithPlain("for the use of Gitee LFS, see")
-	url_fmter3 := fmt.Sprintf(FORMAT_YELLOW, "https://gitee.com/help/articles/4235")
-	fmt.Println(url_fmter3)
+	PrintYellowln("https://gitee.com/help/articles/4235")
 }
 
 func main() {

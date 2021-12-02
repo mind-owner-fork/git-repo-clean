@@ -183,10 +183,10 @@ func (op *Options) ParseOptions(args []string) error {
 	}
 	if op.version {
 		ft := LocalPrinter().Sprintf("build version: %s", BuildVersion)
-		PrintGreenln(ft)
+		PrintPlainln(ft)
 		os.Exit(1)
 	}
-	if len(args) == 1 && op.SingleOpts() {
+	if len(args) == 1 && op.SingleOpts() && !op.interact {
 		PrintLocalWithRedln("single parameter is invalid")
 		os.Exit(1)
 	}
