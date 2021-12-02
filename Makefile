@@ -85,3 +85,7 @@ RELEASE_BUILD = GOOS=$(1) GOARCH=$(2) \
 clean:
 	rm -f bin/git-repo-clean
 	rm -rf releases/*
+
+.PHONY: install
+install:
+	cp bin/git-repo-clean $(shell git --exec-path)
