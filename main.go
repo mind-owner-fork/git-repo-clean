@@ -16,16 +16,11 @@ func InitContext(args []string) *Repository {
 	if len(args) == 0 {
 		op.interact = true
 	}
-	repo, err := git.NewRepository(op.path)
-	if err != nil {
-		PrintLocalWithRedln("Couldn't open Git repository")
-		os.Exit(1)
-	}
-	defer repo.Close()
 
 	gitBin, err := findGitBin()
 	if err != nil {
-		PrintLocalWithRedln("Couldn't find Git execute program")
+		ft := LocalPrinter().Sprintf("Couldn't find Git execute program: %s", err)
+		PrintRedln(ft)
 		os.Exit(1)
 	}
 
@@ -39,6 +34,14 @@ func InitContext(args []string) *Repository {
 		PrintLocalWithRedln("Sorry, this tool requires Git version at least 2.24.0")
 		os.Exit(1)
 	}
+
+	repo, err := git.NewRepository(op.path)
+	if err != nil {
+		ft := LocalPrinter().Sprintf("Couldn't open Git repository: %s", err)
+		PrintRedln(ft)
+		os.Exit(1)
+	}
+	defer repo.Close()
 
 	cur, err := GetCurrentBranch(gitBin, op.path)
 	if err != nil {

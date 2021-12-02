@@ -249,7 +249,7 @@ func IsFresh(gitbin, path string) (bool, error) {
 
 // check if Git-LFS has installed in host machine
 func HasLFSEnv(gitbin, path string) (bool, error) {
-	cmd := exec.Command(gitbin, "-C", path, "lfs", "version")
+	cmd := exec.Command(gitbin, "lfs", "version")
 	out, err := cmd.Output()
 	if err != nil {
 		return false, fmt.Errorf(LocalPrinter().Sprintf("could not run 'git lfs version': %s", err))
@@ -260,12 +260,12 @@ func HasLFSEnv(gitbin, path string) (bool, error) {
 
 // get git version string
 func GitVersion(gitbin, path string) (string, error) {
-	cmd := exec.Command(gitbin, "-C", path, "version")
+	cmd := exec.Command(gitbin, "version")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf(LocalPrinter().Sprintf("could not run 'git version': %s", err))
 	}
-	matches := Match("[0-9]+.[0-9]+.[0-9]?", string(out))
+	matches := Match("[0-9]+.[0-9]+.[0-9]+.?[0-9]?", string(out))
 	if len(matches) == 0 {
 		return "", errors.New(LocalPrinter().Sprintf("match git version wrong"))
 	}
@@ -278,6 +278,9 @@ func GitVersionConvert(version string) int {
 	dict := strings.Split(version, ".")
 	if len(dict) == 3 {
 		vstr = dict[0] + dict[1] + dict[2]
+	}
+	if len(dict) == 4 {
+		vstr = dict[0] + dict[1] + dict[2] + dict[3]
 	}
 	vstr = strings.TrimSuffix(vstr, "\n")
 	ret, err := strconv.Atoi(vstr)
