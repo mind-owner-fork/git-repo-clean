@@ -139,6 +139,7 @@ $ make
 - [ ] 实现Windows下一键安装
 - [ ] 升级Golang
 - [ ] 升级Git
+- [ ] 增加对LFS的支持
 
 ## BUG
 + 如果仓库中存在nested tag, 则在清理过程中会出现错误，如：`error: multiple updates for ref 'refs/tags/v1.0.1-pointer' not allowed`, 这会导致文件删除失败。暂时处理方式是一旦检测到这种情况，就退出程序，并显示警告信息。
@@ -155,6 +156,9 @@ $ make
 
 ## Contribute
 
+有任何问题，可以提交 [issue](https://gitee.com/oschina/git-repo-clean/issues)讨论,
+
+或者有好的改进点、特性点，可以提交 [PR](https://gitee.com/oschina/git-repo-clean/pulls)，流程如下：
 1. Fork 本仓库
 2. 新建 Feat_xxx 分支
 3. 提交代码
