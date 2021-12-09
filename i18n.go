@@ -225,13 +225,15 @@ func initChinese() {
 
 }
 
-// find local languange type
+// find local languange type. LC_ALL > LANG > LANGUAGE
 func Local() language.Tag {
+	// when LC_ALL && LANG is none, throw panic
 	userLanguage, err := jibber_jabber.DetectLanguage()
 	if err != nil {
 		panic(err)
 	}
-	if userLanguage == "" {
+	// fix LC_ALL=C.UTF-8
+	if userLanguage == "C" {
 		userLanguage = "zh"
 	}
 	tagLanguage := language.Make(userLanguage)
