@@ -524,12 +524,16 @@ func parse_filechange(line string) FileChange {
 		} else { // pattern: M mode hash1-id path
 			parent_id = arr[2]
 		}
-		path := strings.TrimSuffix(arr[3], "\n")
+
+		// **NOTE** special case: M 100644 :18 "bad dir/2.c
+		path := strings.Join(arr[3:], " ")
+		path = strings.TrimSuffix(path, "\n")
 
 		filechange := NewFileChange("M", mode, parent_id, path)
 		return filechange
 	} else if types == "D" { // pattern: D path
-		path := strings.TrimSuffix(arr[1], "\n")
+		path := strings.Join(arr[1:], " ")
+		path = strings.TrimSuffix(arr[1], "\n")
 		filechange := NewFileChange("D", "", "", path)
 		return filechange
 	} else if types == "R" { // pattern: R old new

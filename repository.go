@@ -64,7 +64,8 @@ func (repo Repository) GetBlobName(oid string) (string, error) {
 		}
 		texts := strings.Split(line, " ")
 		if texts[0] == oid {
-			blobname := texts[1]
+			// blob(file) name maybe lile: "bad dir/readme.md
+			blobname := strings.Join(texts[1:], " ")
 			return blobname, nil
 		}
 	}
