@@ -90,7 +90,7 @@ func initEnglish() {
 	message.SetString(language.English, "start preparing repository data", "Start preparing repository data")
 	message.SetString(language.English, "backup canceled", "Backup canceled")
 	message.SetString(language.English, "start backup", "Start backup...")
-	message.SetString(language.English, "clone error", "git clone --no-local --quiet")
+	message.SetString(language.English, "clone error", "git clone --no-local error")
 	message.SetString(language.English, "run filepach.Abs error", "Run filepach.Abs error")
 
 	message.SetString(language.English, "backup done! Backup file path is: %s", "Backup done! Backup file path is: %s")
@@ -106,13 +106,13 @@ func initEnglish() {
 	message.SetString(language.English, "filetype error one", "Sorry, the type name you entered is too long, more than 10 characters")
 	message.SetString(language.English, "filetype error two", "The type must be a letter. It can contain '.' in the middle, but it doesn't need to contain '.' at the beginning")
 
-	message.SetString(language.English, "select the minimum size of the file to scan, such as 1m, 1G", "Select the minimum size of the file to scan, such as 1m, 1G:")
+	message.SetString(language.English, "select the minimum size of the file to scan, such as 1m, 1G:", "Select the minimum size of the file to scan, such as 1m, 1G:")
 	message.SetString(language.English, "the size value needs units, such as 10K. The optional units are B, K, m and G, and are not case sensitive",
 		"The size value needs units, such as 10K. The optional units are B, K, m and G, and are not case sensitive")
 	message.SetString(language.English, "filesize error one", "input error")
 	message.SetString(language.English, "filesize error two", "Must be a combination of numbers + unit characters (B, K, m, g), and the units are not case sensitive")
 
-	message.SetString(language.English, "select the number of scan results to display, the default is 3", "Select the number of scan results to display. The default value is 3:")
+	message.SetString(language.English, "select the number of scan results to display, the default is 3:", "Select the number of scan results to display. The default value is 3:")
 	message.SetString(language.English, "the default display is the first 3. The maximum page size is 10 rows, so it is best not to exceed 10.",
 		"The default display is the first 3. The maximum page size is 10 rows, so it is best not to exceed 10.")
 	message.SetString(language.English, "filenumber error one", "input error")
@@ -191,7 +191,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "start preparing repository data", "开始准备仓库数据")
 	message.SetString(language.Chinese, "backup canceled", "已取消备份")
 	message.SetString(language.Chinese, "start backup", "开始备份...")
-	message.SetString(language.Chinese, "clone error", "git clone --no-local --quiet错误")
+	message.SetString(language.Chinese, "clone error", "git clone --no-local 错误")
 	message.SetString(language.Chinese, "run filepach.Abs error", "运行 filepach.Abs 错误")
 	message.SetString(language.Chinese, "backup done! Backup file path is: %s", "备份完毕! 备份文件路径为：%s")
 	message.SetString(language.Chinese, "Push failed", "推送失败，可能是没有权限推送，或者该仓库没有设置远程仓库。")
@@ -204,12 +204,12 @@ func initChinese() {
 	message.SetString(language.Chinese, "filetype error one", "抱歉，输入的类型名过长，超过10个字符")
 	message.SetString(language.Chinese, "filetype error two", "类型必须是字母，中间可以包含'.'，但是开头不需要包含'.'")
 
-	message.SetString(language.Chinese, "select the minimum size of the file to scan, such as 1m, 1G", "选择要扫描文件的最低大小，如：1M, 1g:")
+	message.SetString(language.Chinese, "select the minimum size of the file to scan, such as 1m, 1G:", "选择要扫描文件的最低大小，如：1M, 1g:")
 	message.SetString(language.Chinese, "filesize help message", "大小数值需要单位，如: 10K. 可选单位有B,K,M,G, 且不区分大小写")
 	message.SetString(language.Chinese, "filesize error one", "输入错误")
 	message.SetString(language.Chinese, "filesize error two", "必须以数字+单位字符(b,k,m,g)组合，且单位不区分大小写")
 
-	message.SetString(language.Chinese, "select the number of scan results to display, the default is 3", "选择要显示扫描结果的数量，默认值是3:")
+	message.SetString(language.Chinese, "select the number of scan results to display, the default is 3:", "选择要显示扫描结果的数量，默认值是3:")
 	message.SetString(language.Chinese, "filenumber help message", "默认显示前3个，单页最大显示为10行，所以最好不超过10。")
 	message.SetString(language.Chinese, "filenumber error one", "输入错误")
 	message.SetString(language.Chinese, "filenumber error two", "必须是纯数字")

@@ -364,9 +364,8 @@ func (repo *Repository) BackUp(gitbin, path string) {
 		}
 	}
 	PrintLocalWithGreen("start backup")
-	cmd := exec.Command(gitbin, "-C", path, "clone", "--quiet", "--no-local", path, dst)
-	out, err := cmd.Output()
-	fmt.Println(string(out))
+	cmd := exec.Command(gitbin, "-C", path, "clone", "--no-local", path, dst)
+	_, err = cmd.Output()
 	if err != nil {
 		PrintLocalWithRedln("clone error")
 		fmt.Println(err)
