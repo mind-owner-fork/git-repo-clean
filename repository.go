@@ -13,13 +13,9 @@ import (
 	"strings"
 
 	"path/filepath"
-
-	"github.com/github/git-sizer/counts"
-	"github.com/github/git-sizer/git"
 )
 
 type Repository struct {
-	git.Repository
 	path   string
 	gitBin string
 	gitDir string
@@ -28,7 +24,7 @@ type Repository struct {
 
 type HistoryRecord struct {
 	oid        string
-	objectSize uint32
+	objectSize uint64
 	objectName string
 }
 
@@ -46,15 +42,15 @@ func (repo Repository) GetBlobName(oid string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	blobname := ""
 	buf := bufio.NewReader(out)
 	for {
 		line, err := buf.ReadString('\n')
 		if err != nil {
-			if err != io.EOF {
-				return "", err
+			if err == io.EOF {
+				break
 			}
-			return "", nil
+			return "", err
 		}
 		// drop LF
 		line = line[:len(line)-1]
@@ -65,10 +61,21 @@ func (repo Repository) GetBlobName(oid string) (string, error) {
 		texts := strings.Split(line, " ")
 		if texts[0] == oid {
 			// blob(file) name maybe lile: "bad dir/readme.md
-			blobname := strings.Join(texts[1:], " ")
-			return blobname, nil
+			blobname = strings.Join(texts[1:], " ")
 		}
 	}
+	return blobname, nil
+}
+
+func parseBatchHeader(header string) (objectid, objecttype, objectsize string, err error) {
+	// drop LF
+	header = header[:len(header)-1]
+
+	infos := strings.Split(header, " ")
+	if infos[len(infos)-1] == "missing" {
+		return "", "", "", errors.New("got missing object")
+	}
+	return infos[0], infos[1], infos[2], nil
 }
 
 func ScanRepository(repo Repository) (BlobList, error) {
@@ -79,87 +86,47 @@ func ScanRepository(repo Repository) (BlobList, error) {
 	if repo.opts.verbose {
 		PrintLocalWithGreenln("start scanning")
 	}
-
-	// get reference iter
-	refIter, err := repo.NewReferenceIter()
+	cmd := exec.Command(repo.gitBin, "-C", repo.path, "cat-file", "--batch-all-objects",
+		"--batch-check=%(objectname) %(objecttype) %(objectsize)")
+	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return empty, err
 	}
-	defer func() {
-		if refIter != nil {
-			refIter.Close()
-		}
-	}()
 
-	// get object iter
-	iter, in, err := repo.NewObjectIter("--stdin", "--date-order")
+	cmd.Stderr = os.Stderr
+	err = cmd.Start()
 	if err != nil {
 		return empty, err
 	}
-	defer func() {
-		if iter != nil {
-			iter.Close()
-		}
-	}()
 
-	// parse references
-	errChan := make(chan error, 1)
-	var refs []git.Reference
-	go func() {
-		defer in.Close()
-		bufin := bufio.NewWriter(in)
-		defer bufin.Flush()
-
-		for {
-			ref, ok, err := refIter.Next()
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if !ok {
+	buf := bufio.NewReader(out)
+	for {
+		line, err := buf.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
 				break
 			}
-			// save ref into refs list
-			refs = append(refs, ref)
-			_, err = bufin.WriteString(ref.OID.String())
-			if err != nil {
-				errChan <- err
-				return
-			}
-			err = bufin.WriteByte('\n')
-			if err != nil {
-				errChan <- err
-				return
-			}
+			return empty, err
 		}
-
-		err := refIter.Close()
-		errChan <- err
-		refIter = nil
-	}()
-
-	// process blobs
-	for {
-		oid, objectType, objectSize, err := iter.Next()
+		objectid, objecttype, objectsize, err := parseBatchHeader(line)
 		if err != nil {
-			if err != io.EOF {
-				return empty, err
-			}
-			break
+			return empty, err
 		}
-		switch objectType {
-		case "blob":
+		if objecttype == "blob" {
 			limit, err := UnitConvert(repo.opts.limit)
 			if err != nil {
 				return empty, err
 			}
-			if objectSize > counts.Count32(limit) {
-
-				name, err := repo.GetBlobName(oid.String())
+			size, _ := strconv.ParseUint(objectsize, 10, 0)
+			if size > limit {
+				// #TODO get filename from user option
+				name, err := repo.GetBlobName(objectid)
 				if err != nil {
-					ft := LocalPrinter().Sprintf("run GetBlobName error: %s", err)
-					PrintRedln(ft)
-					os.Exit(1)
+					if err != io.EOF {
+						ft := LocalPrinter().Sprintf("run GetBlobName error: %s", err)
+						PrintRedln(ft)
+						os.Exit(1)
+					}
 				}
 
 				if len(repo.opts.types) != 0 || repo.opts.types != "*" {
@@ -175,7 +142,7 @@ func ScanRepository(repo Repository) (BlobList, error) {
 					}
 				}
 				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{oid.String(), uint32(objectSize), name})
+				blobs = append(blobs, HistoryRecord{objectid, size, name})
 				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize
@@ -183,30 +150,12 @@ func ScanRepository(repo Repository) (BlobList, error) {
 				// remain first [op.number] blobs
 				if len(blobs) > int(repo.opts.number) {
 					blobs = blobs[:repo.opts.number]
+					// break
 				}
 			}
-		case "tree":
-		case "commit":
-		case "tag":
-			continue
-		default:
-			err = fmt.Errorf(LocalPrinter().Sprintf("expected blob object type, but got: %s", objectType))
-			return empty, err
 		}
-
 	}
-
-	err = <-errChan
-	if err != nil {
-		return empty, err
-	}
-
-	err = iter.Close()
-	iter = nil
-	if err != nil {
-		return empty, err
-	}
-	return blobs, err
+	return blobs, nil
 }
 
 // check if the current repository is bare repo

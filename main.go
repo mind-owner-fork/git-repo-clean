@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"github.com/github/git-sizer/git"
 )
 
 func InitContext(args []string) *Repository {
@@ -35,7 +33,7 @@ func InitContext(args []string) *Repository {
 		os.Exit(1)
 	}
 
-	repo, err := git.NewRepository(op.path)
+	repo, err := NewRepository(op.path)
 	if err != nil {
 		ft := LocalPrinter().Sprintf("Couldn't open Git repository: %s", err)
 		PrintRedln(ft)
@@ -69,7 +67,6 @@ func InitContext(args []string) *Repository {
 		os.Exit(1)
 	}
 	return &Repository{
-		*repo,
 		op.path,
 		gitBin,
 		gitDir,
