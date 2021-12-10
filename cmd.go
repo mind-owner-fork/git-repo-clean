@@ -33,7 +33,7 @@ var qs = []*survey.Question{
 	{
 		Name: "fileSize",
 		Prompt: &survey.Input{
-			Message: LocalSprintf("select the minimum size of the file to scan, such as 1m, 1G"),
+			Message: LocalSprintf("select the minimum size of the file to scan, such as 1m, 1G:"),
 			Default: "1M",
 			Help:    LocalSprintf("the size value needs units, such as 10K. The optional units are B, K, m and G, and are not case sensitive"),
 		},
@@ -52,7 +52,7 @@ var qs = []*survey.Question{
 	{
 		Name: "fileNumber",
 		Prompt: &survey.Input{
-			Message: LocalSprintf("select the number of scan results to display, the default is 3"),
+			Message: LocalSprintf("select the number of scan results to display, the default is 3:"),
 			Default: "3",
 			Help:    LocalSprintf("the default display is the first 3. The maximum page size is 10 rows, so it is best not to exceed 10."),
 		},
