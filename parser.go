@@ -801,9 +801,9 @@ func (filter *RepoFilter) Parser() {
 
 	for {
 		line, _ := iter.Next()
-		if matches := Match("feature done\n", line); len(matches) != 0 {
+		if matches := Match("feature done\n$", line); len(matches) != 0 {
 			continue
-		} else if matches := Match("blob\n", line); len(matches) != 0 {
+		} else if matches := Match("^blob\n$", line); len(matches) != 0 {
 			blob := iter.parseBlob(line)
 			filter.tweak_blob(blob)
 
@@ -835,7 +835,7 @@ func (filter *RepoFilter) Parser() {
 			if tag.ele.base.dumped {
 				tag.dump(input)
 			}
-		} else if strings.HasPrefix(line, "done\n") {
+		} else if matches := Match("done\n$", line); len(matches) != 0 {
 			iter.Close()
 			break
 		}
