@@ -77,9 +77,13 @@ func InitContext(args []string) *Repository {
 func NewFilter(args []string) (*RepoFilter, error) {
 
 	var repo = InitContext(args)
+	err := GetBlobSize(*repo)
+	if err != nil {
+		PrintRedln("run getblobsize error")
+	}
 	var first_target []string
-	var final_target []string
-
+	var scanned_targets []string
+	var file_paths []string
 	// when run git-repo-clean -i, its means run scan too
 	if repo.opts.interact {
 		repo.opts.scan = true
@@ -90,6 +94,10 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			os.Exit(1)
 		}
 	}
+
+	PrintLocalWithPlain("current repository size")
+	PrintLocalWithYellowln(GetDatabaseSize(repo.gitBin, repo.path))
+
 	if repo.opts.scan {
 		bloblist, err := ScanRepository(*repo)
 		if err != nil {
@@ -113,15 +121,19 @@ func NewFilter(args []string) (*RepoFilter, error) {
 				os.Exit(1)
 			}
 			var ok = false
-			ok, final_target = Confirm(first_target)
+			ok, scanned_targets = Confirm(first_target)
 			if !ok {
 				PrintLocalWithRedln("operation aborted")
 				os.Exit(1)
 			}
 		} else {
 			for _, item := range bloblist {
-				final_target = append(final_target, item.oid)
+				scanned_targets = append(scanned_targets, item.oid)
 			}
+		}
+	} else {
+		if repo.opts.file != nil {
+			file_paths = repo.opts.file
 		}
 	}
 
@@ -130,8 +142,9 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 
 	return &RepoFilter{
-		repo:    repo,
-		targets: final_target}, nil
+		repo:      repo,
+		scanned:   scanned_targets,
+		filepaths: file_paths}, nil
 }
 
 func Prompt(repo Repository) {

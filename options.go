@@ -27,12 +27,12 @@ Options:
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
   -s, --scan		scan the Git repository objects
+  -f, --file		provie file path directly to delete, incompatible with --scan
   -b, --branch		set the branch to scan, default is current branch
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
   -t, --type		set the file name suffix to filter from Git repository
   -i, --interactive 	enable interactive operation
-  -f, --force		force to execute file delete and history rewrite
   -d, --delete		execute file cleanup and history rewrite process
 
 These options can provide users with two ways of using: 
@@ -78,12 +78,12 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   -h, --help		显示使用信息
   -p, --path		指定Git仓库的路径, 默认是当前目录，即'.'
   -s, --scan		扫描Git仓库数据
+  -f, --file		直接指定仓库中的文件或目录，与'--scan'不兼容
   -b, --branch		设置扫描分支, 默认是当前分支
   -l, --limit		设置扫描文件阈值, 比如: '--limit=10m'
   -n, --number		设置显示扫描结果的数量
   -t, --type		设置扫描文件后缀名，即文件类型
   -i, --interactive 	开启交互式操作
-  -f, --force		强制执行文件删除和历史重写
   -d, --delete		执行文件删除和历史重写过程
 
 
@@ -118,6 +118,7 @@ type Options struct {
 	help     bool
 	path     string
 	scan     bool
+	file     []string
 	delete   bool
 	branch   string
 	limit    string
@@ -138,6 +139,8 @@ func (op *Options) init(args []string) error {
 	flags.StringVarP(&op.path, "path", "p", ".", "Git repository path, default is '.'")
 	// default is to scan repo
 	flags.BoolVarP(&op.scan, "scan", "s", false, "scan the Git repository objects")
+	// specify the target files to delete
+	flags.StringArrayVarP(&op.file, "file", "f", nil, "specify the target files to delete")
 	// default branch is current branch, when set to 'all', means sacn all branches
 	flags.StringVarP(&op.branch, "branch", "b", "", "set the branch to scan")
 	// default file threshold is 1M

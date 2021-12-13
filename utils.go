@@ -90,8 +90,6 @@ func PrintPlainln(msg string) {
 
 func (repo Repository) ShowScanResult(list BlobList) {
 	PrintLocalWithGreenln("scan done!")
-	PrintLocalWithPlain("current repository size")
-	PrintLocalWithYellowln(GetDatabaseSize(repo.gitBin, repo.path))
 	PrintLocalWithYellowln("note that there may be multiple versions of the same file")
 	PrintLocalWithYellowln("please delete selectively according to its Blob ID")
 

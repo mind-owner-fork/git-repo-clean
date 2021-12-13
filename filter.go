@@ -5,12 +5,13 @@ import (
 )
 
 type RepoFilter struct {
-	repo    *Repository
-	targets []string // blob oid string array
+	repo      *Repository
+	scanned   []string // file's oid provided by scanner
+	filepaths []string // files(or dir) provided by user
 }
 
 func (filter *RepoFilter) tweak_blob(blob *Blob) {
-	for _, target := range filter.targets {
+	for _, target := range filter.scanned {
 		if target == blob.original_oid {
 			// set new id to 0
 			blob.ele.skip(0)
@@ -30,9 +31,7 @@ func (filter *RepoFilter) tweak_commit(commit *Commit, helper *Helper_info) {
 
 	old_1st_parent := commit.first_parent()
 
-	// 如果filechange中，查询不到from-id，则需要删除该条记录，
-	// 如果整个filechange都没了，则需要删除该commit
-	filter_filechange(commit)
+	filter_filechange(commit, filter)
 
 	if len(commit.filechanges) == 0 {
 		commit.skip(old_1st_parent)
@@ -45,20 +44,39 @@ func (filter *RepoFilter) tweak_commit(commit *Commit, helper *Helper_info) {
 	}
 }
 
-func filter_filechange(commit *Commit) {
+func filter_filechange(commit *Commit, filter *RepoFilter) {
 	newfilechanges := make([]FileChange, 0)
+	matched := false
 	for _, filechange := range commit.filechanges {
-
-		// *if id is 40-byte hash-1 then its a subdirectory
-		if len(filechange.blob_id) == 40 {
-			continue
-		}
-
-		if filechange.changetype == "M" {
-			id, _ := strconv.Atoi(filechange.blob_id)
-			if _, ok := ID_HASH[int32(id)]; !ok {
-				continue
+		// filter by blob oid
+		for _, target := range filter.scanned {
+			if target == filechange.blob_id {
+				matched = true
+				break
 			}
+		}
+		// filter by blob size threshold
+		objectsize := Blob_size_list[filechange.blob_id]
+		size, _ := strconv.ParseUint(objectsize, 10, 0)
+		limit, err := UnitConvert(filter.repo.opts.limit)
+		if err != nil {
+			panic("convert uint error")
+		}
+		if size > limit {
+			matched = true
+			break
+		}
+		// filter by blob name or directory
+		for _, filepath := range filter.filepaths {
+			matches := Match(filepath, filechange.filepath)
+			if len(matches) != 0 {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			// skip this file
+			continue
 		}
 		// otherwise, keep it in newfilechange
 		newfilechanges = append(newfilechanges, filechange)

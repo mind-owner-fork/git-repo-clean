@@ -127,31 +127,13 @@ func NewFileChange(types_, mode_, id_, filepath_ string) FileChange {
 	}
 }
 
-func (fc *FileChange) dumpToString() string {
-	if fc.changetype == "M" {
-		if fc.mode == "160000" || fc.mode == "040000" { // gitlink or subdirectory
-			filechange_ := fmt.Sprintf("M %s %s %s\n", fc.mode, fc.blob_id, fc.filepath)
-			return filechange_
-		} else {
-			filechange_ := fmt.Sprintf("M %s :%s %s\n", fc.mode, fc.blob_id, fc.filepath)
-			return filechange_
-		}
-	} else if fc.changetype == "D" {
-		filechange_ := fmt.Sprintf("D %s\n", fc.filepath)
-		return filechange_
-	}
-	return ""
-}
-
 func (fc *FileChange) dump(writer io.WriteCloser) {
 	if fc.changetype == "M" && fc.blob_id == "0" {
 		return
 	}
 	fc.base.dumped = true
-	// currently only consider M type "M 100644 :18 files/1.c" and D type "D files/1.c"
-	// when the type is M, and the id is short mark id
 	if fc.changetype == "M" {
-		if fc.mode == "160000" || fc.mode == "040000" {
+		if len(fc.blob_id) == 40 {
 			filechange_ := fmt.Sprintf("M %s %s %s\n", fc.mode, fc.blob_id, fc.filepath)
 			writer.Write([]byte(filechange_))
 		} else {
@@ -307,7 +289,7 @@ func (commit *Commit) dump(writer io.WriteCloser) {
 	}
 	// **NOTE** the filechanges here are multi-string line
 	for _, filechange := range commit.filechanges {
-		writer.Write([]byte(filechange.dumpToString()))
+		filechange.dump(writer)
 	}
 
 	writer.Write([]byte("\n"))
@@ -518,7 +500,7 @@ func parse_filechange(line string) FileChange {
 
 		var parent_id string
 		if strings.HasPrefix(arr[2], ":") {
-			parent_id = strings.Split(arr[2], ":")[1]
+			parent_id = arr[2][1:]
 			orig, _ := strconv.Atoi(parent_id)
 			IDs.translate(int32(orig))
 		} else { // pattern: M mode hash1-id path
