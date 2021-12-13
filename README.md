@@ -75,10 +75,11 @@ $ make
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
   -s, --scan		scan the Git repository objects
+  -f, --file		provie file path directly to delete, incompatible with --scan
   -b, --branch		set the branch to scan, default is current branch
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
-  -t, --type		set the file type to filter from Git repository
+  -t, --type		set the file name suffix to filter from Git repository
   -i, --interactive 	enable interactive operation
   -d, --delete		execute file cleanup and history rewrite process
 ```
@@ -87,7 +88,7 @@ $ make
 **交互式用法:**
 
 > 输入`git repo-clean`可以直接进入交互模式
-该方式进入交互模式，因为没有加任何参数，只能使用默认选项。此模式下默认打开的选项有`--sacn`, `--delete`, `--verbose`，如果想使用其它选项，如`--branch`，则可以使用如下方式：
+该方式进入交互模式，因为没有加任何参数，只能使用默认选项。此模式下默认打开的选项有`--scan`, `--delete`, `--verbose`，如果想使用其它选项，如`--branch`，则可以使用如下方式：
 
 `git repo-clean -i[--interactive]`
 > 使用`-i` 选项进入交互式模式，该方法可以追加其它选项，如`git repo-clean -i --branch=topic`
@@ -112,6 +113,20 @@ $ make
 ![命令行式用法](docs/images/git-repo-clean-command-line.gif)
 
 
+如果确定了要删除的文件，也可以不使用`--scan`扫描模式，扫描模式会消耗大量时间进行仓库全量扫描。 经过重构，现在可以跳过前面的扫描过程，直接向程序指定文件，或者文件夹进行删除、重写历史操作。使用选项`--file <filepath>`即可调用该功能。
+
+`git repo-clean -v --file file1 --file mydir/file2 --file dir/ --delete`
+> 使用`--file <filepath>`删除指定文件，或者指定文件夹中的所有文件。
+
+也可以不用扫描，只指定文件大小的阈值，即可从仓库中完成删除大小超过指定阈值的文件。
+
+`git repo-clean --limit=1G --delete`
+> 此时，`--number`选项无效
+
+**注意：**
+
+当提交的文件只在当前分支时，不必使用`--branch`选项。只有在确定其它分支也有提交文件需要删除时，可以在当前分支使用`--branch=all`选项。
+
 ## 代码结构
 
 + main.go       | 程序主入口
@@ -130,7 +145,7 @@ $ make
 - [ ] 支持在同一个选项中有多个选择，如：--type=jpg, png, mp4
 - [ ] 支持指定更准确范围的文件大小
 - [x] 对特殊文件名的处理
-- [ ] 支持直接指定文件
+- [x] 支持直接指定文件
 - [ ] 增加处理过程的进度提示信息，时间消耗信息等
 - [ ] 对用户提供的仓库做进一步检测，如检测`.git`与工作目录是否分离
 - [ ] 考虑重写历史对签名的影响
@@ -166,7 +181,7 @@ $ make
 4. 新建 Pull Request
 
 
-## Licensing
+## License
 git repo-clean is licensed under [Mulan PSL v2](LICENSE)
 
 
