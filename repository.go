@@ -30,6 +30,8 @@ type HistoryRecord struct {
 
 type BlobList []HistoryRecord
 
+var Blob_size_list = make(map[string]string)
+
 func (repo Repository) GetBlobName(oid string) (string, error) {
 	cmd := exec.Command(repo.gitBin, "-C", repo.path, "rev-list", "--objects", "--all")
 	out, err := cmd.StdoutPipe()
@@ -78,25 +80,19 @@ func parseBatchHeader(header string) (objectid, objecttype, objectsize string, e
 	return infos[0], infos[1], infos[2], nil
 }
 
-func ScanRepository(repo Repository) (BlobList, error) {
+func GetBlobSize(repo Repository) error {
 
-	var empty []HistoryRecord
-	var blobs []HistoryRecord
-
-	if repo.opts.verbose {
-		PrintLocalWithGreenln("start scanning")
-	}
 	cmd := exec.Command(repo.gitBin, "-C", repo.path, "cat-file", "--batch-all-objects",
 		"--batch-check=%(objectname) %(objecttype) %(objectsize)")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		return empty, err
+		return err
 	}
 
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
 	if err != nil {
-		return empty, err
+		return err
 	}
 
 	buf := bufio.NewReader(out)
@@ -106,52 +102,65 @@ func ScanRepository(repo Repository) (BlobList, error) {
 			if err == io.EOF {
 				break
 			}
-			return empty, err
+			return err
 		}
 		objectid, objecttype, objectsize, err := parseBatchHeader(line)
 		if err != nil {
-			return empty, err
+			return err
 		}
 		if objecttype == "blob" {
-			limit, err := UnitConvert(repo.opts.limit)
-			if err != nil {
-				return empty, err
-			}
-			size, _ := strconv.ParseUint(objectsize, 10, 0)
-			if size > limit {
-				// #TODO get filename from user option
-				name, err := repo.GetBlobName(objectid)
-				if err != nil {
-					if err != io.EOF {
-						ft := LocalPrinter().Sprintf("run GetBlobName error: %s", err)
-						PrintRedln(ft)
-						os.Exit(1)
-					}
-				}
+			Blob_size_list[objectid] = objectsize
+		}
+	}
+	return nil
+}
 
-				if len(repo.opts.types) != 0 || repo.opts.types != "*" {
-					var pattern string
-					if strings.HasSuffix(name, "\"") {
-						pattern = "." + repo.opts.types + "\"$"
-					} else {
-						pattern = "." + repo.opts.types + "$"
-					}
-					if matches := Match(pattern, name); len(matches) == 0 {
-						// matched none, skip
-						continue
-					}
+func ScanRepository(repo Repository) (BlobList, error) {
+
+	var empty []HistoryRecord
+	var blobs []HistoryRecord
+
+	if repo.opts.verbose {
+		PrintLocalWithGreenln("start scanning")
+	}
+
+	for objectid, objectsize := range Blob_size_list {
+		limit, err := UnitConvert(repo.opts.limit)
+		if err != nil {
+			return empty, err
+		}
+		size, _ := strconv.ParseUint(objectsize, 10, 0)
+		if size > limit {
+			name, err := repo.GetBlobName(objectid)
+			if err != nil {
+				if err != io.EOF {
+					ft := LocalPrinter().Sprintf("run GetBlobName error: %s", err)
+					PrintRedln(ft)
+					os.Exit(1)
 				}
-				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{objectid, size, name})
-				// sort according by size
-				sort.Slice(blobs, func(i, j int) bool {
-					return blobs[i].objectSize > blobs[j].objectSize
-				})
-				// remain first [op.number] blobs
-				if len(blobs) > int(repo.opts.number) {
-					blobs = blobs[:repo.opts.number]
-					// break
+			}
+			if len(repo.opts.types) != 0 || repo.opts.types != "*" {
+				var pattern string
+				if strings.HasSuffix(name, "\"") {
+					pattern = "." + repo.opts.types + "\"$"
+				} else {
+					pattern = "." + repo.opts.types + "$"
 				}
+				if matches := Match(pattern, name); len(matches) == 0 {
+					// matched none, skip
+					continue
+				}
+			}
+			// append this record blob into slice
+			blobs = append(blobs, HistoryRecord{objectid, size, name})
+			// sort according by size
+			sort.Slice(blobs, func(i, j int) bool {
+				return blobs[i].objectSize > blobs[j].objectSize
+			})
+			// remain first [op.number] blobs
+			if len(blobs) > int(repo.opts.number) {
+				blobs = blobs[:repo.opts.number]
+				// break
 			}
 		}
 	}
