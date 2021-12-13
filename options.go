@@ -60,6 +60,13 @@ Command-Line way:
   you can limit the number of results by --number option:
     git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
 
+  If you want to delete a known file, there is no need to scan the whole repo,
+  just use the '--file' option:
+    git repo-clean --file file1 --file file2 --delete
+
+  Or, if you want to delete all files under dir/ :
+    git repo-clean --file dir/ --delete
+
 `
 const Usage_ZH = `用法: git repo-clean [选项]
 
@@ -109,6 +116,12 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
 
   如果根据指定条件，扫描结果过多，可以通过--number限制结果数量，执行：
     git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
+
+  如果你想删除某个已知的文件，则可以使用'--file'选择，直接指定文件：
+	  git repo-clean --file file1 --file file2 --delete
+
+  或者，你想删除某个目录下所有的文件，以及相关提交记录：
+	  git repo-clean --file dir/ --delete
 
 `
 
