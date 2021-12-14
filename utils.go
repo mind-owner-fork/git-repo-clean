@@ -26,7 +26,7 @@ func UnitConvert(input string) (uint64, error) {
 	u := input[len(input)-1:]
 	cv, err := strconv.ParseUint(v, 10, 32)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("parse uint error: %s", err)
 	}
 	if strings.ToLower(u) == "b" {
 		return cv, nil

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strconv"
 )
 
@@ -49,22 +50,31 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 	matched := false
 	for _, filechange := range commit.filechanges {
 		// filter by blob oid
-		for _, target := range filter.scanned {
-			if target == filechange.blob_id {
+		if filter.repo.opts.scan {
+			for _, target := range filter.scanned {
+				if target == filechange.blob_id {
+					matched = true
+					break
+				}
+			}
+		} else if filter.repo.opts.limit != "0b" { // filter by blob size threshold
+			objectsize := Blob_size_list[filechange.blob_id]
+			size, err := strconv.ParseUint(objectsize, 10, 0)
+			if err != nil {
+				ft := LocalPrinter().Sprintf("parse uint error: %s", err)
+				PrintRedln(ft)
+				os.Exit(1)
+			}
+			limit, err := UnitConvert(filter.repo.opts.limit)
+			if err != nil {
+				ft := LocalPrinter().Sprintf("convert uint error: %s", err)
+				PrintRedln(ft)
+				os.Exit(1)
+			}
+			if size > limit {
 				matched = true
 				break
 			}
-		}
-		// filter by blob size threshold
-		objectsize := Blob_size_list[filechange.blob_id]
-		size, _ := strconv.ParseUint(objectsize, 10, 0)
-		limit, err := UnitConvert(filter.repo.opts.limit)
-		if err != nil {
-			panic("convert uint error")
-		}
-		if size > limit {
-			matched = true
-			break
 		}
 		// filter by blob name or directory
 		for _, filepath := range filter.filepaths {

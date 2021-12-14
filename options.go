@@ -117,10 +117,10 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   如果根据指定条件，扫描结果过多，可以通过--number限制结果数量，执行：
     git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
 
-  如果你想删除某个已知的文件，则可以使用'--file'选择，直接指定文件：
+  如果你想删除某个已知的文件，则不必扫描仓库，使用'--file'选项，直接指定文件：
 	  git repo-clean --file file1 --file file2 --delete
 
-  或者，你想删除某个目录下所有的文件，以及相关提交记录：
+  或者，你想一次性删除某个目录下所有的文件，以及相关提交记录：
 	  git repo-clean --file dir/ --delete
 
 `
@@ -156,19 +156,16 @@ func (op *Options) init(args []string) error {
 	flags.StringArrayVarP(&op.file, "file", "f", nil, "specify the target files to delete")
 	// default branch is current branch, when set to 'all', means sacn all branches
 	flags.StringVarP(&op.branch, "branch", "b", "", "set the branch to scan")
-	// default file threshold is 1M
-	flags.StringVarP(&op.limit, "limit", "l", "1m", "set the file size limitation")
-	// default to show top 3 largest file
+	// default file size threshold is zero byte
+	flags.StringVarP(&op.limit, "limit", "l", "0b", "set the file size limitation")
+	// default to show top 3 largest files
 	flags.Uint32VarP(&op.number, "number", "n", 3, "set the number of results to show")
-	// default is null, which means all type
+	// default is null, which means all types
 	flags.StringVarP(&op.types, "type", "t", "", "set the file type to filter from Git repository")
 	// interactive with user end
 	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
 	// perform delete files action
 	flags.BoolVarP(&op.delete, "delete", "d", false, "execute file cleanup and history rewrite process")
-	// to ignore fresh clone check
-	// flags.BoolVarP(&op.force, "force", "f", false, "force to execute history rewrite even the repository haven't backup")
-	// flags.BoolVarP(&op.lfs, "lfs", "L", false, "use LFS server to storage local large file, must followed by --add option")
 
 	err := flags.Parse(args)
 	if err != nil {
