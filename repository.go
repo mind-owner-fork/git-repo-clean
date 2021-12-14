@@ -130,11 +130,8 @@ func ScanRepository(repo Repository) (BlobList, error) {
 			return empty, fmt.Errorf(LocalPrinter().Sprintf(
 				"convert uint error: %s", err))
 		}
-		size, err := strconv.ParseUint(objectsize, 10, 0)
-		if err != nil {
-			return empty, fmt.Errorf(LocalPrinter().Sprintf(
-				"parse uint error: %s", err))
-		}
+		// set bitsize to 64, means max single blob size is 4 GiB
+		size, _ := strconv.ParseUint(objectsize, 10, 64)
 		if size > limit {
 			name, err := repo.GetBlobName(objectid)
 			if err != nil {
