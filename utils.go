@@ -24,7 +24,8 @@ func UnitConvert(input string) (uint64, error) {
 	}
 	v := input[:len(input)-1]
 	u := input[len(input)-1:]
-	cv, err := strconv.ParseUint(v, 10, 32)
+	// set bitsize to 64, means max single blob size is 4 GiB
+	cv, err := strconv.ParseUint(v, 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("parse uint error: %s", err)
 	}

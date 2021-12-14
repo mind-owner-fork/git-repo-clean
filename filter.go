@@ -59,12 +59,8 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 			}
 		} else if filter.repo.opts.limit != "0b" { // filter by blob size threshold
 			objectsize := Blob_size_list[filechange.blob_id]
-			size, err := strconv.ParseUint(objectsize, 10, 0)
-			if err != nil {
-				ft := LocalPrinter().Sprintf("parse uint error: %s", err)
-				PrintRedln(ft)
-				os.Exit(1)
-			}
+			// set bitsize to 64, means max single blob size is 4 GiB
+			size, _ := strconv.ParseUint(objectsize, 10, 64)
 			limit, err := UnitConvert(filter.repo.opts.limit)
 			if err != nil {
 				ft := LocalPrinter().Sprintf("convert uint error: %s", err)
