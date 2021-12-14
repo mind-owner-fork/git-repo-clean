@@ -76,6 +76,7 @@ func initEnglish() {
 	// repository.go
 	message.SetString(language.English, "start scanning", "Start scanning(if the repository is too large, the scanning time will be long, please wait a few minutes)...")
 	message.SetString(language.English, "run GetBlobName error: %s", "Run GetBlobName error: %s")
+	message.SetString(language.English, "run getblobsize error: %s", "Run getblobsize error: %s")
 	message.SetString(language.English, "expected blob object type, but got: %s", "Expected blob object type, but got: %s")
 	message.SetString(language.English, "could not run 'git rev-parse --is-bare-repository': %s", "Could not run 'git rev-parse --is-bare-repository': %s")
 	message.SetString(language.English, "could not run 'git rev-parse --is-shallow-repository': %s", "Could not run 'git rev-parse --is-shallow-repository': %s")
@@ -126,6 +127,9 @@ func initEnglish() {
 	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you want to overwrite it (if no, will cancel the backup) ?")
 	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to force push to the remote repository now ?")
 	message.SetString(language.English, "process interrupted", "process interrupted")
+
+	message.SetString(language.English, "convert uint error: %s", "Convert uint error: %s")
+	message.SetString(language.English, "parse uint error: %s", "Parse uint error: %s")
 }
 
 func initChinese() {
@@ -157,7 +161,7 @@ func initChinese() {
 	// options.go
 	message.SetString(language.Chinese, "help info", Usage_ZH)
 	message.SetString(language.Chinese, "option format error: %s", "选项格式错误: %s")
-	message.SetString(language.Chinese, "build version: %s", "编译版本: %s")
+	message.SetString(language.Chinese, "build version: %s", "版本编号: %s")
 	message.SetString(language.Chinese, "single parameter is invalid", "该单项参数无效，请结合其它参数使用")
 	// parser.go
 	message.SetString(language.Chinese, "unsupported filechange type", "不支持的filechange类型")
@@ -176,7 +180,8 @@ func initChinese() {
 	message.SetString(language.Chinese, "please delete selectively according to its Blob ID", "请根据需要，通过其对应的ID进行选择性删除，如果确认文件可以全部删除，全选即可。")
 	// repository.go
 	message.SetString(language.Chinese, "start scanning", "开始扫描(如果仓库过大，扫描时间会比较长，请耐心等待)...")
-	message.SetString(language.Chinese, "run GetBlobName error: %s", "运行GetBlobName错误: %s")
+	message.SetString(language.Chinese, "run GetBlobName error: %s", "运行 GetBlobName 错误: %s")
+	message.SetString(language.English, "run getblobsize error: %s", "运行 getblobsize 错误: %s")
 	message.SetString(language.Chinese, "expected blob object type, but got: %s", "期望blob类型数据，但实际得到: %s")
 	message.SetString(language.Chinese, "could not run 'git rev-parse --is-bare-repository': %s", "无法运行'git rev-parse --is-bare-repository': %s")
 	message.SetString(language.Chinese, "could not run 'git rev-parse --is-shallow-repository': %s", "无法运行'git rev-parse --is-shallow-repository': %s")
@@ -223,6 +228,8 @@ func initChinese() {
 	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在强制推送到远程仓库？")
 	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
+	message.SetString(language.English, "convert uint error: %s", "转换大小单位出错: %s")
+	message.SetString(language.English, "parse uint error: %s", "解析无符号整数出错: %s")
 }
 
 // find local languange type. LC_ALL > LANG > LANGUAGE

@@ -79,7 +79,8 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	var repo = InitContext(args)
 	err := GetBlobSize(*repo)
 	if err != nil {
-		PrintRedln("run getblobsize error")
+		ft := LocalPrinter().Sprintf("run getblobsize error: %s", err)
+		PrintRedln(ft)
 	}
 	var first_target []string
 	var scanned_targets []string

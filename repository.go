@@ -117,8 +117,8 @@ func GetBlobSize(repo Repository) error {
 
 func ScanRepository(repo Repository) (BlobList, error) {
 
-	var empty []HistoryRecord
-	var blobs []HistoryRecord
+	var empty BlobList
+	var blobs BlobList
 
 	if repo.opts.verbose {
 		PrintLocalWithGreenln("start scanning")
@@ -127,16 +127,20 @@ func ScanRepository(repo Repository) (BlobList, error) {
 	for objectid, objectsize := range Blob_size_list {
 		limit, err := UnitConvert(repo.opts.limit)
 		if err != nil {
-			return empty, err
+			return empty, fmt.Errorf(LocalPrinter().Sprintf(
+				"convert uint error: %s", err))
 		}
-		size, _ := strconv.ParseUint(objectsize, 10, 0)
+		size, err := strconv.ParseUint(objectsize, 10, 0)
+		if err != nil {
+			return empty, fmt.Errorf(LocalPrinter().Sprintf(
+				"parse uint error: %s", err))
+		}
 		if size > limit {
 			name, err := repo.GetBlobName(objectid)
 			if err != nil {
 				if err != io.EOF {
-					ft := LocalPrinter().Sprintf("run GetBlobName error: %s", err)
-					PrintRedln(ft)
-					os.Exit(1)
+					return empty, fmt.Errorf(LocalPrinter().Sprintf(
+						"run GetBlobName error: %s", err))
 				}
 			}
 			if len(repo.opts.types) != 0 || repo.opts.types != "*" {
