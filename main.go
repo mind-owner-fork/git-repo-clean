@@ -15,35 +15,16 @@ func InitContext(args []string) *Repository {
 		op.interact = true
 	}
 
-	gitBin, err := findGitBin()
-	if err != nil {
-		ft := LocalPrinter().Sprintf("Couldn't find Git execute program: %s", err)
-		PrintRedln(ft)
-		os.Exit(1)
-	}
-
-	version, err := GitVersion(gitBin, op.path)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	// Git version should >= 2.24.0
-	if GitVersionConvert(version) < 2240 {
-		PrintLocalWithRedln("Sorry, this tool requires Git version at least 2.24.0")
-		os.Exit(1)
-	}
-
-	repo, err := NewRepository(op.path)
+	r, err := NewRepository(op.path)
 	if err != nil {
 		ft := LocalPrinter().Sprintf("Couldn't open Git repository: %s", err)
 		PrintRedln(ft)
 		os.Exit(1)
 	}
-	defer repo.Close()
 
-	cur, err := GetCurrentBranch(gitBin, op.path)
+	cur, err := GetCurrentBranch(r.gitBin, op.path)
 	if err != nil {
-		fmt.Println(err)
+		PrintRedln(fmt.Sprint(err))
 		os.Exit(1)
 	}
 	if op.branch == "" {
@@ -52,24 +33,10 @@ func InitContext(args []string) *Repository {
 		op.branch = "--all"
 	}
 
-	if bare, _ := IsBare(gitBin, op.path); bare {
-		PrintLocalWithRedln("Couldn't support running in bare repository")
-		os.Exit(1)
-	}
-	if shallow, _ := IsShallow(gitBin, op.path); shallow {
-		PrintLocalWithRedln("Couldn't support running in shallow repository")
-		os.Exit(1)
-	}
-
-	gitDir, err := GitDir(gitBin, op.path)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 	return &Repository{
 		op.path,
-		gitBin,
-		gitDir,
+		r.gitBin,
+		r.gitDir,
 		op,
 	}
 }

@@ -545,7 +545,7 @@ func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, ex
 		for {
 			n, err := writer.Write([]byte(newline))
 			if err != nil {
-				fmt.Println(err)
+				PrintRedln(fmt.Sprint(err))
 			}
 			if n != len(newline) {
 				PrintLocalWithRedln("failed to write data")

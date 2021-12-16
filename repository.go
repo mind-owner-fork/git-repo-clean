@@ -275,7 +275,11 @@ func GetCurrentStatus(gitbin, path string) {
 }
 
 func GetDatabaseSize(gitbin, path string) string {
-	path = filepath.Join(path, ".git")
+	if bare, _ := IsBare(gitbin, path); bare {
+		path = filepath.Join(path, ".")
+	} else {
+		path = filepath.Join(path, ".git")
+	}
 	cmd := exec.Command("du", "-hs", path)
 	out, err := cmd.Output()
 	if err != nil {
@@ -309,7 +313,7 @@ func GetGiteeGCWeb(gitbin, path string) string {
 
 func (repo *Repository) BackUp(gitbin, path string) {
 	PrintLocalWithGreenln("start preparing repository data")
-	// #TODO specify backup directory by option
+	// #TODO rename to ${repo}.bak
 	dst := "../backup.bak"
 	// check if the same directory exist
 	_, err := os.Stat(dst)
@@ -327,7 +331,6 @@ func (repo *Repository) BackUp(gitbin, path string) {
 	_, err = cmd.Output()
 	if err != nil {
 		PrintLocalWithRedln("clone error")
-		fmt.Println(err)
 		return
 	}
 	abs_path, err := filepath.Abs(dst)
@@ -363,15 +366,10 @@ func NewRepository(path string) (*Repository, error) {
 	gitBin, err := findGitBin()
 	if err != nil {
 		return nil, fmt.Errorf(
-			"could not find 'git' executable (is it in your PATH?): %v", err,
-		)
+			"Couldn't find Git execute program: %s", err)
 	}
 	gitdir, err := GitDir(gitBin, path)
 	if err != nil {
-		return &Repository{}, err
-	}
-
-	if bare, err := IsBare(gitBin, path); err != nil || bare {
 		return &Repository{}, err
 	}
 
@@ -379,15 +377,22 @@ func NewRepository(path string) (*Repository, error) {
 		return &Repository{}, err
 	}
 
+	version, err := GitVersion(gitBin, path)
+	if err != nil {
+		PrintRedln(fmt.Sprint(err))
+		os.Exit(1)
+	}
+	// Git version should >= 2.24.0
+	if GitVersionConvert(version) < 2240 {
+		PrintLocalWithRedln("Sorry, this tool requires Git version at least 2.24.0")
+		os.Exit(1)
+	}
+
 	return &Repository{
 		path:   path,   // working dir
 		gitDir: gitdir, // .git dir
 		gitBin: gitBin,
 	}, nil
-}
-
-func (repo *Repository) Close() error {
-	return nil
 }
 
 func (repo *Repository) CleanUp() {
@@ -399,11 +404,11 @@ func (repo *Repository) CleanUp() {
 	cmd1.Stdout = os.Stdout
 	err := cmd1.Start()
 	if err != nil {
-		fmt.Println(err)
+		PrintRedln(fmt.Sprint(err))
 	}
 	err = cmd1.Wait()
 	if err != nil {
-		fmt.Println(err)
+		PrintRedln(fmt.Sprint(err))
 	}
 
 	fmt.Println("running git reflog expire --expire=now --all")
@@ -412,11 +417,11 @@ func (repo *Repository) CleanUp() {
 	cmd2.Stdout = os.Stdout
 	err = cmd2.Start()
 	if err != nil {
-		fmt.Println(err)
+		PrintRedln(fmt.Sprint(err))
 	}
 	err = cmd2.Wait()
 	if err != nil {
-		fmt.Println(err)
+		PrintRedln(fmt.Sprint(err))
 	}
 
 	fmt.Println("running git gc --prune=now")
@@ -425,10 +430,10 @@ func (repo *Repository) CleanUp() {
 	cmd3.Stdout = os.Stdout
 	err = cmd3.Start()
 	if err != nil {
-		fmt.Println(err)
+		PrintRedln(fmt.Sprint(err))
 	}
 	cmd3.Wait()
 	if err != nil {
-		fmt.Println(err)
+		PrintRedln(fmt.Sprint(err))
 	}
 }
