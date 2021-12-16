@@ -191,8 +191,10 @@ func IsShallow(gitbin, path string) (bool, error) {
 			"could not run 'git rev-parse --is-shallow-repository': %s", err),
 		)
 	}
-
-	return string(bytes.TrimSpace(out)) == "true", nil
+	if string(bytes.TrimSpace(out)) == "true" {
+		return true, fmt.Errorf(LocalPrinter().Sprintf("could not run in a shallow repo"))
+	}
+	return false, nil
 }
 
 // check if the current repository is flesh clone.
@@ -373,7 +375,7 @@ func NewRepository(path string) (*Repository, error) {
 		return &Repository{}, err
 	}
 
-	if shallow, err := IsShallow(gitBin, path); err != nil || shallow {
+	if shallow, err := IsShallow(gitBin, path); shallow {
 		return &Repository{}, err
 	}
 
