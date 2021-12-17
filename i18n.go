@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/cloudfoundry/jibber_jabber"
@@ -47,6 +48,8 @@ func initEnglish() {
 	message.SetString(language.English, "introduce GIT LFS",
 		"If you need to store large files, please use the GIT LFS to avoid the size of the repository exceed the limit again.")
 	message.SetString(language.English, "for the use of Gitee LFS, see", "For the use of Gitee LFS, see: ")
+	message.SetString(language.English, "init repo filter error", "Init repo Filter error")
+
 	// options.go
 	message.SetString(language.English, "help info", Usage)
 	message.SetString(language.English, "option format error: %s", "Option format error: %s")
@@ -130,6 +133,7 @@ func initEnglish() {
 
 	message.SetString(language.English, "convert uint error: %s", "Convert uint error: %s")
 	message.SetString(language.English, "parse uint error: %s", "Parse uint error: %s")
+
 }
 
 func initChinese() {
@@ -158,6 +162,8 @@ func initChinese() {
 	message.SetString(language.Chinese, "suggest operations done", "完成以上三步后，恭喜你，所有的清理工作已经完成！")
 	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，请使用Git-LFS功能，避免仓库体积再次膨胀。")
 	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gite LFS 的使用请参阅：")
+	message.SetString(language.Chinese, "init repo filter error", "初始化仓库过滤器失败")
+
 	// options.go
 	message.SetString(language.Chinese, "help info", Usage_ZH)
 	message.SetString(language.Chinese, "option format error: %s", "选项格式错误: %s")
@@ -228,8 +234,9 @@ func initChinese() {
 	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在强制推送到远程仓库？")
 	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
-	message.SetString(language.English, "convert uint error: %s", "转换大小单位出错: %s")
-	message.SetString(language.English, "parse uint error: %s", "解析无符号整数出错: %s")
+	message.SetString(language.Chinese, "convert uint error: %s", "转换大小单位出错: %s")
+	message.SetString(language.Chinese, "parse uint error: %s", "解析无符号整数出错: %s")
+
 }
 
 // find local languange type. LC_ALL > LANG > LANGUAGE
@@ -237,6 +244,7 @@ func Local() language.Tag {
 	// when LC_ALL && LANG is none, throw panic
 	userLanguage, err := jibber_jabber.DetectLanguage()
 	if err != nil {
+		fmt.Println("try to set: export LC_ALL=zh_CN.UTF-8")
 		panic(err)
 	}
 	// fix LC_ALL=C.UTF-8

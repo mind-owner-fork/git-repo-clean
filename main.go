@@ -161,7 +161,7 @@ func Prompt(repo Repository) {
 func main() {
 	filter, err := NewFilter(os.Args[1:])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "init repo filter error")
+		LocalFprintf(os.Stderr, "init repo filter error")
 		os.Exit(1)
 	}
 	// repo backup
