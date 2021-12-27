@@ -36,7 +36,7 @@ func initEnglish() {
 		"The following two commands will be executed, then the remote commit will be overwritten:")
 	message.SetString(language.English, "suggest operations header",
 		"Since the history of the local repository has been modified, if there is no new commit, it is recommended to complete the following work first:")
-	message.SetString(language.English, "1. (Done!)", "1. (Done!) update remote repository. Push local cleaned repository to remote repository:")
+	message.SetString(language.English, "1. (Done!)", "1. (Done!) remote repository have been updated.")
 	message.SetString(language.English, "1. (Undo)", "1. (Undo) update remote repository. Push local cleaned repository to remote repository:")
 	message.SetString(language.English, "2. (Undo)",
 		"2. (Undo) clean up the remote repository. After successful push, please go to your corresponding repository management page to perform GC operation.")
@@ -102,6 +102,7 @@ func initEnglish() {
 		"Push failed. You may not have permission to push, or the repository does not have a remote repository")
 	message.SetString(language.English, "done", "Done")
 	message.SetString(language.English, "file cleanup is complete. Start cleaning the repository", "File cleanup is complete. Start cleaning the repository...")
+	message.SetString(language.English, "branches have been changed", "The following branches have been changed: ")
 
 	// cmd.go
 	message.SetString(language.English, "select the type of file to scan, such as zip, png:", "Select the type of file to scan, such as zip, png:")
@@ -125,10 +126,10 @@ func initEnglish() {
 	message.SetString(language.English, "multi select message", "Please select the file you want to delete (multiple choices are allowed):")
 	message.SetString(language.English, "multi select help info", "Use <Up/Down> arrows to move, <space> to select, <right> to all, <left> to none, type to filter, ? for more help")
 
-	message.SetString(language.English, "confirm message", "The above is the file you want to delete. Are you sure you want to delete it ?")
-	message.SetString(language.English, "ask for backup message", "Do you want to back up the repository before deleting your files ?")
-	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you want to overwrite it (if no, will cancel the backup) ?")
-	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to force push to the remote repository now ?")
+	message.SetString(language.English, "confirm message", "The above is the file you want to delete. Are you sure you want to *DELETE* it ?")
+	message.SetString(language.English, "ask for backup message", "Do you want to *BACK UP* the repository before deleting your files ?")
+	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you want to *OVERWRITE* it (if no, will cancel the backup) ?")
+	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to *FORCE PUSH* to the remote repository now ?")
 	message.SetString(language.English, "process interrupted", "process interrupted")
 
 	message.SetString(language.English, "convert uint error: %s", "Convert uint error: %s")
@@ -153,7 +154,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "current repository size", "当前仓库大小：")
 	message.SetString(language.Chinese, "execute force push", "将会执行如下两条命令，远端的的提交将会被覆盖:")
 	message.SetString(language.Chinese, "suggest operations header", "由于本地仓库的历史已经被修改，如果没有新的提交，建议先完成如下工作：")
-	message.SetString(language.Chinese, "1. (Done!)", "1. (已完成！)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
+	message.SetString(language.Chinese, "1. (Done!)", "1. (已完成！)远程仓库已经更新。")
 	message.SetString(language.Chinese, "1. (Undo)", "1. (待完成)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
 	message.SetString(language.Chinese, "2. (Undo)", "2. (待完成)清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作。")
 	message.SetString(language.Chinese, "3. (Undo)", "3. (待完成)处理关联仓库。处理同一个远程仓库下clone的其它仓库，确保不会将同样的文件再次提交到远程仓库。")
@@ -187,7 +188,7 @@ func initChinese() {
 	// repository.go
 	message.SetString(language.Chinese, "start scanning", "开始扫描(如果仓库过大，扫描时间会比较长，请耐心等待)...")
 	message.SetString(language.Chinese, "run GetBlobName error: %s", "运行 GetBlobName 错误: %s")
-	message.SetString(language.English, "run getblobsize error: %s", "运行 getblobsize 错误: %s")
+	message.SetString(language.Chinese, "run getblobsize error: %s", "运行 getblobsize 错误: %s")
 	message.SetString(language.Chinese, "expected blob object type, but got: %s", "期望blob类型数据，但实际得到: %s")
 	message.SetString(language.Chinese, "could not run 'git rev-parse --is-bare-repository': %s", "无法运行'git rev-parse --is-bare-repository': %s")
 	message.SetString(language.Chinese, "could not run 'git rev-parse --is-shallow-repository': %s", "无法运行'git rev-parse --is-shallow-repository': %s")
@@ -208,6 +209,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "Push failed", "推送失败，可能是没有权限推送，或者该仓库没有设置远程仓库。")
 	message.SetString(language.Chinese, "done", "完成")
 	message.SetString(language.Chinese, "file cleanup is complete. Start cleaning the repository", "文件清理完毕，开始清理仓库...")
+	message.SetString(language.Chinese, "branches have been changed", "以下分支已经更改：")
 
 	// cmd.go
 	message.SetString(language.Chinese, "select the type of file to scan, such as zip, png:", "选择要扫描的文件的类型，如：zip, png:")
@@ -228,10 +230,10 @@ func initChinese() {
 	message.SetString(language.Chinese, "multi select message", "请选择你要删除的文件(可多选):")
 	message.SetString(language.Chinese, "multi select help info", "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择。")
 
-	message.SetString(language.Chinese, "confirm message", "以上是你要删除的文件，确定要删除吗?")
-	message.SetString(language.Chinese, "ask for backup message", "在删除你的文件之前，是否需要备份仓库?")
-	message.SetString(language.Chinese, "ask for override message", "当前目录下存在同名文件夹，是否需要覆盖(回答否，则取消备份)?")
-	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在强制推送到远程仓库？")
+	message.SetString(language.Chinese, "confirm message", "以上是你要删除的文件，确定要<删除>吗?")
+	message.SetString(language.Chinese, "ask for backup message", "在删除你的文件之前，是否需要<备份仓库>?")
+	message.SetString(language.Chinese, "ask for override message", "当前目录下存在同名文件夹，是否需要<覆盖>(回答否，则取消备份)?")
+	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在<强制推送>到远程仓库？")
 	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
 	message.SetString(language.Chinese, "convert uint error: %s", "转换大小单位出错: %s")

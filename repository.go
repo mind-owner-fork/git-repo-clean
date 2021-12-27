@@ -397,7 +397,33 @@ func NewRepository(path string) (*Repository, error) {
 	}, nil
 }
 
+// BrachesChanged prints all branches that have been changed
+func BrachesChanged() {
+	branches := Branch_changed.ToSlice()
+	if len(branches) != 0 {
+		PrintLocalWithYellowln("branches have been changed")
+		for _, branch := range branches {
+			s := strings.TrimSpace(branch.(string))
+			if strings.HasPrefix(s, "refs/heads/") {
+				n := strings.TrimPrefix(s, "refs/heads/")
+				PrintYellowln(n)
+			}
+
+			if strings.HasPrefix(s, "refs/tags/") {
+				n := strings.TrimPrefix(s, "refs/tags/")
+				PrintYellowln(n)
+			}
+
+			if strings.HasPrefix(s, "refs/remotes/") {
+				n := strings.TrimPrefix(s, "refs/remotes/")
+				PrintYellowln(n)
+			}
+		}
+	}
+}
+
 func (repo *Repository) CleanUp() {
+	BrachesChanged()
 	// clean up
 	PrintLocalWithGreenln("file cleanup is complete. Start cleaning the repository")
 

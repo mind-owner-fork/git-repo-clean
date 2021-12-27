@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	mapset "github.com/deckarep/golang-set"
 )
 
 const (
@@ -18,8 +20,11 @@ const (
 )
 
 var (
+	HASH_ID            = make(map[string]int32)
+	SKIPPED_COMMITS    = mapset.NewSet()
 	Lasted_commit      = make(map[string]int32)
 	Lasted_orig_commit = make(map[string]int32)
+	Branch_changed     = mapset.NewSet() // record branches that has been changed
 )
 
 type origParents []int32
@@ -109,6 +114,7 @@ type FileChange struct {
 	mode       string
 	blob_id    string
 	filepath   string
+	branch     string // record branch(ref) name this filechange belongs to
 }
 
 // **NOTE**
@@ -692,10 +698,12 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 	// if extra_msg is not empty and haven't been used, treat it as filechange
 	if len(tail_msg) > 1 && !used {
 		filechange = parse_filechange(string(tail_msg))
+		filechange.branch = branch
 		file_changes = append(file_changes, filechange)
 	}
 	for newline != "\n" {
 		filechange = parse_filechange(newline)
+		filechange.branch = branch
 		file_changes = append(file_changes, filechange)
 		newline, _ = iter.Next()
 	}

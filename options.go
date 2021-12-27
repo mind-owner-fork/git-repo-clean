@@ -26,9 +26,9 @@ Options:
   -V, --version		show git-repo-clean version number
   -h, --help		show usage information
   -p, --path		Git repository path, default is '.'
-  -s, --scan		scan the Git repository objects
+  -s, --scan		scan the Git repository objects, default to scan all branches
   -f, --file		provie file path directly to delete, incompatible with --scan
-  -b, --branch		set the branch to scan, default is current branch
+  -b, --branch		set the branch where files need to be deleted , default all branches
   -l, --limit		set the file size limitation, like: '--limit=10m'
   -n, --number		set the number of results to show
   -t, --type		set the file name suffix to filter from Git repository
@@ -84,9 +84,9 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   -V, --version		显示 git-repo-clean 版本号
   -h, --help		显示使用信息
   -p, --path		指定Git仓库的路径, 默认是当前目录，即'.'
-  -s, --scan		扫描Git仓库数据
+  -s, --scan		扫描Git仓库数据，默认是扫描所有分支中的数据
   -f, --file		直接指定仓库中的文件或目录，与'--scan'不兼容
-  -b, --branch		设置扫描分支, 默认是当前分支
+  -b, --branch		设置需要删除文件的分支, 默认是从所有分支中删除文件
   -l, --limit		设置扫描文件阈值, 比如: '--limit=10m'
   -n, --number		设置显示扫描结果的数量
   -t, --type		设置扫描文件后缀名，即文件类型
@@ -154,8 +154,8 @@ func (op *Options) init(args []string) error {
 	flags.BoolVarP(&op.scan, "scan", "s", false, "scan the Git repository objects")
 	// specify the target files to delete
 	flags.StringArrayVarP(&op.file, "file", "f", nil, "specify the target files to delete")
-	// default branch is current branch, when set to 'all', means sacn all branches
-	flags.StringVarP(&op.branch, "branch", "b", "", "set the branch to scan")
+	// since the deleting process is not very slow, default is all branch
+	flags.StringVarP(&op.branch, "branch", "b", "all", "set the branch to scan")
 	// default file size threshold is zero byte
 	flags.StringVarP(&op.limit, "limit", "l", "0b", "set the file size limitation")
 	// default to show top 3 largest files

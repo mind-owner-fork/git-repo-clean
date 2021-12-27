@@ -53,6 +53,7 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 		if filter.repo.opts.scan {
 			for _, target := range filter.scanned {
 				if target == filechange.blob_id {
+					Branch_changed.Add(filechange.branch)
 					matched = true
 					break
 				}
@@ -68,6 +69,7 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 				os.Exit(1)
 			}
 			if size > limit {
+				Branch_changed.Add(filechange.branch)
 				matched = true
 				break
 			}
@@ -77,6 +79,7 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 			matches := Match(filepath, filechange.filepath)
 			if len(matches) != 0 {
 				matched = true
+				Branch_changed.Add(filechange.branch)
 				break
 			}
 		}

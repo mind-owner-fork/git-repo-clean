@@ -22,14 +22,9 @@ func InitContext(args []string) *Repository {
 		os.Exit(1)
 	}
 
-	cur, err := GetCurrentBranch(r.gitBin, op.path)
-	if err != nil {
-		PrintRedln(fmt.Sprint(err))
-		os.Exit(1)
-	}
-	if op.branch == "" {
-		op.branch = cur
-	} else if op.branch == "all" {
+	// set default branch to all is to keep deleting process consistent with scanning process
+	// user end pass '--branch=all', but git-fast-export takes '--all'
+	if op.branch == "all" {
 		op.branch = "--all"
 	}
 
@@ -132,8 +127,6 @@ func Prompt(repo Repository) {
 	PrintLocalWithPlainln("suggest operations header")
 	if pushed {
 		PrintLocalWithGreenln("1. (Done!)")
-		PrintLocalWithGreenln("    git push origin --all --force")
-		PrintLocalWithGreenln("    git push origin --tags --force")
 		fmt.Println()
 	} else {
 		PrintLocalWithRedln("1. (Undo)")
