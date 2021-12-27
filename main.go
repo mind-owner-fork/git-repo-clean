@@ -114,6 +114,7 @@ func Prompt(repo Repository) {
 	PrintLocalWithGreenln("cleaning completed")
 	PrintLocalWithPlain("current repository size")
 	PrintLocalWithGreenln(GetDatabaseSize(repo.gitBin, repo.path))
+	BrachesChanged()
 	var pushed bool
 	if AskForUpdate() {
 		PrintLocalWithPlainln("execute force push")

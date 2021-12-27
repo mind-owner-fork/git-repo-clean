@@ -423,7 +423,6 @@ func BrachesChanged() {
 }
 
 func (repo *Repository) CleanUp() {
-	BrachesChanged()
 	// clean up
 	PrintLocalWithGreenln("file cleanup is complete. Start cleaning the repository")
 
