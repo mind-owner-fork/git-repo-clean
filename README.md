@@ -70,18 +70,18 @@ $ make
 
 目前选项有如下：
 ```bash
-  -v, --verbose		show process information
-  -V, --version		show git-repo-clean version number
-  -h, --help		show usage information
-  -p, --path		Git repository path, default is '.'
-  -s, --scan		scan the Git repository objects
-  -f, --file		provie file path directly to delete, incompatible with --scan
-  -b, --branch		set the branch to scan, default is current branch
-  -l, --limit		set the file size limitation, like: '--limit=10m'
-  -n, --number		set the number of results to show
-  -t, --type		set the file name suffix to filter from Git repository
-  -i, --interactive 	enable interactive operation
-  -d, --delete		execute file cleanup and history rewrite process
+  -v, --verbose		显示处理的详细过程
+  -V, --version		显示 git-repo-clean 版本号
+  -h, --help		显示使用信息
+  -p, --path		指定Git仓库的路径, 默认是当前目录，即'.'
+  -s, --scan		扫描Git仓库数据，默认是扫描所有分支中的数据
+  -f, --file		直接指定仓库中的文件或目录，与'--scan'不兼容
+  -b, --branch		设置需要删除文件的分支, 默认是从所有分支中删除文件
+  -l, --limit		设置扫描文件阈值, 比如: '--limit=10m'
+  -n, --number		设置显示扫描结果的数量
+  -t, --type		设置扫描文件后缀名，即文件类型
+  -i, --interactive 	开启交互式操作
+  -d, --delete		执行文件删除和历史重写过程
 ```
 
 
@@ -100,15 +100,15 @@ $ make
 **命令行式用法:**
 
 `git repo-clean --scan --limit=1G --type=tar.gz --number=1`
-> 在仓库中使用命令行，扫描仓库当前分支的文件，文件最小为1G，类型为tar.gz，显示前1个结果
+> 在仓库中使用命令行，扫描仓库当所有分支中的文件，文件最小为1G，类型为tar.gz，显示前1个结果
 
 `git repo-clean --scan --limit=1G --type=tar.gz --number=1 --delete`
-> 加上`--delete`选项，则会批量删除当前分支扫描出的文件，并重写相关提交历史(包括HEAD)
+> 加上`--delete`选项，则会批量删除扫描出的文件，并重写相关提交历史(包括HEAD)
 
-如果想要清理其他分支的数据或者所有分支的数据，可以使用`--branch`选项，如`--branch=all`则可以进行全扫描，会把所有分支上筛选出的数据清理掉。
+如果想要清理其他分支的数据，可以使用`--branch`选项。默认`--branch=all`进行全扫描，会把所有分支上筛选出的数据清理掉。
 
-`git repo-clean --scan --limit=1G --type=tar.gz --number=1 --delete --branch=all`
-> 加上`--branch`选项，则会扫描所有分支的文件再执行删除，并重写相关提交历史
+`git repo-clean --scan --limit=1G --type=tar.gz --number=1 --delete --branch=dev`
+> 加上`--branch=dev`选项，则只会删除`dev`分支中的指定文件，并重写相关提交历史。
 
 ![命令行式用法](docs/images/git-repo-clean-command-line.gif)
 
@@ -125,7 +125,7 @@ $ make
 
 **注意：**
 
-当提交的文件只在当前分支时，不必使用`--branch`选项。只有在确定其它分支也有提交文件需要删除时，可以在当前分支使用`--branch=all`选项。
+目前扫描操作和删除操作都是默认在所有分支上进行，而`--branch`选项只是指定删除时的分支，不能指定扫描时的分支。因此如果使用了这个选项指定了某个分支，可能从扫描结果中选择了另一个分支中的文件，因此不会有文件真正被删除。
 
 ## 代码结构
 
@@ -160,7 +160,6 @@ $ make
 ## NOTE
 + 目前只关注文件本身，所以扫描时只关注blob类型对象
 + 从Git 2.32.0起，`git-rev-list`具备`--filter=object:type`选项，在扫描时能够过滤特定类型，这样能够加快处理过程，后续考虑使用较新的Git版本。
-+ 考虑到有种情况是扫描出来的大文件(blob)只存在历史中，此时如果想删除，指定文件名是找不到该文件的。因此，实际在做文件删除时，应该指定为blob hash值，也就是虽然看起来用户选择的是文件名，实际上使用它对应的blob hash ID。
 
 + 以下参数单独使用是无效的：`--branch`, `--scan`, `--verbose`, `--delete`, 需要结合其它参数一起使用。
 
@@ -179,7 +178,7 @@ Q：
 
 A：
 首先可能是同一个文件存在多个历史版本，在扫描结果中，它们的文件ID是不同的。扫描时，如果不指定`--number`选项，则默认只显示，并将只删除前3个文件。所以当同一个文件存在多个版本时，第一次只删除了其中3个，第二次扫描显示的是另外的3个版本。
-其次，该文件可能存在与其它分支中，当前扫描是全量全分支扫描，但是删除时，是默认删除当前分支的文件。所以如果发现删除的文件还存在，需要先确认是否在其它分支也存在同名文件，然后在使用`--branch`分支，如`git repo-clean -i -b=all`进行全量删除。
+其次，该文件可能存在与其它分支中，当前扫描是全量全分支扫描，但是删除时，是选择了删除当前分支的文件。所以如果发现删除的文件还存在，可以不知道特定分支，而是默认进行全部分支的删除。
 
 Q：
 删除后，推送仍然失败。
