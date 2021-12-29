@@ -99,6 +99,10 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	} else {
 		if repo.opts.file != nil {
 			file_paths = repo.opts.file
+			repo.opts.limit = ""
+		}
+		if repo.opts.limit != "" {
+			repo.opts.number = ^uint32(0) // UINT_MAX
 		}
 	}
 
@@ -116,7 +120,6 @@ func Prompt(repo Repository) {
 	PrintLocalWithGreenln("cleaning completed")
 	PrintLocalWithPlain("current repository size")
 	PrintLocalWithGreenln(GetDatabaseSize(repo.gitBin, repo.path))
-	BrachesChanged()
 	var pushed bool
 	if AskForUpdate() {
 		PrintLocalWithPlainln("execute force push")

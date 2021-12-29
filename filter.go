@@ -49,8 +49,8 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 	newfilechanges := make([]FileChange, 0)
 	matched := false
 	for _, filechange := range commit.filechanges {
-		// filter by blob oid
-		if filter.repo.opts.scan {
+		if filter.repo.opts.scan && len(filter.scanned) != 0 {
+			// filter by blob oid
 			for _, target := range filter.scanned {
 				if target == filechange.blob_id {
 					Branch_changed.Add(filechange.branch)
@@ -58,7 +58,8 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 					break
 				}
 			}
-		} else if filter.repo.opts.limit != "0b" { // filter by blob size threshold
+		} else if !filter.repo.opts.scan && filter.repo.opts.limit != "" && filter.repo.opts.types == "" {
+			// filter by blob size threshold
 			objectsize := Blob_size_list[filechange.blob_id]
 			// set bitsize to 64, means max single blob size is 4 GiB
 			size, _ := strconv.ParseUint(objectsize, 10, 64)
@@ -73,14 +74,15 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 				matched = true
 				break
 			}
-		}
-		// filter by blob name or directory
-		for _, filepath := range filter.filepaths {
-			matches := Match(filepath, filechange.filepath)
-			if len(matches) != 0 {
-				matched = true
-				Branch_changed.Add(filechange.branch)
-				break
+		} else if !filter.repo.opts.scan && len(filter.filepaths) != 0 {
+			// filter by blob name or directory
+			for _, filepath := range filter.filepaths {
+				matches := Match(filepath, filechange.filepath)
+				if len(matches) != 0 {
+					matched = true
+					Branch_changed.Add(filechange.branch)
+					break
+				}
 			}
 		}
 		if matched {

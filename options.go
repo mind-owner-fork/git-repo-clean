@@ -155,12 +155,12 @@ func (op *Options) init(args []string) error {
 	flags.StringArrayVarP(&op.file, "file", "f", nil, "specify the target files to delete")
 	// since the deleting process is not very slow, default is all branch
 	flags.StringVarP(&op.branch, "branch", "b", "all", "set the branch to scan")
-	// default file size threshold is zero byte
-	flags.StringVarP(&op.limit, "limit", "l", "0b", "set the file size limitation")
+	// default file size threshold is 1m
+	flags.StringVarP(&op.limit, "limit", "l", "1m", "set the file size limitation")
 	// default to show top 3 largest files
 	flags.Uint32VarP(&op.number, "number", "n", 3, "set the number of results to show")
 	// default is null, which means all types
-	flags.StringVarP(&op.types, "type", "t", "", "set the file type to filter from Git repository")
+	flags.StringVarP(&op.types, "type", "t", "*", "set the file type to filter from Git repository")
 	// interactive with user end
 	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
 	// perform delete files action
