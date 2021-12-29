@@ -49,6 +49,7 @@ func initEnglish() {
 		"If you need to store large files, please use the GIT LFS to avoid the size of the repository exceed the limit again.")
 	message.SetString(language.English, "for the use of Gitee LFS, see", "For the use of Gitee LFS, see: ")
 	message.SetString(language.English, "init repo filter error", "Init repo Filter error")
+	message.SetString(language.English, "ask question module fail: %s", "Ask question module fail: %s")
 
 	// options.go
 	message.SetString(language.English, "help info", Usage)
@@ -164,6 +165,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，请使用Git-LFS功能，避免仓库体积再次膨胀。")
 	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gite LFS 的使用请参阅：")
 	message.SetString(language.Chinese, "init repo filter error", "初始化仓库过滤器失败")
+	message.SetString(language.Chinese, "ask question module fail: %s", "交互式模块运行失败: %s")
 
 	// options.go
 	message.SetString(language.Chinese, "help info", Usage_ZH)

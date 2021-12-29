@@ -54,6 +54,8 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		repo.opts.verbose = true
 
 		if err := repo.opts.SurveyCmd(); err != nil {
+			ft := LocalPrinter().Sprintf("ask question module fail: %s", err)
+			PrintRedln(ft)
 			os.Exit(1)
 		}
 	}
