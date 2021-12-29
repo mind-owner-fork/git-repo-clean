@@ -104,6 +104,7 @@ func initEnglish() {
 	message.SetString(language.English, "done", "Done")
 	message.SetString(language.English, "file cleanup is complete. Start cleaning the repository", "File cleanup is complete. Start cleaning the repository...")
 	message.SetString(language.English, "branches have been changed", "The following branches have been changed: ")
+	message.SetString(language.English, "nothing have changed, exit...", "Nothing have changed, exit...")
 
 	// cmd.go
 	message.SetString(language.English, "select the type of file to scan, such as zip, png:", "Select the type of file to scan, such as zip, png:")
@@ -212,6 +213,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "done", "完成")
 	message.SetString(language.Chinese, "file cleanup is complete. Start cleaning the repository", "文件清理完毕，开始清理仓库...")
 	message.SetString(language.Chinese, "branches have been changed", "以下分支已经更改：")
+	message.SetString(language.Chinese, "nothing have changed, exit...", "没有文件更改，退出...")
 
 	// cmd.go
 	message.SetString(language.Chinese, "select the type of file to scan, such as zip, png:", "选择要扫描的文件的类型，如：zip, png:")

@@ -398,7 +398,7 @@ func NewRepository(path string) (*Repository, error) {
 }
 
 // BrachesChanged prints all branches that have been changed
-func BrachesChanged() {
+func BrachesChanged() bool {
 	branches := Branch_changed.ToSlice()
 	if len(branches) != 0 {
 		PrintLocalWithYellowln("branches have been changed")
@@ -419,12 +419,20 @@ func BrachesChanged() {
 				PrintYellowln(n)
 			}
 		}
+		return true
 	}
+	return false
 }
 
 func (repo *Repository) CleanUp() {
-	// clean up
-	PrintLocalWithGreenln("file cleanup is complete. Start cleaning the repository")
+	if BrachesChanged() {
+		// clean up
+		PrintLocalWithGreenln("file cleanup is complete. Start cleaning the repository")
+	} else {
+		// exit
+		PrintLocalWithYellowln("nothing have changed, exit...")
+		os.Exit(1)
+	}
 
 	fmt.Println("running git reset --hard")
 	cmd1 := exec.Command(repo.gitBin, "-C", repo.path, "reset", "--hard")

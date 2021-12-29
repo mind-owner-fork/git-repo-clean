@@ -99,29 +99,26 @@ $ make
 
 **命令行式用法:**
 
-`git repo-clean --scan --limit=1G --type=tar.gz --number=1`
+`git repo-clean --verbose --scan --limit=1G --type=tar.gz --number=1`
 > 在仓库中使用命令行，扫描仓库当所有分支中的文件，文件最小为1G，类型为tar.gz，显示前1个结果
 
-`git repo-clean --scan --limit=1G --type=tar.gz --number=1 --delete`
+`git repo-clean --verbose --scan --limit=1G --type=tar.gz --number=1 --delete`
 > 加上`--delete`选项，则会批量删除扫描出的文件，并重写相关提交历史(包括HEAD)
 
 如果想要清理其他分支的数据，可以使用`--branch`选项。默认`--branch=all`进行全扫描，会把所有分支上筛选出的数据清理掉。
-
-`git repo-clean --scan --limit=1G --type=tar.gz --number=1 --delete --branch=dev`
+`git repo-clean --verbose --scan --limit=1G --type=tar.gz --number=1 --delete --branch=dev`
 > 加上`--branch=dev`选项，则只会删除`dev`分支中的指定文件，并重写相关提交历史。
 
-![命令行式用法](docs/images/git-repo-clean-command-line.gif)
-
-
-如果确定了要删除的文件，也可以不使用`--scan`扫描模式，扫描模式会消耗大量时间进行仓库全量扫描。 经过重构，现在可以跳过前面的扫描过程，直接向程序指定文件，或者文件夹进行删除、重写历史操作。使用选项`--file <filepath>`即可调用该功能。
-
-`git repo-clean -v --file file1 --file mydir/file2 --file dir/ --delete`
+如果确定了要删除的文件，也可以不使用`--scan`扫描模式，扫描模式会消耗大量时间进行仓库全量扫描。 经过重构，现在可以跳过前面的扫描过程，直接向程序指定文件或者文件夹进行删除、重写历史操作。使用选项`--file <filepath>`即可调用该功能。
+`git repo-clean --verbose --file file1 --file dir/ --delete`
 > 使用`--file <filepath>`删除指定文件，或者指定文件夹中的所有文件。
 
 也可以不用扫描，只指定文件大小的阈值，即可从仓库中完成删除大小超过指定阈值的文件。
+`git repo-clean -verbose --limit=1G --delete`
+> 此时，`--number`选项无意义，默认值转为`UINT_MAX`。
 
-`git repo-clean --limit=1G --delete`
-> 此时，`--number`选项无效
+![命令行式用法](docs/images/git-repo-clean-command-line.gif)
+
 
 **注意：**
 
