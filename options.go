@@ -56,8 +56,7 @@ Command-Line way:
   the previous deletion, you can use the --branch option to delete it from all branches:
     git repo-clean --scan --limit=1G --type=tar.gz --delete --branch=all
 
-  If there are too many scanning results according to the specified conditions, 
-  you can limit the number of results by --number option:
+  You can limit the number of results by --number option, the default value is 3:
     git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
 
   If you want to delete a known file, there is no need to scan the whole repo,
@@ -114,7 +113,7 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   文件仍然存在，则可以使用--branch选项，从所有分支删除，执行：
     git repo-clean --scan --limit=1G --type=tar.gz --delete --branch=all
 
-  如果根据指定条件，扫描结果过多，可以通过--number限制结果数量，执行：
+  可以通过--number选项，控制扫描结果的数量，默认只扫描出前3个最大文件：
     git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
 
   如果你想删除某个已知的文件，则不必扫描仓库，使用'--file'选项，直接指定文件：
