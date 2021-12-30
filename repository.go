@@ -140,6 +140,9 @@ func ScanRepository(repo Repository) (BlobList, error) {
 						"run GetBlobName error: %s", err))
 				}
 			}
+			if name == "" {
+				continue
+			}
 			if len(repo.opts.types) != 0 || repo.opts.types != "*" {
 				var pattern string
 				if strings.HasSuffix(name, "\"") {
