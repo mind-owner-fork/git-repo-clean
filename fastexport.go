@@ -28,9 +28,14 @@ func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
 		"--use-done-feature",
 		"--mark-tags",    // git >= 2.24.0
 		"--reencode=yes", // git >= 2.23.0
-		"--no-data",
 		repo.opts.branch,
+		"--no-data",
 	}
+	// drop "--no-data"
+	if repo.opts.lfs {
+		args = args[:len(args)-1]
+	}
+
 	cmd := repo.GitCommand(args...)
 	out, err := cmd.StdoutPipe()
 	if err != nil {

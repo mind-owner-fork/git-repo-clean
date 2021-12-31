@@ -34,6 +34,7 @@ Options:
   -t, --type		set the file name suffix to filter from Git repository
   -i, --interactive 	enable interactive operation
   -d, --delete		execute file cleanup and history rewrite process
+  -L, --lfs			migrate big file into Git LFS server
 
 These options can provide users with two ways of using: 
 interactive way, command line way.
@@ -91,6 +92,7 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   -t, --type		设置扫描文件后缀名，即文件类型
   -i, --interactive 	开启交互式操作
   -d, --delete		执行文件删除和历史重写过程
+  -L, --lfs			将大文件迁移到Git LFS 服务器
 
 
 这些选项主要可以给用户提供两种使用方法：交互式、命令行式
@@ -137,7 +139,7 @@ type Options struct {
 	number   uint32
 	types    string
 	interact bool
-	// lfs      bool
+	lfs      bool
 }
 
 func (op *Options) init(args []string) error {
@@ -165,6 +167,9 @@ func (op *Options) init(args []string) error {
 	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
 	// perform delete files action
 	flags.BoolVarP(&op.delete, "delete", "d", false, "execute file cleanup and history rewrite process")
+
+	// migrate big file into Git LFS server
+	flags.BoolVarP(&op.lfs, "lfs", "L", false, "migrate big file into Git LFS server")
 
 	err := flags.Parse(args)
 	if err != nil {
