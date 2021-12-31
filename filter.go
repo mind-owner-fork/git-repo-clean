@@ -52,13 +52,24 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 		if filter.repo.opts.scan && len(filter.scanned) != 0 {
 			// filter by blob oid
 			for _, target := range filter.scanned {
-				if target == filechange.blob_id {
-					Branch_changed.Add(filechange.branch)
-					matched = true
-					break
+				if len(filechange.blob_id) == 40 {
+					if target == filechange.blob_id {
+						Branch_changed.Add(filechange.branch)
+						matched = true
+						break
+					}
+				} else {
+					if filechange.changetype == "M" {
+						id, _ := strconv.Atoi(filechange.blob_id)
+						if _, ok := ID_HASH[int32(id)]; !ok {
+							Branch_changed.Add(filechange.branch)
+							matched = true
+							break
+						}
+					}
 				}
 			}
-		} else if !filter.repo.opts.scan && filter.repo.opts.limit != "" && filter.repo.opts.types == "" {
+		} else if !filter.repo.opts.scan && filter.repo.opts.limit != "" && filter.repo.opts.types == "*" {
 			// filter by blob size threshold
 			objectsize := Blob_size_list[filechange.blob_id]
 			// set bitsize to 64, means max single blob size is 4 GiB
