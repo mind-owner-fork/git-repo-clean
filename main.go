@@ -46,7 +46,6 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 	var first_target []string
 	var scanned_targets []string
-	// var tartgets map
 	var file_paths []string
 	// when run git-repo-clean -i, its means run scan too
 	if repo.opts.interact {
@@ -60,7 +59,6 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			os.Exit(1)
 		}
 	}
-	//
 	if repo.opts.lfs {
 		repo.opts.scan = true
 	}

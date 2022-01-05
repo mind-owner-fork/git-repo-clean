@@ -48,7 +48,7 @@ func GenerateHash(data []byte, alg string) (hash string) {
 // size $(old size)
 func CreatePointerFile(blob *Blob) []byte {
 	var buf bytes.Buffer
-	buf.Write([]byte("version https://git-lfs.github.com/spec/v1\n"))
+	fmt.Fprintf(&buf, "version %s\n", LFSVER)
 	fmt.Fprintf(&buf, "oid sha256:%s\n", blob.sha256)
 	fmt.Fprintf(&buf, "size %d\n", len(blob.data))
 	if buf.Len() > 200 {
