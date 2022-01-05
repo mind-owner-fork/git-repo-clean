@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func InitContext(args []string) *Repository {
@@ -73,13 +74,11 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			PrintRedln(ft)
 			os.Exit(1)
 		}
-		if len(bloblist) != 0 {
-			repo.ShowScanResult(bloblist)
-		}
-
 		if len(bloblist) == 0 {
 			PrintLocalWithRedln("no files were scanned")
 			os.Exit(1)
+		} else {
+			repo.ShowScanResult(bloblist)
 		}
 
 		if repo.opts.interact {
@@ -99,6 +98,17 @@ func NewFilter(args []string) (*RepoFilter, error) {
 				scanned_targets = append(scanned_targets, item.oid)
 			}
 		}
+		//  record target file's name
+		for _, item := range bloblist {
+			for _, target := range scanned_targets {
+				if item.oid == target {
+					// cut their prefix
+					list := strings.Split(item.objectName, "/")
+					Files_changed.Add(list[len(list)-1])
+				}
+			}
+		}
+
 	} else {
 		if repo.opts.file != nil {
 			file_paths = repo.opts.file
@@ -120,7 +130,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 }
 
 func LFSPrompt(repo Repository) {
-	PrintLocalWithYellowln("since you have converted your big files into Git LFS pointer file")
+	FilesChanged()
 	PrintLocalWithYellowln("before you push to remote, you have to do something below:")
 	PrintLocalWithYellowln("1. install git-lfs")
 	PrintLocalWithYellowln("2. run command: git lfs install")

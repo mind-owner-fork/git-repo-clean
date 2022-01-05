@@ -50,8 +50,6 @@ func initEnglish() {
 	message.SetString(language.English, "for the use of Gitee LFS, see", "For the use of Gitee LFS, see: ")
 	message.SetString(language.English, "init repo filter error", "Init repo Filter error")
 	message.SetString(language.English, "ask question module fail: %s", "Ask question module fail: %s")
-	message.SetString(language.English, "since you have converted your big files into Git LFS pointer file",
-		"Since you have converted your big files into Git LFS pointer file,")
 	message.SetString(language.English, "before you push to remote, you have to do something below:",
 		"before you push to remote, you have to do something below:")
 	message.SetString(language.English, "1. install git-lfs",
@@ -59,7 +57,7 @@ func initEnglish() {
 	message.SetString(language.English, "2. run command: git lfs install",
 		"2. run command: git lfs install")
 	message.SetString(language.English, "3. edit .gitattributes file",
-		"3. edit .gitattributes file, to add the files you've migrated by <git lfs track 'your-file'>")
+		`3. run command: git lfs track "your-file"(this will modify .gitattributes file`)
 	message.SetString(language.English, "4. commit your .gitattributes file.",
 		"4. commit your .gitattributes file.")
 
@@ -153,6 +151,8 @@ func initEnglish() {
 	message.SetString(language.English, "convert uint error: %s", "Convert uint error: %s")
 	message.SetString(language.English, "parse uint error: %s", "Parse uint error: %s")
 
+	message.SetString(language.English, "file have been changed", "those files have been converted to LFS file:")
+
 }
 
 func initChinese() {
@@ -183,8 +183,6 @@ func initChinese() {
 	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gitee LFS 的使用请参阅：")
 	message.SetString(language.Chinese, "init repo filter error", "初始化仓库过滤器失败")
 	message.SetString(language.Chinese, "ask question module fail: %s", "交互式模块运行失败: %s")
-	message.SetString(language.Chinese, "since you have converted your big files into Git LFS pointer file",
-		"因为你已将指定的大文件转化为 Git LFS 类型文件,")
 	message.SetString(language.Chinese, "before you push to remote, you have to do something below:",
 		"在你推送仓库到远程之前，必须完成以下操作：")
 	message.SetString(language.Chinese, "1. install git-lfs",
@@ -192,9 +190,9 @@ func initChinese() {
 	message.SetString(language.Chinese, "2. run command: git lfs install",
 		"2. 在仓库中运行命令：git lfs install ")
 	message.SetString(language.Chinese, "3. edit .gitattributes file",
-		"3. 编辑 .gitattributes 文件，将已经转换的大文件的名称加入到这个文件中：git lfs track 'your-file'")
+		`3. 追踪上述文件(这会修改 .gitattributes 文件)：git lfs track "your-file"`)
 	message.SetString(language.Chinese, "4. commit your .gitattributes file.",
-		"4. 提交编辑好的 .gitattributes 文件")
+		"4. 提交修改后的 .gitattributes 文件")
 
 	// options.go
 	message.SetString(language.Chinese, "help info", Usage_ZH)
@@ -272,6 +270,8 @@ func initChinese() {
 
 	message.SetString(language.Chinese, "convert uint error: %s", "转换大小单位出错: %s")
 	message.SetString(language.Chinese, "parse uint error: %s", "解析无符号整数出错: %s")
+
+	message.SetString(language.Chinese, "file have been changed", "以下这些文件已经被转化为 LFS 文件:")
 
 }
 
