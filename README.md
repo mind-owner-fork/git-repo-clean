@@ -136,6 +136,7 @@ $ make
 + filter.go     | 仓库数据过滤
 + git.go        | Git对象相关
 + utils.go      | 一些有用帮助函数
++ lfs.go        | 处理Git LFS相关的函数
 
 
 ## TODO
@@ -149,7 +150,6 @@ $ make
 - [ ] 实现Windows下一键安装
 - [ ] 升级Golang
 - [ ] 升级Git
-- [ ] 增加对LFS的支持
 
 ## BUG
 + 如果仓库中存在nested tag, 则在清理过程中会出现错误，如：`error: multiple updates for ref 'refs/tags/v1.0.1-pointer' not allowed`, 这会导致文件删除失败。暂时处理方式是一旦检测到这种情况，就退出程序，并显示警告信息。
@@ -159,6 +159,15 @@ $ make
 + 从Git 2.32.0起，`git-rev-list`具备`--filter=object:type`选项，在扫描时能够过滤特定类型，这样能够加快处理过程，后续考虑使用较新的Git版本。
 
 + 以下参数单独使用是无效的：`--branch`, `--scan`, `--verbose`, `--delete`, 需要结合其它参数一起使用。
+
+
+## Git LFS(Git Large File Storage)
+> 关于Git LFS, 参考：https://gitee.com/help/articles/4235
+
+`git-repo-clean`从`v1.3.0`开始支持将扫描出来的历史大文件直接转化为`Git LFS`指针文件。如果用户开通了Gitee LFS功能，则可以将大文件上传到Gitee LFS 服务器单独存储，而 Git 仓库只需要管理一份转换后很小的LFS指针文件。
+
+在完成转换后，直到推送到远程之前，用户需要在本地安装`git lfs`工具，用来安装相关的钩子，这样在推送时，才会将`LFS`对象上传到`Gitee LFS`服务器。
+> `git lfs`的安装，参考：https://github.com/git-lfs/git-lfs#downloading
 
 
 ## 常见问题 Q&A
