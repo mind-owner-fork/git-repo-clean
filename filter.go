@@ -14,6 +14,12 @@ type RepoFilter struct {
 func (filter *RepoFilter) tweak_blob(blob *Blob) {
 	for _, target := range filter.scanned {
 		if target == blob.original_oid {
+			// replace old blob with new LFS info
+			if filter.repo.opts.lfs {
+				ConvertToLFSObj(blob)
+				blob = UpdateBlob(blob)
+				break
+			}
 			// set new id to 0
 			blob.ele.skip(0)
 		}

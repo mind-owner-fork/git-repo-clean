@@ -42,6 +42,9 @@ git fast-export
 
 **NOTE**
 <!-- This feature may need be authorized by Gitee.com -->
+**Git LFS pointer:**
+
+Git LFS Specification: https://github.com/git-lfs/git-lfs/blob/5eb9bb01/docs/spec.md
 
 `new sha1` is hash of this content:
 "
@@ -51,4 +54,12 @@ git fast-export
 "
 `new size` is this content's size
 
-# TODO: sha256
+sha256:
+SHA-256 signature of the file's contents
+
+The pointer file should be small, that less than 200 bytes
+
+**Git LFS objects:**
+
+file name: .git/lfs/objects/ab/cd/abcdxxxx
+file content: old content
