@@ -428,7 +428,7 @@ func BrachesChanged() bool {
 }
 
 func (repo *Repository) CleanUp() {
-	if BrachesChanged() {
+	if BrachesChanged() || repo.opts.lfs {
 		// clean up
 		PrintLocalWithGreenln("file cleanup is complete. Start cleaning the repository")
 	} else {

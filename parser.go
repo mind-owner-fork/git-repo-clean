@@ -52,9 +52,10 @@ type Blob struct {
 	original_oid string             // 40 bytes
 	data_size    int64              // blob size maybe very large
 	data         []byte             // raw data block
+	sha256       string             // for lfs objects
 }
 
-func NewBlob(size_ int64, data_ []byte, hash_id_ string) Blob {
+func NewBlob(size_ int64, data_ []byte, hash_id_, sha256_ string) Blob {
 	var ele = NewGitElementsWithID()
 	ele.base.types = "blob"
 	return Blob{
@@ -62,6 +63,7 @@ func NewBlob(size_ int64, data_ []byte, hash_id_ string) Blob {
 		original_oid: hash_id_,
 		data_size:    size_,
 		data:         data_,
+		sha256:       sha256_,
 	}
 }
 
@@ -180,32 +182,6 @@ and the commiter format is : <committer_name> SP <committer_email> SP <committer
 
 As for the format of "from", see:
 https://git-scm.com/docs/git-fast-import#_from
-
-**Special Case 1:**
-
-commit refs/heads/review-mode/readonly
-mark :23
-original-oid 46d3d959019ffe22c8399755dd7028cece366ccd
-author Cactusinhand <lilinchao@oschina.cn> 1626747427 +0000
-committer Gitee <noreply@gitee.com> 1626747427 +0000
-data 99
-!13 change readonly file
-Merge pull request !13 from Cactusinhand/auto-7670704-master-1626686679876from :4   <-------------
-merge :22
-M 100644 :21 README.en.md
-M 100644 :5 files/1.c
-
-**Special Case 2:**
-reset refs/heads/review-mode/readonly
-commit refs/heads/review-mode/readonly
-mark :4
-original-oid 1072abf2c53ce53ad88cb6fdea64d2cf51f9fac8
-author Cactusinhand <lilinchao@oschina.cn> 1626405532 +0000
-committer Gitee <noreply@gitee.com> 1626405532 +0000
-data 14
-Initial commitM 100644 :1 .gitee/PULL_REQUEST_TEMPLATE.zh-CN.md  <-------------
-M 100644 :2 README.en.md
-M 100644 :3 README.md
 
 **NOTE**
 
@@ -546,28 +522,25 @@ func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, ex
 	var sum int64
 	newline := line
 	// if data size is 0, no need to read any data more, just go to next line
-	if size != 0 {
-
-		for {
-			n, err := writer.Write([]byte(newline))
-			if err != nil {
-				PrintRedln(fmt.Sprint(err))
-			}
-			if n != len(newline) {
-				PrintLocalWithRedln("failed to write data")
-			}
-			sum += int64(n)
-			if sum == size {
-				break
-			}
-			if sum > size {
-				cur_linelen := int64(len(newline))
-				extra_linelen := sum - size
-				extra_msg = []byte(newline)[(cur_linelen - extra_linelen):]
-				break
-			}
-			newline, _ = iter.Next()
+	for size != 0 {
+		n, err := writer.Write([]byte(newline))
+		if err != nil {
+			PrintRedln(fmt.Sprint(err))
 		}
+		if n != len(newline) {
+			PrintLocalWithRedln("failed to write data")
+		}
+		sum += int64(n)
+		if sum == size {
+			break
+		}
+		if sum > size {
+			cur_linelen := int64(len(newline))
+			extra_linelen := sum - size
+			extra_msg = []byte(newline)[(cur_linelen - extra_linelen):]
+			return sum, bytes.TrimRight(writer.Bytes(), string(extra_msg)), extra_msg
+		}
+		newline, _ = iter.Next()
 	}
 	return sum, writer.Bytes(), extra_msg
 }
@@ -593,9 +566,11 @@ func (iter *FEOutPutIter) parseBlob(line string) *Blob {
 	size := parse_datasize(newline)
 
 	newline, _ = iter.Next()
-	actual_size, data_block, _ := iter.parse_data(newline, size)
+	_, data_block, _ := iter.parse_data(newline, size)
 
-	blob := NewBlob(actual_size, data_block, original_oid)
+	sha256 := GenerateHash(data_block, "sha256sum")
+
+	blob := NewBlob(size, data_block, original_oid, sha256)
 
 	if mark_id > 0 {
 		blob.ele.old_id = mark_id
@@ -640,14 +615,24 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 	parents := make([]int32, 0)
 
 	if actual_size > size {
-		// treat this one as actual commit msg, the extra in the tail maybe filechange or parent(from), or just a LF
 		/*
-					Initial commit LF
-			        M 100644 :1 LICENSE LF
-			        M 100644 :1 README.md LF <--- tail-msg
+			**Special Case 2:**
+				data 99
+				!13 change readonly file
+				Merge pull request !13 from Cactusinhand/auto-7670704-master-1626686679876from :4   <-------------
+				merge :22
+				M 100644 :21 README.en.md
+				M 100644 :5 files/1.c
+			Tail msg: from :4
+
+			**Special Case 2:**
+				data 14
+				Initial commitM 100644 :1 .gitee/PULL_REQUEST_TEMPLATE.zh-CN.md  <-------------
+				M 100644 :2 README.en.md
+				M 100644 :3 README.md
+			Tail msg: M 100644 :1 .gitee/PULL_REQUEST_TEMPLATE.zh-CN.md
 		*/
-		first_part := bytes.TrimRight(msg, string(tail_msg))
-		actual_msg = append(first_part, '\n')
+		actual_msg = append(msg, '\n')
 
 		if match := Match("from :"+ref_re, string(tail_msg)); len(match) > 0 {
 			// get a from parent in extra_msg
@@ -789,7 +774,11 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 
 func (filter *RepoFilter) Parser() {
 	if filter.repo.opts.verbose {
-		PrintLocalWithGreenln("start to clean up specified files")
+		if filter.repo.opts.lfs {
+			PrintLocalWithGreenln("start to migrate specified files")
+		} else {
+			PrintLocalWithGreenln("start to clean up specified files")
+		}
 	}
 
 	iter, err := filter.repo.NewFastExportIter()

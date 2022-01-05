@@ -35,7 +35,7 @@ func initEnglish() {
 	message.SetString(language.English, "execute force push",
 		"The following two commands will be executed, then the remote commit will be overwritten:")
 	message.SetString(language.English, "suggest operations header",
-		"Since the history of the local repository has been modified, if there is no new commit, it is recommended to complete the following work first:")
+		"Since the history of the local repository has been modified, if there is no new commit or you've configurated Git-LFS, it is recommended to complete the following work first:")
 	message.SetString(language.English, "1. (Done!)", "1. (Done!) remote repository have been updated.")
 	message.SetString(language.English, "1. (Undo)", "1. (Undo) update remote repository. Push local cleaned repository to remote repository:")
 	message.SetString(language.English, "2. (Undo)",
@@ -46,10 +46,22 @@ func initEnglish() {
 	message.SetString(language.English, "for detailed documentation, see", "For detailed documentation, see: ")
 	message.SetString(language.English, "suggest operations done", "After completing the above three steps, Congratulations, all the cleaning work has been done!")
 	message.SetString(language.English, "introduce GIT LFS",
-		"If you need to store large files, please use the GIT LFS to avoid the size of the repository exceed the limit again.")
+		"If you need to store large files, please use '--lfs' option to convert big file into  GIT LFS to avoid the size of the repository exceed the limit again.")
 	message.SetString(language.English, "for the use of Gitee LFS, see", "For the use of Gitee LFS, see: ")
 	message.SetString(language.English, "init repo filter error", "Init repo Filter error")
 	message.SetString(language.English, "ask question module fail: %s", "Ask question module fail: %s")
+	message.SetString(language.English, "since you have converted your big files into Git LFS pointer file",
+		"Since you have converted your big files into Git LFS pointer file,")
+	message.SetString(language.English, "before you push to remote, you have to do something below:",
+		"before you push to remote, you have to do something below:")
+	message.SetString(language.English, "1. install git-lfs",
+		"1. install git-lfs by this link: https://packagecloud.io/github/git-lfs/install")
+	message.SetString(language.English, "2. run command: git lfs install",
+		"2. run command: git lfs install")
+	message.SetString(language.English, "3. edit .gitattributes file",
+		"3. edit .gitattributes file, to add the files you've migrated by <git lfs track 'your-file'>")
+	message.SetString(language.English, "4. commit your .gitattributes file.",
+		"4. commit your .gitattributes file.")
 
 	// options.go
 	message.SetString(language.English, "help info", Usage)
@@ -66,6 +78,9 @@ func initEnglish() {
 	message.SetString(language.English, "failed to write data", "Failed to write data")
 	message.SetString(language.English, "start to clean up specified files",
 		"Start to clean up the specified file from the history (if the repository is too large, the execution time will be long, please wait a few minutes)...")
+	message.SetString(language.English, "start to migrate specified files",
+		"Start converting the specified file to an LFS file (if the repository is too large, the execution time will be long, please wait a few minutes)...")
+
 	message.SetString(language.English, "run git-fast-import process failed", "Run git-fast-import process failed")
 	// utils.go
 	message.SetString(language.English, "expected a value followed by --limit option, but you are: %s",
@@ -132,6 +147,7 @@ func initEnglish() {
 	message.SetString(language.English, "ask for backup message", "Do you want to *BACK UP* the repository before deleting your files ?")
 	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you want to *OVERWRITE* it (if no, will cancel the backup) ?")
 	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to *FORCE PUSH* to the remote repository now ?")
+	message.SetString(language.English, "ask for migrating big file into LFS", "Do you want to migrate your big files into Git LFS? ")
 	message.SetString(language.English, "process interrupted", "process interrupted")
 
 	message.SetString(language.English, "convert uint error: %s", "Convert uint error: %s")
@@ -155,7 +171,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "cleaning completed", "本地仓库清理完成！")
 	message.SetString(language.Chinese, "current repository size", "当前仓库大小：")
 	message.SetString(language.Chinese, "execute force push", "将会执行如下两条命令，远端的的提交将会被覆盖:")
-	message.SetString(language.Chinese, "suggest operations header", "由于本地仓库的历史已经被修改，如果没有新的提交，建议先完成如下工作：")
+	message.SetString(language.Chinese, "suggest operations header", "由于本地仓库的历史已经被修改，如果没有新的提交, 或者已经完成Git-LFS配置，建议先完成如下工作：")
 	message.SetString(language.Chinese, "1. (Done!)", "1. (已完成！)远程仓库已经更新。")
 	message.SetString(language.Chinese, "1. (Undo)", "1. (待完成)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
 	message.SetString(language.Chinese, "2. (Undo)", "2. (待完成)清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作。")
@@ -163,10 +179,22 @@ func initChinese() {
 	message.SetString(language.Chinese, "gitee GC page link", "如果是 Gitee 仓库，且有管理权限，请点击链接: ")
 	message.SetString(language.Chinese, "for detailed documentation, see", "详细文档请参阅: ")
 	message.SetString(language.Chinese, "suggest operations done", "完成以上三步后，恭喜你，所有的清理工作已经完成！")
-	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，请使用Git-LFS功能，避免仓库体积再次膨胀。")
-	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gite LFS 的使用请参阅：")
+	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，使用'--lfs'选项，将大文件迁移到GIT LFS，避免仓库体积膨胀。")
+	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gitee LFS 的使用请参阅：")
 	message.SetString(language.Chinese, "init repo filter error", "初始化仓库过滤器失败")
 	message.SetString(language.Chinese, "ask question module fail: %s", "交互式模块运行失败: %s")
+	message.SetString(language.Chinese, "since you have converted your big files into Git LFS pointer file",
+		"因为你已将指定的大文件转化为 Git LFS 类型文件,")
+	message.SetString(language.Chinese, "before you push to remote, you have to do something below:",
+		"在你推送仓库到远程之前，必须完成以下操作：")
+	message.SetString(language.Chinese, "1. install git-lfs",
+		"1. 安装 Git LFS: https://packagecloud.io/github/git-lfs/install")
+	message.SetString(language.Chinese, "2. run command: git lfs install",
+		"2. 在仓库中运行命令：git lfs install ")
+	message.SetString(language.Chinese, "3. edit .gitattributes file",
+		"3. 编辑 .gitattributes 文件，将已经转换的大文件的名称加入到这个文件中：git lfs track 'your-file'")
+	message.SetString(language.Chinese, "4. commit your .gitattributes file.",
+		"4. 提交编辑好的 .gitattributes 文件")
 
 	// options.go
 	message.SetString(language.Chinese, "help info", Usage_ZH)
@@ -181,6 +209,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "no match data size", "没有匹配到数据大小字段")
 	message.SetString(language.Chinese, "failed to write data", "写数据失败")
 	message.SetString(language.Chinese, "start to clean up specified files", "开始从历史中清理指定的文件(如果仓库过大，执行时间会比较长，请耐心等待)...")
+	message.SetString(language.Chinese, "start to migrate specified files", "开始将指定的文件转换为LFS文件(如果仓库过大，执行时间会比较长，请耐心等待)...")
 	message.SetString(language.Chinese, "run git-fast-import process failed", "运行git fast-import过程出错")
 	// utils.go
 	message.SetString(language.Chinese, "expected a value followed by --limit option, but you are: %s", "'--limit'选项后面需要跟一个数值，但是你给的是: %s")
@@ -238,6 +267,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "ask for backup message", "在删除你的文件之前，是否需要<备份仓库>?")
 	message.SetString(language.Chinese, "ask for override message", "当前目录下存在同名文件夹，是否需要<覆盖>(回答否，则取消备份)?")
 	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在<强制推送>到远程仓库？")
+	message.SetString(language.Chinese, "ask for migrating big file into LFS", "是否将大文件迁移到 Git LFS 进行管理？")
 	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
 	message.SetString(language.Chinese, "convert uint error: %s", "转换大小单位出错: %s")

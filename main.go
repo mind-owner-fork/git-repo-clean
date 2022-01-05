@@ -46,6 +46,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 	var first_target []string
 	var scanned_targets []string
+	// var tartgets map
 	var file_paths []string
 	// when run git-repo-clean -i, its means run scan too
 	if repo.opts.interact {
@@ -58,6 +59,10 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			PrintRedln(ft)
 			os.Exit(1)
 		}
+	}
+	//
+	if repo.opts.lfs {
+		repo.opts.scan = true
 	}
 
 	PrintLocalWithPlain("current repository size")
@@ -116,18 +121,32 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		filepaths: file_paths}, nil
 }
 
+func LFSPrompt(repo Repository) {
+	PrintLocalWithYellowln("since you have converted your big files into Git LFS pointer file")
+	PrintLocalWithYellowln("before you push to remote, you have to do something below:")
+	PrintLocalWithYellowln("1. install git-lfs")
+	PrintLocalWithYellowln("2. run command: git lfs install")
+	PrintLocalWithYellowln("3. edit .gitattributes file")
+	PrintLocalWithYellowln("4. commit your .gitattributes file.")
+}
+
 func Prompt(repo Repository) {
 	PrintLocalWithGreenln("cleaning completed")
 	PrintLocalWithPlain("current repository size")
 	PrintLocalWithGreenln(GetDatabaseSize(repo.gitBin, repo.path))
+	if repo.opts.lfs {
+		LFSPrompt(repo)
+	}
 	var pushed bool
-	if AskForUpdate() {
-		PrintLocalWithPlainln("execute force push")
-		PrintLocalWithYellowln("git push origin --all --force")
-		PrintLocalWithYellowln("git push origin --tags --force")
-		err := repo.PushRepo(repo.gitBin, repo.path)
-		if err == nil {
-			pushed = true
+	if !repo.opts.lfs {
+		if AskForUpdate() {
+			PrintLocalWithPlainln("execute force push")
+			PrintLocalWithYellowln("git push origin --all --force")
+			PrintLocalWithYellowln("git push origin --tags --force")
+			err := repo.PushRepo(repo.gitBin, repo.path)
+			if err == nil {
+				pushed = true
+			}
 		}
 	}
 	PrintLocalWithPlainln("suggest operations header")
@@ -166,6 +185,12 @@ func main() {
 	// repo backup
 	if AskForBackUp() {
 		filter.repo.BackUp(filter.repo.gitBin, filter.repo.path)
+	}
+	// ask for lfs migrate
+	if AskForMigrateToLFS() {
+		filter.repo.opts.lfs = true
+	} else {
+		filter.repo.opts.lfs = false
 	}
 	// filter data
 	filter.Parser()

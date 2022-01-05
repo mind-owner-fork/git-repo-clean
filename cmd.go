@@ -142,6 +142,23 @@ func Confirm(list []string) (bool, []string) {
 	return ok, results
 }
 
+func AskForMigrateToLFS() bool {
+	ok := false
+
+	prompt := &survey.Confirm{
+		Message: LocalSprintf("ask for migrating big file into LFS") + "\n",
+	}
+	err := survey.AskOne(prompt, &ok)
+	if err != nil {
+		if err == terminal.InterruptErr {
+			PrintLocalWithRedln("process interrupted")
+			os.Exit(1)
+		}
+	}
+
+	return ok
+}
+
 func AskForBackUp() bool {
 	ok := false
 
