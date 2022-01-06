@@ -382,6 +382,10 @@ func NewRepository(path string) (*Repository, error) {
 		return &Repository{}, err
 	}
 
+	if bare, err := IsBare(gitBin, path); bare && err == nil {
+		PrintLocalWithYellowln("bare repo warning")
+	}
+
 	version, err := GitVersion(gitBin, path)
 	if err != nil {
 		PrintRedln(fmt.Sprint(err))

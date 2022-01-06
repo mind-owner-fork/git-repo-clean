@@ -31,7 +31,7 @@ func initEnglish() {
 		"You haven't selected any files. Please select at least one file")
 	message.SetString(language.English, "operation aborted", "The operation has been aborted. Please reconfirm the file and try again.")
 	message.SetString(language.English, "cleaning completed", "Local repository cleaning up completed!")
-	message.SetString(language.English, "current repository size", "Current repository size: ")
+	message.SetString(language.English, "current repository size", "Current repository size(including LFS objects): ")
 	message.SetString(language.English, "execute force push",
 		"The following two commands will be executed, then the remote commit will be overwritten:")
 	message.SetString(language.English, "suggest operations header",
@@ -110,6 +110,8 @@ func initEnglish() {
 	message.SetString(language.English, "start backup", "Start backup...")
 	message.SetString(language.English, "clone error", "git clone --no-local error")
 	message.SetString(language.English, "run filepach.Abs error", "Run filepach.Abs error")
+	message.SetString(language.English, "bare repo warning", "⚠ Warning: you are in a bare or mirror repo, some operations may not work well.")
+	message.SetString(language.Chinese, "bare repo error", "❌ Error: can't perform any LFS operation in a bare or mirror repo.")
 
 	message.SetString(language.English, "backup done! Backup file path is: %s", "Backup done! Backup file path is: %s")
 	message.SetString(language.English, "push failed",
@@ -169,9 +171,9 @@ func initChinese() {
 	message.SetString(language.Chinese, "no files were selected", "你没有选择任何文件，请至少选择一个文件。")
 	message.SetString(language.Chinese, "operation aborted", "操作已中止，请重新确认文件后再次尝试。")
 	message.SetString(language.Chinese, "cleaning completed", "本地仓库清理完成！")
-	message.SetString(language.Chinese, "current repository size", "当前仓库大小：")
+	message.SetString(language.Chinese, "current repository size", "当前仓库大小(包括LFS数据)：")
 	message.SetString(language.Chinese, "execute force push", "将会执行如下两条命令，远端的的提交将会被覆盖:")
-	message.SetString(language.Chinese, "suggest operations header", "由于本地仓库的历史已经被修改，如果没有新的提交, 或者已经完成Git-LFS配置，建议先完成如下工作：")
+	message.SetString(language.Chinese, "suggest operations header", "由于本地仓库的历史已修改，如果没有新的提交, 或者已经完成Git-LFS配置，建议先完成如下工作：")
 	message.SetString(language.Chinese, "1. (Done!)", "1. (已完成！)远程仓库已经更新。")
 	message.SetString(language.Chinese, "1. (Undo)", "1. (待完成)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
 	message.SetString(language.Chinese, "2. (Undo)", "2. (待完成)清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作。")
@@ -179,7 +181,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "gitee GC page link", "如果是 Gitee 仓库，且有管理权限，请点击链接: ")
 	message.SetString(language.Chinese, "for detailed documentation, see", "详细文档请参阅: ")
 	message.SetString(language.Chinese, "suggest operations done", "完成以上三步后，恭喜你，所有的清理工作已经完成！")
-	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，使用'--lfs'选项，将大文件迁移到GIT LFS，避免仓库体积膨胀。")
+	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，可使用'--lfs'选项，将大文件迁移到Git LFS，避免仓库体积膨胀。")
 	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gitee LFS 的使用请参阅：")
 	message.SetString(language.Chinese, "init repo filter error", "初始化仓库过滤器失败")
 	message.SetString(language.Chinese, "ask question module fail: %s", "交互式模块运行失败: %s")
@@ -241,6 +243,8 @@ func initChinese() {
 	message.SetString(language.Chinese, "file cleanup is complete. Start cleaning the repository", "文件清理完毕，开始清理仓库...")
 	message.SetString(language.Chinese, "branches have been changed", "以下分支已经更改：")
 	message.SetString(language.Chinese, "nothing have changed, exit...", "没有文件更改，退出...")
+	message.SetString(language.Chinese, "bare repo warning", "⚠ 警告：您正在裸仓或镜像仓中，有些操作可能会受到影响。")
+	message.SetString(language.Chinese, "bare repo error", "❌ 错误：无法在裸仓或镜像仓中执行LFS相关操作!")
 
 	// cmd.go
 	message.SetString(language.Chinese, "select the type of file to scan, such as zip, png:", "选择要扫描的文件的类型，如：zip, png:")
