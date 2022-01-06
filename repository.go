@@ -19,6 +19,7 @@ type Repository struct {
 	path   string
 	gitBin string
 	gitDir string
+	bare   bool
 	opts   Options
 }
 
@@ -279,18 +280,34 @@ func GetCurrentStatus(gitbin, path string) {
 	fmt.Println(st)
 }
 
-func GetDatabaseSize(gitbin, path string) string {
-	if bare, _ := IsBare(gitbin, path); bare {
-		path = filepath.Join(path, ".")
+// get git objects data size
+func (repo *Repository) GetDatabaseSize() string {
+	var path string
+	if repo.bare {
+		path = filepath.Join(repo.path, ".")
 	} else {
-		path = filepath.Join(path, ".git")
+		path = filepath.Join(repo.path, ".git/objects")
 	}
 	cmd := exec.Command("du", "-hs", path)
 	out, err := cmd.Output()
 	if err != nil {
-		PrintLocalWithRedln("could not run 'du -hs .git'")
+		PrintLocalWithRedln("could not run 'du -hs'")
 	}
 	return strings.TrimSuffix(string(out), "\n")
+}
+
+// get lfs objects data size
+func (repo *Repository) GetLFSObjSize() string {
+	path := filepath.Join(repo.path, ".git/lfs")
+	if _, err := os.Stat(path); err == nil {
+		cmd := exec.Command("du", "-hs", path)
+		out, err := cmd.Output()
+		if err != nil {
+			PrintLocalWithRedln("could not run 'du -hs .git/lfs/'")
+		}
+		return strings.TrimSuffix(string(out), "\n")
+	}
+	return ""
 }
 
 // get repo GC url if the repo is hosted on Gitee.com
@@ -382,7 +399,9 @@ func NewRepository(path string) (*Repository, error) {
 		return &Repository{}, err
 	}
 
+	var bare bool
 	if bare, err := IsBare(gitBin, path); bare && err == nil {
+		bare = true
 		PrintLocalWithYellowln("bare repo warning")
 	}
 
@@ -401,6 +420,7 @@ func NewRepository(path string) (*Repository, error) {
 		path:   path,   // working dir
 		gitDir: gitdir, // .git dir
 		gitBin: gitBin,
+		bare:   bare,
 	}, nil
 }
 

@@ -33,6 +33,7 @@ func InitContext(args []string) *Repository {
 		op.path,
 		r.gitBin,
 		r.gitDir,
+		r.bare,
 		op,
 	}
 }
@@ -65,7 +66,11 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 
 	PrintLocalWithPlain("current repository size")
-	PrintLocalWithYellowln(GetDatabaseSize(repo.gitBin, repo.path))
+	PrintLocalWithYellowln(repo.GetDatabaseSize())
+	if lfs := repo.GetLFSObjSize(); len(lfs) > 0 {
+		PrintLocalWithPlain("including LFS objects size")
+		PrintLocalWithYellowln(lfs)
+	}
 
 	if repo.opts.scan {
 		bloblist, err := ScanRepository(*repo)
@@ -141,7 +146,11 @@ func LFSPrompt(repo Repository) {
 func Prompt(repo Repository) {
 	PrintLocalWithGreenln("cleaning completed")
 	PrintLocalWithPlain("current repository size")
-	PrintLocalWithGreenln(GetDatabaseSize(repo.gitBin, repo.path))
+	PrintLocalWithYellowln(repo.GetDatabaseSize())
+	if lfs := repo.GetLFSObjSize(); len(lfs) > 0 {
+		PrintLocalWithPlain("including LFS objects size")
+		PrintLocalWithYellowln(lfs)
+	}
 	if repo.opts.lfs {
 		LFSPrompt(repo)
 	}
@@ -196,12 +205,12 @@ func main() {
 	}
 	// ask for lfs migrate
 	if AskForMigrateToLFS() {
-		filter.repo.opts.lfs = true
 		// can't run lfs-migrate in bare repo
-		if bare, err := IsBare(filter.repo.gitBin, filter.repo.path); bare && err == nil {
+		if filter.repo.bare {
 			PrintLocalWithYellowln("bare repo error")
 			os.Exit(1)
 		}
+		filter.repo.opts.lfs = true
 	} else {
 		filter.repo.opts.lfs = false
 	}
