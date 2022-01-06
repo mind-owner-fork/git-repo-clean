@@ -131,7 +131,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 
 func LFSPrompt(repo Repository) {
 	FilesChanged()
-	PrintLocalWithYellowln("before you push to remote, you have to do something below:")
+	PrintLocalWithPlainln("before you push to remote, you have to do something below:")
 	PrintLocalWithYellowln("1. install git-lfs")
 	PrintLocalWithYellowln("2. run command: git lfs install")
 	PrintLocalWithYellowln("3. edit .gitattributes file")
@@ -197,6 +197,11 @@ func main() {
 	// ask for lfs migrate
 	if AskForMigrateToLFS() {
 		filter.repo.opts.lfs = true
+		// can't run lfs-migrate in bare repo
+		if bare, err := IsBare(filter.repo.gitBin, filter.repo.path); bare && err == nil {
+			PrintLocalWithYellowln("bare repo error")
+			os.Exit(1)
+		}
 	} else {
 		filter.repo.opts.lfs = false
 	}

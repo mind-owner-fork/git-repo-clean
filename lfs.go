@@ -116,7 +116,7 @@ func CreateLFSDir(sha256 string) (name string) {
 func FilesChanged() {
 	files := Files_changed.ToSlice()
 	if len(files) != 0 {
-		PrintLocalWithYellowln("file have been changed")
+		PrintLocalWithPlainln("file have been changed")
 		for _, file := range files {
 			PrintYellowln(file.(string))
 		}
