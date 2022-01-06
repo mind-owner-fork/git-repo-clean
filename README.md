@@ -122,7 +122,22 @@ $ make
 
 **注意：**
 
-目前扫描操作和删除操作都是默认在所有分支上进行，而`--branch`选项只是指定删除时的分支，不能指定扫描时的分支。因此如果使用了这个选项指定了某个分支，可能从扫描结果中选择了另一个分支中的文件，因此不会有文件真正被删除。
++ 目前扫描操作和删除操作都是默认在所有分支上进行，而`--branch`选项只是指定删除时的分支，不能指定扫描时的分支。因此如果使用了这个选项指定了某个分支，可能从扫描结果中选择了另一个分支中的文件，因此不会有文件真正被删除。
+
+
+## Git LFS(Git Large File Storage)
+> 关于Git LFS, 参考：https://gitee.com/help/articles/4235
+
+`git-repo-clean`从`v1.3.0`开始支持将扫描出来的历史大文件直接转化为`Git LFS`指针文件。如果用户开通了`Gitee LFS`功能，则可以将大文件上传到Gitee的LFS服务器单独存储，而 Git仓库只需要管理一份转换后很小的LFS指针文件。
+LFS指针文件代替了原始文件存储在Git仓库`.git/objects/`中，而原文件存储在`.git/lfs/objects/`目录中，Git仓库不管理该目录，上传时该目录中的文件将上传到单独的LFS存储仓库。
+
+在完成转换后，直到推送到远程之前，用户需要在本地安装`git lfs`工具，用来安装相关的钩子，如`pre-push`，这样在推送时，才会将`LFS`对象上传到`Gitee LFS`服务器。
+> `git lfs`的安装，参考：https://github.com/git-lfs/git-lfs#downloading
+
+目前只能在扫描模式下使用LFS功能，如：
+`git repo-clean --verbose --scan --limit=100M --delete --lfs`
+这条命令会将仓库中的大于`100 MB`的文件转化为不超过`200 Bytes`的LFS指针文件，极大的节省仓库空间。
+
 
 ## 代码结构
 
@@ -159,15 +174,6 @@ $ make
 + 从Git 2.32.0起，`git-rev-list`具备`--filter=object:type`选项，在扫描时能够过滤特定类型，这样能够加快处理过程，后续考虑使用较新的Git版本。
 
 + 以下参数单独使用是无效的：`--branch`, `--scan`, `--verbose`, `--delete`, 需要结合其它参数一起使用。
-
-
-## Git LFS(Git Large File Storage)
-> 关于Git LFS, 参考：https://gitee.com/help/articles/4235
-
-`git-repo-clean`从`v1.3.0`开始支持将扫描出来的历史大文件直接转化为`Git LFS`指针文件。如果用户开通了Gitee LFS功能，则可以将大文件上传到Gitee LFS 服务器单独存储，而 Git 仓库只需要管理一份转换后很小的LFS指针文件。
-
-在完成转换后，直到推送到远程之前，用户需要在本地安装`git lfs`工具，用来安装相关的钩子，这样在推送时，才会将`LFS`对象上传到`Gitee LFS`服务器。
-> `git lfs`的安装，参考：https://github.com/git-lfs/git-lfs#downloading
 
 
 ## 常见问题 Q&A
