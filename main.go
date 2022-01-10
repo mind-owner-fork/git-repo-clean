@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 )
 
 func InitContext(args []string) *Repository {
@@ -107,9 +106,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		for _, item := range bloblist {
 			for _, target := range scanned_targets {
 				if item.oid == target {
-					// cut their prefix
-					list := strings.Split(item.objectName, "/")
-					Files_changed.Add(list[len(list)-1])
+					Files_changed.Add(item.objectName)
 				}
 			}
 		}

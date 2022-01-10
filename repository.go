@@ -348,7 +348,7 @@ func (repo *Repository) BackUp(gitbin, path string) {
 			os.RemoveAll(dst)
 		}
 	}
-	PrintLocalWithGreen("start backup")
+	PrintLocalWithGreenln("start backup")
 	cmd := exec.Command(gitbin, "-C", path, "clone", "--no-local", path, dst)
 	_, err = cmd.Output()
 	if err != nil {
@@ -400,7 +400,7 @@ func NewRepository(path string) (*Repository, error) {
 	}
 
 	var bare bool
-	if bare, err := IsBare(gitBin, path); bare && err == nil {
+	if b, err := IsBare(gitBin, path); b && err == nil {
 		bare = true
 		PrintLocalWithYellowln("bare repo warning")
 	}
