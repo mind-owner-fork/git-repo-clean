@@ -34,7 +34,7 @@ Options:
   -t, --type		set the file name suffix to filter from Git repository
   -i, --interactive 	enable interactive operation
   -d, --delete		execute file cleanup and history rewrite process
-  -L, --lfs			migrate big file into Git LFS server
+  -L, --lfs		migrate big file into Git LFS Pointer file
 
 These options can provide users with two ways of using: 
 interactive way, command line way.
@@ -92,7 +92,7 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   -t, --type		设置扫描文件后缀名，即文件类型
   -i, --interactive 	开启交互式操作
   -d, --delete		执行文件删除和历史重写过程
-  -L, --lfs			将大文件迁移到Git LFS 服务器
+  -L, --lfs		将大文件转换为Git LFS指针文件
 
 
 这些选项主要可以给用户提供两种使用方法：交互式、命令行式

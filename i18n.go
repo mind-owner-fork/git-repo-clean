@@ -112,7 +112,7 @@ func initEnglish() {
 	message.SetString(language.English, "clone error", "git clone --no-local error")
 	message.SetString(language.English, "run filepach.Abs error", "Run filepach.Abs error")
 	message.SetString(language.English, "bare repo warning", "⚠ Warning: you are in a bare or mirror repo, some operations may not work well.")
-	message.SetString(language.Chinese, "bare repo error", "❌ Error: can't perform any LFS operation in a bare or mirror repo.")
+	message.SetString(language.English, "bare repo error", "❌ Error: can't perform any LFS operation in a bare or mirror repo.")
 
 	message.SetString(language.English, "backup done! Backup file path is: %s", "Backup done! Backup file path is: %s")
 	message.SetString(language.English, "push failed",
