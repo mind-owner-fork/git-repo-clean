@@ -53,6 +53,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		repo.opts.scan = true
 		repo.opts.delete = true
 		repo.opts.verbose = true
+		repo.opts.lfs = true
 
 		if err := repo.opts.SurveyCmd(); err != nil {
 			ft := LocalPrinter().Sprintf("ask question module fail: %s", err)
@@ -201,15 +202,12 @@ func main() {
 		filter.repo.BackUp(filter.repo.gitBin, filter.repo.path)
 	}
 	// ask for lfs migrate
-	if AskForMigrateToLFS() {
+	if filter.repo.opts.lfs && AskForMigrateToLFS() {
 		// can't run lfs-migrate in bare repo
 		if filter.repo.bare {
 			PrintLocalWithYellowln("bare repo error")
 			os.Exit(1)
 		}
-		filter.repo.opts.lfs = true
-	} else {
-		filter.repo.opts.lfs = false
 	}
 	// filter data
 	filter.Parser()
