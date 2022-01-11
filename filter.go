@@ -28,10 +28,15 @@ func (filter *RepoFilter) tweak_blob(blob *Blob) {
 
 func (filter *RepoFilter) tweak_commit(commit *Commit, helper *Helper_info) {
 
-	// 如果没有from, 但是有filechange，则可能是first commit
-	// 如果有from，但是没有filechange， 则可能是merge commit
-
-	// 如果存在from，且from：0, 说明是从第一个blob就开始删除了，后面都是0
+	// 如果没有parent, 且也没有filechange，则first commit是empty commit
+	if len(commit.parents) == 0 && len(commit.filechanges) == 0 {
+		return
+	}
+	// 如果有parent，但是没有filechange， 则可能是merge commit, 或者连续的empty commit
+	if len(commit.parents) != 0 && len(commit.filechanges) == 0 {
+		return
+	}
+	// 如果有parent，且from：0, 说明是从第一个blob就开始删除了
 	if len(commit.parents) != 0 && commit.parents[0] == 0 {
 		commit.skip(0)
 	}
