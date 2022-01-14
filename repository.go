@@ -333,10 +333,20 @@ func GetGiteeGCWeb(gitbin, path string) string {
 	return url
 }
 
+func GetRepoPath(gitbin, path string) string {
+	cmd := exec.Command(gitbin, "-C", path, "worktree", "list")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	repopath := strings.Split(string(out), " ")[0]
+	return repopath
+}
+
 func (repo *Repository) BackUp(gitbin, path string) {
 	PrintLocalWithGreenln("start preparing repository data")
-	// #TODO rename to ${repo}.bak
-	dst := "../backup.bak"
+	repo_path := GetRepoPath(gitbin, path)
+	dst := repo_path + ".bak"
 	// check if the same directory exist
 	_, err := os.Stat(dst)
 	if err == nil {
