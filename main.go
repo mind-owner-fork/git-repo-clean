@@ -40,7 +40,7 @@ func InitContext(args []string) *Repository {
 func NewFilter(args []string) (*RepoFilter, error) {
 
 	var repo = InitContext(args)
-	err := GetBlobSize(*repo)
+	err := repo.GetBlobSize()
 	if err != nil {
 		ft := LocalPrinter().Sprintf("run getblobsize error: %s", err)
 		PrintRedln(ft)
@@ -73,7 +73,7 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 
 	if repo.opts.scan {
-		bloblist, err := ScanRepository(*repo)
+		bloblist, err := repo.ScanRepository()
 		if err != nil {
 			ft := LocalPrinter().Sprintf("scanning repository error: %s", err)
 			PrintRedln(ft)
@@ -158,7 +158,7 @@ func Prompt(repo Repository) {
 			PrintLocalWithPlainln("execute force push")
 			PrintLocalWithYellowln("git push origin --all --force")
 			PrintLocalWithYellowln("git push origin --tags --force")
-			err := repo.PushRepo(repo.gitBin, repo.path)
+			err := repo.PushRepo()
 			if err == nil {
 				pushed = true
 			}
@@ -175,7 +175,7 @@ func Prompt(repo Repository) {
 		fmt.Println()
 	}
 	PrintLocalWithRedln("2. (Undo)")
-	url := GetGiteeGCWeb(repo.gitBin, repo.path)
+	url := repo.GetGiteeGCWeb()
 	if url != "" {
 		PrintLocalWithRed("gitee GC page link")
 		PrintYellowln(url)
@@ -199,7 +199,7 @@ func main() {
 	}
 	// repo backup
 	if AskForBackUp() {
-		filter.repo.BackUp(filter.repo.gitBin, filter.repo.path)
+		filter.repo.BackUp()
 	}
 	// ask for lfs migrate
 	if filter.repo.opts.lfs && AskForMigrateToLFS() {

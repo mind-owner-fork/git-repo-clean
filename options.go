@@ -67,6 +67,10 @@ Command-Line way:
   Or, if you want to delete all files under dir/ :
     git repo-clean --file dir/ --delete
 
+  If you want to use Git LFS to manage your big file, use '--lfs' option to
+  convert your big file into LFS pointer file:
+    git repo-clean --scan --limit=1G --type=so --lfs --delete
+
 `
 const Usage_ZH = `用法: git repo-clean [选项]
 
@@ -123,6 +127,9 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
 
   或者，你想一次性删除某个目录下所有的文件，以及相关提交记录：
     git repo-clean --file dir/ --delete
+
+  如果你想用Git LFS管理你的大文件，可以使用'--lfs'选项将大文件转换为LFS指针文件：
+    git repo-clean --scan --limit=1G --type=so --lfs --delete
 
 `
 
