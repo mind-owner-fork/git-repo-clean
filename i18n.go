@@ -18,8 +18,8 @@ func init() {
 func initEnglish() {
 	// main.go
 	message.SetString(language.English, "parse Option error", "Parse Option error")
-	message.SetString(language.English, "couldn't open Git repository", "Couldn't open Git repository")
-	message.SetString(language.English, "couldn't find Git execute program", "Couldn't find Git execute program")
+	message.SetString(language.English, "couldn't open Git repository: %s", "Couldn't open Git repository: %s")
+	message.SetString(language.English, "couldn't find Git execute program: %s", "Couldn't find Git execute program: %s")
 	message.SetString(language.English, "sorry, this tool requires Git version at least 2.24.0",
 		"Sorry, this tool requires Git version at least 2.24.0")
 	message.SetString(language.English, "couldn't support running in bare repository", "Couldn't support running in bare repository")
@@ -161,8 +161,8 @@ func initEnglish() {
 func initChinese() {
 	// main.go
 	message.SetString(language.Chinese, "parse Option error", "解析参数错误。")
-	message.SetString(language.Chinese, "couldn't open Git repository", "无法打开Git仓库。")
-	message.SetString(language.Chinese, "couldn't find Git execute program", "无法找到Git可执行文件。")
+	message.SetString(language.Chinese, "couldn't open Git repository: %s", "无法打开Git仓库: %s")
+	message.SetString(language.Chinese, "couldn't find Git execute program: %s", "无法找到Git可执行文件: %s")
 	message.SetString(language.Chinese, "sorry, this tool requires Git version at least 2.24.0",
 		"抱歉，这个工具需要Git的最低版本为 2.24.0")
 	message.SetString(language.Chinese, "couldn't support running in bare repository", "不支持在裸仓库中执行。")

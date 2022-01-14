@@ -119,10 +119,10 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
     git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
 
   如果你想删除某个已知的文件，则不必扫描仓库，使用'--file'选项，直接指定文件：
-	  git repo-clean --file file1 --file file2 --delete
+    git repo-clean --file file1 --file file2 --delete
 
   或者，你想一次性删除某个目录下所有的文件，以及相关提交记录：
-	  git repo-clean --file dir/ --delete
+    git repo-clean --file dir/ --delete
 
 `
 
