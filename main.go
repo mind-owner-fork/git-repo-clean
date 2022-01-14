@@ -17,8 +17,8 @@ func InitContext(args []string) *Repository {
 
 	r, err := NewRepository(op.path)
 	if err != nil {
-		ft := LocalPrinter().Sprintf("Couldn't open Git repository: %s", err)
-		PrintRedln(ft)
+		ft := LocalPrinter().Sprintf("couldn't open Git repository: %s", err)
+		PrintLocalWithRedln(ft)
 		os.Exit(1)
 	}
 

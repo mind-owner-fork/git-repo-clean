@@ -233,7 +233,7 @@ func GitVersion(gitbin, path string) (string, error) {
 	}
 	matches := Match("[0-9]+.[0-9]+.[0-9]+.?[0-9]?", string(out))
 	if len(matches) == 0 {
-		return "", errors.New(LocalPrinter().Sprintf("match git version wrong"))
+		return "", fmt.Errorf(LocalPrinter().Sprintf("match git version wrong"))
 	}
 	return matches[0], nil
 }
@@ -397,16 +397,16 @@ func NewRepository(path string) (*Repository, error) {
 	// Find the `git` executable to be used:
 	gitBin, err := findGitBin()
 	if err != nil {
-		return nil, fmt.Errorf(
-			"Couldn't find Git execute program: %s", err)
+		return nil, fmt.Errorf(LocalPrinter().Sprintf(
+			"couldn't find Git execute program: %s", err))
 	}
 	gitdir, err := GitDir(gitBin, path)
 	if err != nil {
-		return &Repository{}, err
+		return nil, err
 	}
 
 	if shallow, err := IsShallow(gitBin, path); shallow {
-		return &Repository{}, err
+		return nil, err
 	}
 
 	var bare bool
@@ -417,13 +417,12 @@ func NewRepository(path string) (*Repository, error) {
 
 	version, err := GitVersion(gitBin, path)
 	if err != nil {
-		PrintRedln(fmt.Sprint(err))
-		os.Exit(1)
+		return nil, err
 	}
 	// Git version should >= 2.24.0
 	if GitVersionConvert(version) < 2240 {
-		PrintLocalWithRedln("Sorry, this tool requires Git version at least 2.24.0")
-		os.Exit(1)
+		return nil, fmt.Errorf(LocalPrinter().Sprintf(
+			"sorry, this tool requires Git version at least 2.24.0"))
 	}
 
 	return &Repository{
