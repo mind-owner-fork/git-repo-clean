@@ -1,2 +1,0 @@
-docs/images/git-repo-clean-interactive.gif filter=lfs diff=lfs merge=lfs -text
-docs/images/git-repo-clean-command-line.gif filter=lfs diff=lfs merge=lfs -text
