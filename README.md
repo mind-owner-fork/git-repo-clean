@@ -27,7 +27,7 @@ drwxrwxr-x 3 git git 4.0K Dec  1 17:31 docs                 # 附录文档
 
 **2. 源码编译安装包**
 
-该方式需要你的电脑有基本的`make编译`环境，以及Golang环境
+该方式需要你的电脑有基本的Golang发开环境
 
 ```bash
 $ git clone https://gitee.com/oschina/git-repo-clean
@@ -82,6 +82,7 @@ $ make
   -t, --type		设置扫描文件后缀名，即文件类型
   -i, --interactive 	开启交互式操作
   -d, --delete		执行文件删除和历史重写过程
+  -L, --lfs		将大文件转换为Git LFS指针文件
 ```
 
 

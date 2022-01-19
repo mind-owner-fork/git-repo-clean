@@ -58,14 +58,12 @@ func CreatePointerFile(blob *Blob) []byte {
 	return buf.Bytes()
 }
 
-func UpdateBlob(blob *Blob) *Blob {
+func UpdateBlob(blob *Blob) {
 	pf := CreatePointerFile(blob)
 	newblob := blob
 	newblob.original_oid = GenerateHash(pf, "sha1sum")
 	newblob.data_size = int64(len(pf))
 	newblob.data = pf
-
-	return newblob
 }
 
 // convert to Git LFS object

@@ -205,15 +205,6 @@ type Commit struct {
 	filechanges  []FileChange // multi-line
 }
 
-func parent_filter(str []int32) (int32, []int32) {
-	var empty []int32
-	if len(str) == 0 {
-		return 0, empty
-	} else {
-		return str[0], str[1:]
-	}
-}
-
 func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, msg_ []byte, parents_ []int32, filechanges_ []FileChange) Commit {
 	var ele = NewGitElementsWithID()
 	ele.base.types = "commit"
@@ -247,16 +238,16 @@ func (commit *Commit) dump(writer io.WriteCloser) {
 	writer.Write([]byte(orig_id))
 
 	if len(commit.author) != 0 {
-		author_line := fmt.Sprintf("%s", commit.author)
+		author_line := commit.author
 		writer.Write([]byte(author_line))
 	}
 	if len(commit.commiter) != 0 {
-		commiter_line := fmt.Sprintf("%s", commit.commiter)
+		commiter_line := commit.commiter
 		writer.Write([]byte(commiter_line))
 	}
 
 	size_line := fmt.Sprintf("data %d\n", commit.msg_size)
-	data_line := fmt.Sprintf("%s", commit.message)
+	data_line := commit.message
 	writer.Write([]byte(size_line))
 	writer.Write([]byte(data_line))
 
@@ -373,7 +364,7 @@ func (tag *Tag) dump(writer io.WriteCloser) {
 	mark_line := fmt.Sprintf("mark :%d\n", tag.ele.id)
 	from_line := fmt.Sprintf("from :%d\n", tag.from_ref)
 	origin_oid := fmt.Sprintf("original-oid %s\n", tag.original_oid)
-	tagger_line := fmt.Sprintf("%s", tag.tagger)
+	tagger_line := tag.tagger
 	data_line := fmt.Sprintf("data %d\n%s\n", tag.msg_size, tag.msg)
 
 	writer.Write([]byte(tag_line))
@@ -783,10 +774,10 @@ func (filter *RepoFilter) Parser() {
 	}
 
 	iter, err := filter.repo.NewFastExportIter()
-	defer iter.Close()
 	if err != nil {
 		fmt.Fprint(os.Stdout, err)
 	}
+	defer iter.Close()
 
 	input, cmd, err := filter.repo.FastImportOut()
 	defer func() {

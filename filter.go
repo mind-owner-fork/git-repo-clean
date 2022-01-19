@@ -17,7 +17,7 @@ func (filter *RepoFilter) tweak_blob(blob *Blob) {
 			// replace old blob with new LFS info
 			if filter.repo.opts.lfs {
 				ConvertToLFSObj(blob)
-				blob = UpdateBlob(blob)
+				UpdateBlob(blob)
 				break
 			}
 			// set new id to 0
@@ -118,7 +118,7 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 }
 
 func (filter *RepoFilter) tweak_reset(reset *Reset) {
-	if SKIPPED_COMMITS.Contains(reset.from) == true {
+	if SKIPPED_COMMITS.Contains(reset.from) {
 		reset.base.dumped = false
 		reset.base.skip()
 	}
@@ -126,7 +126,7 @@ func (filter *RepoFilter) tweak_reset(reset *Reset) {
 
 func (filter *RepoFilter) tweak_tag(tag *Tag) {
 	// the tag may have no parent, if so skip it
-	if SKIPPED_COMMITS.Contains(tag.from_ref) == true {
+	if SKIPPED_COMMITS.Contains(tag.from_ref) {
 		tag.ele.base.dumped = false
 		tag.ele.skip(0)
 	}

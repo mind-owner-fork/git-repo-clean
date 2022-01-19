@@ -111,7 +111,7 @@ func initEnglish() {
 	message.SetString(language.English, "start backup", "Start backup...")
 	message.SetString(language.English, "clone error", "git clone --no-local error")
 	message.SetString(language.English, "run filepach.Abs error", "Run filepach.Abs error")
-	message.SetString(language.English, "bare repo warning", "⚠ Warning: you are in a bare or mirror repo, some operations may not work well.")
+	message.SetString(language.English, "bare repo warning", "⚠ Warning: you are in a bare or mirror repo, some operations may be limited.")
 	message.SetString(language.English, "bare repo error", "❌ Error: can't perform any LFS operation in a bare or mirror repo.")
 
 	message.SetString(language.English, "backup done! Backup file path is: %s", "Backup done! Backup file path is: %s")
@@ -245,7 +245,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "file cleanup is complete. Start cleaning the repository", "文件清理完毕，开始清理仓库...")
 	message.SetString(language.Chinese, "branches have been changed", "以下分支已经更改：")
 	message.SetString(language.Chinese, "nothing have changed, exit...", "没有文件更改，退出...")
-	message.SetString(language.Chinese, "bare repo warning", "⚠ 警告：您正在裸仓或镜像仓中，有些操作可能会受到影响。")
+	message.SetString(language.Chinese, "bare repo warning", "⚠ 警告：您正在裸仓或镜像仓中，有些操作可能会受到限制。")
 	message.SetString(language.Chinese, "bare repo error", "❌ 错误：无法在裸仓或镜像仓中执行LFS相关操作!")
 
 	// cmd.go

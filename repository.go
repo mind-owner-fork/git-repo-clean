@@ -470,23 +470,25 @@ func (repo Repository) CleanUp() {
 		os.Exit(1)
 	}
 
-	fmt.Println("running git reset --hard")
-	cmd1 := exec.Command(repo.gitBin, "-C", repo.path, "reset", "--hard")
-	cmd1.Stdout = os.Stdout
-	err := cmd1.Start()
-	if err != nil {
-		PrintRedln(fmt.Sprint(err))
-	}
-	err = cmd1.Wait()
-	if err != nil {
-		PrintRedln(fmt.Sprint(err))
+	if !repo.bare {
+		fmt.Println("running git reset --hard")
+		cmd1 := exec.Command(repo.gitBin, "-C", repo.path, "reset", "--hard")
+		cmd1.Stdout = os.Stdout
+		err := cmd1.Start()
+		if err != nil {
+			PrintRedln(fmt.Sprint(err))
+		}
+		err = cmd1.Wait()
+		if err != nil {
+			PrintRedln(fmt.Sprint(err))
+		}
 	}
 
 	fmt.Println("running git reflog expire --expire=now --all")
 	cmd2 := exec.Command(repo.gitBin, "-C", repo.path, "reflog", "expire", "--expire=now", "--all")
 	cmd2.Stderr = os.Stderr
 	cmd2.Stdout = os.Stdout
-	err = cmd2.Start()
+	err := cmd2.Start()
 	if err != nil {
 		PrintRedln(fmt.Sprint(err))
 	}
