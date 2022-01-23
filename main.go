@@ -208,6 +208,8 @@ func main() {
 			PrintLocalWithYellowln("bare repo error")
 			os.Exit(1)
 		}
+	} else {
+		filter.repo.opts.lfs = false
 	}
 	// filter data
 	filter.Parser()
