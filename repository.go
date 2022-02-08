@@ -344,7 +344,6 @@ func getRepoPath(gitbin, path string) string {
 }
 
 func (repo Repository) BackUp() {
-	PrintLocalWithGreenln("start preparing repository data")
 	repo_path := getRepoPath(repo.gitBin, repo.path)
 	dst := repo_path + ".bak"
 	// check if the same directory exist

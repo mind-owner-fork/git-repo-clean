@@ -159,23 +159,6 @@ func AskForMigrateToLFS() bool {
 	return ok
 }
 
-func AskForBackUp() bool {
-	ok := false
-
-	prompt := &survey.Confirm{
-		Message: LocalSprintf("ask for backup message") + "\n",
-	}
-	err := survey.AskOne(prompt, &ok)
-	if err != nil {
-		if err == terminal.InterruptErr {
-			PrintLocalWithRedln("process interrupted")
-			os.Exit(1)
-		}
-	}
-
-	return ok
-}
-
 func AskForOverride() bool {
 	ok := false
 

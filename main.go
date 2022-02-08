@@ -198,9 +198,8 @@ func main() {
 		os.Exit(1)
 	}
 	// repo backup
-	if AskForBackUp() {
-		filter.repo.BackUp()
-	}
+	filter.repo.BackUp()
+
 	// ask for lfs migrate
 	if filter.repo.opts.lfs && AskForMigrateToLFS() {
 		// can't run lfs-migrate in bare repo
