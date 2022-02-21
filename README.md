@@ -114,8 +114,8 @@ $ make
 `git repo-clean --verbose --file file1 --file dir/ --delete`
 > 使用`--file <filepath>`删除指定文件，或者指定文件夹中的所有文件。
 
-也可以不用扫描，只指定文件大小的阈值，即可从仓库中完成删除大小超过指定阈值的文件。
-`git repo-clean -verbose --limit=1G --delete`
+也可以不用扫描，只指定文件大小的阈值，即可从仓库中完成删除大小超过指定阈值的文件。<br/>
+`git repo-clean --verbose --limit=1G --delete`
 > 此时，`--number`选项无意义，默认值转为`UINT_MAX`。
 
 ![命令行式用法](docs/images/git-repo-clean-command-line.gif)
