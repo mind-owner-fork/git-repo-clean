@@ -1,6 +1,6 @@
 TARGET := git-repo-clean
 
-VERSION := 1.3.2
+VERSION := 1.3.3
 
 GO_VERSION := $(subst go version go,,$(shell go version))
 
