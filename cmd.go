@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -178,7 +179,7 @@ func AskForOverride() bool {
 
 func AskForUpdate() bool {
 	ok := false
-
+	fmt.Println()
 	prompt := &survey.Confirm{
 		Message: LocalSprintf("ask for update message") + "\n",
 	}

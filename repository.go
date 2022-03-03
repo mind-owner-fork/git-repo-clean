@@ -446,20 +446,18 @@ func BrachesChanged() bool {
 		for _, branch := range branches {
 			s := strings.TrimSpace(branch.(string))
 			if strings.HasPrefix(s, "refs/heads/") {
-				n := strings.TrimPrefix(s, "refs/heads/")
-				PrintYellowln(n)
+				PrintYellowln(strings.TrimPrefix(s, "refs/heads/"))
 			}
 
 			if strings.HasPrefix(s, "refs/tags/") {
-				n := strings.TrimPrefix(s, "refs/tags/")
-				PrintYellowln(n)
+				PrintYellowln(strings.TrimPrefix(s, "refs/tags/"))
 			}
 
 			if strings.HasPrefix(s, "refs/remotes/") {
-				n := strings.TrimPrefix(s, "refs/remotes/")
-				PrintYellowln(n)
+				PrintYellowln(strings.TrimPrefix(s, "refs/remotes/"))
 			}
 		}
+		fmt.Println()
 		return true
 	}
 	return false

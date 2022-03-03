@@ -18,7 +18,6 @@ func init() {
 func initEnglish() {
 	// main.go
 	message.SetString(language.English, "parse Option error", "Parse Option error")
-	message.SetString(language.English, "couldn't open Git repository: %s", "Couldn't open Git repository: %s")
 	message.SetString(language.English, "couldn't find Git execute program: %s", "Couldn't find Git execute program: %s")
 	message.SetString(language.English, "sorry, this tool requires Git version at least 2.24.0",
 		"Sorry, this tool requires Git version at least 2.24.0")
@@ -36,7 +35,7 @@ func initEnglish() {
 	message.SetString(language.English, "execute force push",
 		"The following two commands will be executed, then the remote commit will be overwritten:")
 	message.SetString(language.English, "suggest operations header",
-		"Since the history of the local repository has been modified, if there is no new commit or you've configurated Git-LFS, it is recommended to complete the following work first:")
+		"the files has been cleaned or converted into LFS objects, please confirm the current repo status is Ok. If there's no other files to handle, please follow those steps below:")
 	message.SetString(language.English, "1. (Done!)", "1. (Done!) remote repository have been updated.")
 	message.SetString(language.English, "1. (Undo)", "1. (Undo) update remote repository. Push local cleaned repository to remote repository:")
 	message.SetString(language.English, "2. (Undo)",
@@ -47,7 +46,7 @@ func initEnglish() {
 	message.SetString(language.English, "for detailed documentation, see", "For detailed documentation, see: ")
 	message.SetString(language.English, "suggest operations done", "After completing the above three steps, Congratulations, all the cleaning work has been done!")
 	message.SetString(language.English, "introduce GIT LFS",
-		"If you need to store large files, please use '--lfs' option to convert big file into  GIT LFS to avoid the size of the repository exceed the limit again.")
+		"If you need to store large files, please use '--lfs' option to convert big file into Gitee LFS to avoid the size of the repository exceed the limit again.")
 	message.SetString(language.English, "for the use of Gitee LFS, see", "For the use of Gitee LFS, see: ")
 	message.SetString(language.English, "init repo filter error", "Init repo Filter error")
 	message.SetString(language.English, "ask question module fail: %s", "Ask question module fail: %s")
@@ -147,7 +146,7 @@ func initEnglish() {
 	message.SetString(language.English, "confirm message", "The above is the file you want to delete. Are you sure you want to *DELETE* it ?")
 	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you need to update the backup?")
 	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to *FORCE PUSH* to the remote repository now ?")
-	message.SetString(language.English, "ask for migrating big file into LFS", "Do you want to migrate your big files into Git LFS? ")
+	message.SetString(language.English, "ask for migrating big file into LFS", "Do you want to migrate your big files into Gitee LFS? ")
 	message.SetString(language.English, "process interrupted", "process interrupted")
 
 	message.SetString(language.English, "convert uint error: %s", "Convert uint error: %s")
@@ -160,7 +159,6 @@ func initEnglish() {
 func initChinese() {
 	// main.go
 	message.SetString(language.Chinese, "parse Option error", "解析参数错误。")
-	message.SetString(language.Chinese, "couldn't open Git repository: %s", "无法打开Git仓库: %s")
 	message.SetString(language.Chinese, "couldn't find Git execute program: %s", "无法找到Git可执行文件: %s")
 	message.SetString(language.Chinese, "sorry, this tool requires Git version at least 2.24.0",
 		"抱歉，这个工具需要Git的最低版本为 2.24.0")
@@ -174,7 +172,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "current repository size", "当前仓库大小：")
 	message.SetString(language.Chinese, "including LFS objects size", "LFS对象大小:  ")
 	message.SetString(language.Chinese, "execute force push", "将会执行如下两条命令，远端的的提交将会被覆盖:")
-	message.SetString(language.Chinese, "suggest operations header", "由于本地仓库的历史已修改，如果没有新的提交, 或者已经完成Git-LFS配置，建议先完成如下工作：")
+	message.SetString(language.Chinese, "suggest operations header", "文件已清理或已转换为LFS对象，请确认当前仓库状态是否正常。如果没有其它文件要处理，建议完成如下工作：")
 	message.SetString(language.Chinese, "1. (Done!)", "1. (已完成！)远程仓库已经更新。")
 	message.SetString(language.Chinese, "1. (Undo)", "1. (待完成)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
 	message.SetString(language.Chinese, "2. (Undo)", "2. (待完成)清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作。")
@@ -182,7 +180,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "gitee GC page link", "如果是 Gitee 仓库，且有管理权限，请点击链接: ")
 	message.SetString(language.Chinese, "for detailed documentation, see", "详细文档请参阅: ")
 	message.SetString(language.Chinese, "suggest operations done", "完成以上三步后，恭喜你，所有的清理工作已经完成！")
-	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，可使用'--lfs'选项，将大文件迁移到Git LFS，避免仓库体积膨胀。")
+	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，可使用'--lfs'选项，将大文件迁移到Gitee LFS，避免仓库体积膨胀。")
 	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gitee LFS 的使用请参阅：")
 	message.SetString(language.Chinese, "init repo filter error", "初始化仓库过滤器失败")
 	message.SetString(language.Chinese, "ask question module fail: %s", "交互式模块运行失败: %s")
@@ -268,7 +266,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "confirm message", "以上是你要删除的文件，确定要<删除>吗?")
 	message.SetString(language.Chinese, "ask for override message", "当前目录下存在同名文件夹，可能已经备份，是否需要更新备份?")
 	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在<强制推送>到远程仓库？")
-	message.SetString(language.Chinese, "ask for migrating big file into LFS", "是否将大文件迁移到 Git LFS 进行管理？")
+	message.SetString(language.Chinese, "ask for migrating big file into LFS", "是否将大文件迁移到 Gitee LFS 进行管理？")
 	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
 	message.SetString(language.Chinese, "convert uint error: %s", "转换大小单位出错: %s")
