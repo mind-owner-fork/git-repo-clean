@@ -22,6 +22,12 @@ func InitContext(args []string) *Repository {
 		os.Exit(1)
 	}
 
+	// check if current repo has uncommited files
+	if err = GetCurrentStatus(r.gitBin, r.path); err != nil {
+		PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
+		os.Exit(1)
+	}
+
 	// set default branch to all is to keep deleting process consistent with scanning process
 	// user end pass '--branch=all', but git-fast-export takes '--all'
 	if op.branch == "all" {

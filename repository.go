@@ -267,17 +267,23 @@ func (repo Repository) GetCurrentBranch() (string, error) {
 }
 
 // get current status
-func (repo Repository) GetCurrentStatus() {
-	cmd := exec.Command(repo.gitBin, "-C", repo.path, "status", "-z")
+func GetCurrentStatus(gitbin, path string) error {
+	cmd := exec.Command(gitbin, "-C", path, "status", "-s")
 	out, err := cmd.Output()
 	if err != nil {
-		PrintLocalWithRedln("could not run 'git status'")
+		return fmt.Errorf("could not run 'git status'")
 	}
 	st := string(out)
 	if st == "" {
-		PrintLocalWithGreenln("git status clean")
+		return nil
 	}
-	fmt.Println(st)
+	list := strings.Split(st, "\n")
+	for _, ele := range list {
+		if strings.HasPrefix(ele, "M ") || strings.HasPrefix(ele, " M") || strings.HasPrefix(ele, "A ") {
+			return fmt.Errorf("there's some changes to be committed, please commit them first.")
+		}
+	}
+	return nil
 }
 
 // get git objects data size
