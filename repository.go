@@ -248,7 +248,7 @@ func gitVersionConvert(version string) int {
 	if len(dict) == 4 {
 		vstr = dict[0] + dict[1] + dict[2] + dict[3]
 	}
-	vstr = strings.TrimSuffix(vstr, "\n")
+	vstr = strings.TrimSpace(vstr)
 	ret, err := strconv.Atoi(vstr)
 	if err != nil {
 		return 0
