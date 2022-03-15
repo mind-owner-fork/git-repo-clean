@@ -27,7 +27,8 @@ drwxrwxr-x 3 git git 4.0K Dec  1 17:31 docs                 # 附录文档
 
 **2. 源码编译安装包**
 
-该方式需要你的电脑有基本的Golang发开环境
+该方式需要你的电脑有基本的Golang开发环境
+安装网址：https://docs.studygolang.com/doc/install
 
 ```bash
 $ git clone https://gitee.com/oschina/git-repo-clean
@@ -36,6 +37,9 @@ $ cd git-repo-clean
 $ make
 # 在bin/目录下即是编译后的程序包
 ```
+
+如果make时提示 i/o timeout 请尝试更换国内代理
+> go env -w GOPROXY=https://goproxy.cn,direct
 
 + 安装
 
