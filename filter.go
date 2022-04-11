@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 type RepoFilter struct {
@@ -67,7 +68,7 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 					if target == filechange.blob_id {
 						Branch_changed.Add(filechange.branch)
 						matched = true
-						break
+						break // break inner for-loop
 					}
 				} else {
 					if filechange.changetype == "M" {
@@ -75,7 +76,7 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 						if _, ok := ID_HASH[int32(id)]; !ok {
 							Branch_changed.Add(filechange.branch)
 							matched = true
-							break
+							break // break inner for-loop
 						}
 					}
 				}
@@ -94,16 +95,20 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 			if size > limit {
 				Branch_changed.Add(filechange.branch)
 				matched = true
-				break
+			}
+		} else if !filter.repo.opts.scan && filter.repo.opts.types != "*" {
+			// filter by file type
+			if strings.HasSuffix(filechange.filepath, "."+filter.repo.opts.types) {
+				Branch_changed.Add(filechange.branch)
+				matched = true
 			}
 		} else if !filter.repo.opts.scan && len(filter.filepaths) != 0 {
 			// filter by blob name or directory
 			for _, filepath := range filter.filepaths {
 				matches := Match(filepath, filechange.filepath)
 				if len(matches) != 0 {
-					matched = true
 					Branch_changed.Add(filechange.branch)
-					break
+					matched = true
 				}
 			}
 		}
