@@ -53,6 +53,12 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	var first_target []string
 	var scanned_targets []string
 	var file_paths []string
+
+	if repo.opts.lfs {
+		repo.opts.scan = true
+		repo.opts.number = ^uint32(0)
+		repo.opts.limit = "200b" // to project LFS file
+	}
 	// when run git-repo-clean -i, its means run scan too
 	if repo.opts.interact {
 		repo.opts.scan = true
@@ -65,9 +71,6 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			PrintRedln(ft)
 			os.Exit(1)
 		}
-	}
-	if repo.opts.lfs {
-		repo.opts.scan = true
 	}
 
 	PrintLocalWithPlain("current repository size")
@@ -121,8 +124,15 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		if repo.opts.file != nil {
 			file_paths = repo.opts.file
 			repo.opts.limit = ""
+			repo.opts.types = "*"
+			repo.opts.number = ^uint32(0) // UINT_MAX
 		}
 		if repo.opts.limit != "" {
+			repo.opts.types = "*"
+			repo.opts.number = ^uint32(0) // UINT_MAX
+		}
+		if len(repo.opts.types) != 0 && repo.opts.types != "*" {
+			repo.opts.limit = ""
 			repo.opts.number = ^uint32(0) // UINT_MAX
 		}
 	}
@@ -208,6 +218,7 @@ func main() {
 	// ask for lfs migrate
 	if filter.repo.opts.lfs && AskForMigrateToLFS() {
 		// can't run lfs-migrate in bare repo
+		// git lfs track must be run in a work tree.
 		if filter.repo.bare {
 			PrintLocalWithYellowln("bare repo error")
 			os.Exit(1)

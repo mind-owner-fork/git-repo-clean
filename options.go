@@ -58,18 +58,29 @@ Command-Line way:
     git repo-clean --scan --limit=1G --type=tar.gz --delete --branch=all
 
   You can limit the number of results by --number option, the default value is 3:
-    git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
+    git repo-clean --scan --limit=100M --type=tar.gz --delete --number=3
 
-  If you want to delete a known file, there is no need to scan the whole repo,
-  just use the '--file' option:
-    git repo-clean --file file1 --file file2 --delete
+  * If you want to use Git LFS to manage your big file, use '--lfs' option to
+  convert big files into LFS pointer files. Note that this operation must under
+  scan mode, and must specify the file type, and will suppress file size limit:
+	git repo-clean --scan --type=so --lfs --delete
 
-  Or, if you want to delete all files under dir/ :
-    git repo-clean --file dir/ --delete
+  * In non-scan mode, which means without specifying the --scan option,
+  you can quickly perform the following operations:
 
-  If you want to use Git LFS to manage your big file, use '--lfs' option to
-  convert your big file into LFS pointer file:
-    git repo-clean --scan --limit=1G --type=so --lfs --delete
+    To delete a known file, there is no need to scan the whole repo,
+    just use the '--file' option:
+      git repo-clean --file file1 --file file2 --delete
+
+    Or, if you want to delete all files under dir/ :
+      git repo-clean --file dir/ --delete
+
+    Or, if you want to delete certain type of files in batch：
+      git repo-clean --type="png" --delete
+
+    Or, delete all files larger than a certain size limit in batch
+      git repo-clean --limit=10M --delete
+
 
 `
 const Usage_ZH = `用法: git repo-clean [选项]
@@ -122,14 +133,26 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
   可以通过--number选项，控制扫描结果的数量，默认只扫描出前3个最大文件：
     git repo-clean --scan --limit=1G --type=tar.gz --delete --number=3
 
-  如果你想删除某个已知的文件，则不必扫描仓库，使用'--file'选项，直接指定文件：
-    git repo-clean --file file1 --file file2 --delete
 
-  或者，你想一次性删除某个目录下所有的文件，以及相关提交记录：
-    git repo-clean --file dir/ --delete
+  * 如果你想用Git LFS管理大文件，可以使用'--lfs'选项将大文件转换为LFS指针文件
+  这个操作必须在扫描模式下进行，必须指定文件类型，即必须有--scan, --type 参数
+  此时--limit, --number参数都无效：
+    git repo-clean --scan --type=so --lfs --delete
 
-  如果你想用Git LFS管理你的大文件，可以使用'--lfs'选项将大文件转换为LFS指针文件：
-    git repo-clean --scan --limit=1G --type=so --lfs --delete
+
+  * 在非扫描模式下，即不指定 --scan 参数，可以快速进行以下操作：
+
+    删除某些已知的文件，不必扫描仓库，使用'--file'选项直接指定文件：
+      git repo-clean --file file1 --file file2 --delete
+
+    或者，批量删除某个目录下所有的文件：
+      git repo-clean --file dir/ --delete
+
+    又或者，批量删除某种类型文件：
+      git repo-clean --type="png" --delete
+
+    再或者，批量删除超过某个大小的所有文件：
+      git repo-clean --limit=10M --delete
 
 `
 

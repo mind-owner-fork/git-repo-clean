@@ -126,14 +126,9 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 	}
 
 	for objectid, objectsize := range Blob_size_list {
-		limit, err := UnitConvert(repo.opts.limit)
-		if err != nil {
-			return empty, fmt.Errorf(LocalPrinter().Sprintf(
-				"convert uint error: %s", err))
-		}
 		// set bitsize to 64, means max single blob size is 4 GiB
 		size, _ := strconv.ParseUint(objectsize, 10, 64)
-		if size > limit {
+		if repo.opts.lfs && !repo.opts.interact {
 			name, err := repo.GetBlobName(objectid)
 			if err != nil {
 				if err != io.EOF {
@@ -142,6 +137,15 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 				}
 			}
 			if name == "" {
+				continue
+			}
+
+			limit, err := UnitConvert(repo.opts.limit)
+			if err != nil {
+				return empty, fmt.Errorf(LocalPrinter().Sprintf(
+					"convert uint error: %s", err))
+			}
+			if size < limit {
 				continue
 			}
 			if len(repo.opts.types) != 0 || repo.opts.types != "*" {
@@ -162,10 +166,47 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 			sort.Slice(blobs, func(i, j int) bool {
 				return blobs[i].objectSize > blobs[j].objectSize
 			})
-			// remain first [op.number] blobs
-			if len(blobs) > int(repo.opts.number) {
-				blobs = blobs[:repo.opts.number]
-				// break
+		} else {
+			limit, err := UnitConvert(repo.opts.limit)
+			if err != nil {
+				return empty, fmt.Errorf(LocalPrinter().Sprintf(
+					"convert uint error: %s", err))
+			}
+
+			if size > limit {
+				name, err := repo.GetBlobName(objectid)
+				if err != nil {
+					if err != io.EOF {
+						return empty, fmt.Errorf(LocalPrinter().Sprintf(
+							"run GetBlobName error: %s", err))
+					}
+				}
+				if name == "" {
+					continue
+				}
+				if len(repo.opts.types) != 0 || repo.opts.types != "*" {
+					var pattern string
+					if strings.HasSuffix(name, "\"") {
+						pattern = "." + repo.opts.types + "\"$"
+					} else {
+						pattern = "." + repo.opts.types + "$"
+					}
+					if matches := Match(pattern, name); len(matches) == 0 {
+						// matched none, skip
+						continue
+					}
+				}
+				// append this record blob into slice
+				blobs = append(blobs, HistoryRecord{objectid, size, name})
+				// sort according by size
+				sort.Slice(blobs, func(i, j int) bool {
+					return blobs[i].objectSize > blobs[j].objectSize
+				})
+				// remain first [op.number] blobs
+				if len(blobs) > int(repo.opts.number) {
+					blobs = blobs[:repo.opts.number]
+					// break
+				}
 			}
 		}
 	}
