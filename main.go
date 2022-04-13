@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 )
 
@@ -43,7 +44,6 @@ func InitContext(args []string) *Repository {
 }
 
 func NewFilter(args []string) (*RepoFilter, error) {
-
 	var repo = InitContext(args)
 	err := repo.GetBlobSize()
 	if err != nil {
@@ -55,9 +55,10 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	var file_paths []string
 
 	if repo.opts.lfs {
-		repo.opts.scan = true
-		repo.opts.number = ^uint32(0)
-		repo.opts.limit = "200b" // to project LFS file
+		limit, _ := UnitConvert(repo.opts.limit)
+		if limit < 200 {
+			repo.opts.limit = "200b" // to project LFS file
+		}
 	}
 	// when run git-repo-clean -i, its means run scan too
 	if repo.opts.interact {
@@ -81,6 +82,9 @@ func NewFilter(args []string) (*RepoFilter, error) {
 	}
 
 	if repo.opts.scan {
+		if repo.opts.limit == "" {
+			repo.opts.limit = "1M" // set default to 1M for scan
+		}
 		bloblist, err := repo.ScanRepository()
 		if err != nil {
 			ft := LocalPrinter().Sprintf("scanning repository error: %s", err)
@@ -120,21 +124,19 @@ func NewFilter(args []string) (*RepoFilter, error) {
 			}
 		}
 
-	} else {
-		if repo.opts.file != nil {
-			file_paths = repo.opts.file
-			repo.opts.limit = ""
-			repo.opts.types = "*"
-			repo.opts.number = ^uint32(0) // UINT_MAX
-		}
-		if repo.opts.limit != "" {
-			repo.opts.types = "*"
-			repo.opts.number = ^uint32(0) // UINT_MAX
-		}
-		if len(repo.opts.types) != 0 && repo.opts.types != "*" {
-			repo.opts.limit = ""
-			repo.opts.number = ^uint32(0) // UINT_MAX
-		}
+	} else if repo.opts.file != nil { // * filter by provided files
+		file_paths = repo.opts.file
+		repo.opts.limit = ""              // no file size limit
+		repo.opts.types = "*"             // default all types
+		repo.opts.number = math.MaxUint32 // no file number limit
+	} else if repo.opts.limit != "" { // * filter by file size
+		repo.opts.file = nil              // no provided files
+		repo.opts.types = "*"             // default to all types
+		repo.opts.number = math.MaxUint32 // no file number limit
+	} else if repo.opts.types != "*" { // * filter by file type
+		repo.opts.file = nil              // no provided files
+		repo.opts.limit = ""              // no file size limit
+		repo.opts.number = math.MaxUint32 // no file number limit
 	}
 
 	if !repo.opts.delete {

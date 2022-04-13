@@ -188,7 +188,7 @@ func (op *Options) init(args []string) error {
 	// since the deleting process is not very slow, default is all branch
 	flags.StringVarP(&op.branch, "branch", "b", "all", "set the branch to scan")
 	// default file size threshold is 1m
-	flags.StringVarP(&op.limit, "limit", "l", "1m", "set the file size limitation")
+	flags.StringVarP(&op.limit, "limit", "l", "", "set the file size limitation")
 	// default to show top 3 largest files
 	flags.Uint32VarP(&op.number, "number", "n", 3, "set the number of results to show")
 	// default is null, which means all types

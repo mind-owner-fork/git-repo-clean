@@ -61,8 +61,8 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 	newfilechanges := make([]FileChange, 0)
 	matched := false
 	for _, filechange := range commit.filechanges {
-		if filter.repo.opts.scan && len(filter.scanned) != 0 {
-			// filter by blob oid
+		// scan mode, filter by blob oid
+		if filter.repo.opts.scan {
 			for _, target := range filter.scanned {
 				if len(filechange.blob_id) == 40 {
 					if target == filechange.blob_id {
@@ -81,34 +81,38 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 					}
 				}
 			}
-		} else if !filter.repo.opts.scan && filter.repo.opts.limit != "" && filter.repo.opts.types == "*" {
+		} else {
 			// filter by blob size threshold
-			objectsize := Blob_size_list[filechange.blob_id]
-			// set bitsize to 64, means max single blob size is 4 GiB
-			size, _ := strconv.ParseUint(objectsize, 10, 64)
-			limit, err := UnitConvert(filter.repo.opts.limit)
-			if err != nil {
-				ft := LocalPrinter().Sprintf("convert uint error: %s", err)
-				PrintRedln(ft)
-				os.Exit(1)
-			}
-			if size > limit {
-				Branch_changed.Add(filechange.branch)
-				matched = true
-			}
-		} else if !filter.repo.opts.scan && filter.repo.opts.types != "*" {
-			// filter by file type
-			if strings.HasSuffix(filechange.filepath, "."+filter.repo.opts.types) {
-				Branch_changed.Add(filechange.branch)
-				matched = true
-			}
-		} else if !filter.repo.opts.scan && len(filter.filepaths) != 0 {
-			// filter by blob name or directory
-			for _, filepath := range filter.filepaths {
-				matches := Match(filepath, filechange.filepath)
-				if len(matches) != 0 {
+			if filter.repo.opts.limit != "" {
+				objectsize := Blob_size_list[filechange.blob_id]
+				// set bitsize to 64, means max single blob size is 4 GiB
+				size, _ := strconv.ParseUint(objectsize, 10, 64)
+				limit, err := UnitConvert(filter.repo.opts.limit)
+				if err != nil {
+					ft := LocalPrinter().Sprintf("convert uint error: %s", err)
+					PrintRedln(ft)
+					os.Exit(1)
+				}
+				if size > limit {
 					Branch_changed.Add(filechange.branch)
 					matched = true
+				}
+			}
+			// filter by file type
+			if filter.repo.opts.types != "*" {
+				if strings.HasSuffix(filechange.filepath, "."+filter.repo.opts.types) {
+					Branch_changed.Add(filechange.branch)
+					matched = true
+				}
+			}
+			// filter by blob name or directory
+			if len(filter.filepaths) != 0 {
+				for _, filepath := range filter.filepaths {
+					matches := Match(filepath, filechange.filepath)
+					if len(matches) != 0 {
+						Branch_changed.Add(filechange.branch)
+						matched = true
+					}
 				}
 			}
 		}
