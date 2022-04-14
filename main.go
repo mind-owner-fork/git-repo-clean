@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"os"
 )
@@ -149,65 +148,6 @@ func NewFilter(args []string) (*RepoFilter, error) {
 		filepaths: file_paths}, nil
 }
 
-func LFSPrompt(repo Repository) {
-	FilesChanged()
-	PrintLocalWithPlainln("before you push to remote, you have to do something below:")
-	PrintLocalWithYellowln("1. install git-lfs")
-	PrintLocalWithYellowln("2. run command: git lfs install")
-	PrintLocalWithYellowln("3. edit .gitattributes file")
-	PrintLocalWithYellowln("4. commit your .gitattributes file.")
-}
-
-func Prompt(repo Repository) {
-	PrintLocalWithGreenln("cleaning completed")
-	PrintLocalWithPlain("current repository size")
-	PrintLocalWithYellowln(repo.GetDatabaseSize())
-	if lfs := repo.GetLFSObjSize(); len(lfs) > 0 {
-		PrintLocalWithPlain("including LFS objects size")
-		PrintLocalWithYellowln(lfs)
-	}
-	if repo.opts.lfs {
-		LFSPrompt(repo)
-	}
-	var pushed bool
-	if !repo.opts.lfs {
-		if AskForUpdate() {
-			PrintLocalWithPlainln("execute force push")
-			PrintLocalWithYellowln("git push origin --all --force")
-			PrintLocalWithYellowln("git push origin --tags --force")
-			err := repo.PushRepo()
-			if err == nil {
-				pushed = true
-			}
-		}
-	}
-	PrintLocalWithPlainln("suggest operations header")
-	if pushed {
-		PrintLocalWithGreenln("1. (Done!)")
-		fmt.Println()
-	} else {
-		PrintLocalWithRedln("1. (Undo)")
-		PrintLocalWithRedln("    git push origin --all --force")
-		PrintLocalWithRedln("    git push origin --tags --force")
-		fmt.Println()
-	}
-	PrintLocalWithRedln("2. (Undo)")
-	url := repo.GetGiteeGCWeb()
-	if url != "" {
-		PrintLocalWithRed("gitee GC page link")
-		PrintYellowln(url)
-	}
-	fmt.Println()
-	PrintLocalWithRedln("3. (Undo)")
-	PrintLocalWithRed("for detailed documentation, see")
-	PrintYellowln("https://gitee.com/oschina/git-repo-clean/blob/main/docs/repo-update.md")
-	fmt.Println()
-	PrintLocalWithPlainln("suggest operations done")
-	PrintLocalWithPlainln("introduce GIT LFS")
-	PrintLocalWithPlain("for the use of Gitee LFS, see")
-	PrintYellowln("https://gitee.com/help/articles/4235")
-}
-
 func main() {
 	filter, err := NewFilter(os.Args[1:])
 	if err != nil {
@@ -232,5 +172,5 @@ func main() {
 	filter.Parser()
 
 	filter.repo.CleanUp()
-	Prompt(*filter.repo)
+	filter.repo.Prompt()
 }

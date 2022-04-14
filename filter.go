@@ -2,8 +2,8 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
-	"strings"
 )
 
 type RepoFilter struct {
@@ -100,16 +100,15 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 			}
 			// filter by file type
 			if filter.repo.opts.types != "*" {
-				if strings.HasSuffix(filechange.filepath, "."+filter.repo.opts.types) {
+				if filepath.Ext(filechange.filepath) == "."+filter.repo.opts.types {
 					Branch_changed.Add(filechange.branch)
 					matched = true
 				}
 			}
 			// filter by blob name or directory
 			if len(filter.filepaths) != 0 {
-				for _, filepath := range filter.filepaths {
-					matches := Match(filepath, filechange.filepath)
-					if len(matches) != 0 {
+				for _, path := range filter.filepaths {
+					if path == EndcodePath(TrimeDoubleQuote(filechange.filepath)) {
 						Branch_changed.Add(filechange.branch)
 						matched = true
 					}

@@ -142,3 +142,18 @@ func maxLenBlobSize(list BlobList) int {
 	// the first one is the biggest one
 	return len(strconv.Itoa(int(list[0].objectSize)))
 }
+
+func EndcodePath(path string) string {
+	path = strings.ReplaceAll(path, "\\\\", "\\")
+	return path
+}
+
+func TrimeDoubleQuote(s string) string {
+	if len(s) > 0 && s[0] == '"' {
+		s = s[1:]
+	}
+	if len(s) > 0 && s[len(s)-1] == '"' {
+		s = s[:len(s)-1]
+	}
+	return s
+}

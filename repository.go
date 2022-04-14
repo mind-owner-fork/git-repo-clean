@@ -33,6 +33,46 @@ type BlobList []HistoryRecord
 
 var Blob_size_list = make(map[string]string)
 
+func NewRepository(path string) (*Repository, error) {
+	// Find the `git` executable to be used:
+	gitBin, err := findGitBin()
+	if err != nil {
+		return nil, fmt.Errorf(LocalPrinter().Sprintf(
+			"couldn't find Git execute program: %s", err))
+	}
+	gitdir, err := GitDir(gitBin, path)
+	if err != nil {
+		return nil, err
+	}
+
+	if shallow, err := isShallow(gitBin, path); shallow {
+		return nil, err
+	}
+
+	var bare bool
+	if b, err := isBare(gitBin, path); b && err == nil {
+		bare = true
+		PrintLocalWithYellowln("bare repo warning")
+	}
+
+	version, err := gitVersion(gitBin, path)
+	if err != nil {
+		return nil, err
+	}
+	// Git version should >= 2.24.0
+	if gitVersionConvert(version) < 2240 {
+		return nil, fmt.Errorf(LocalPrinter().Sprintf(
+			"sorry, this tool requires Git version at least 2.24.0"))
+	}
+
+	return &Repository{
+		path:   path,   // working dir
+		gitDir: gitdir, // .git dir
+		gitBin: gitBin,
+		bare:   bare,
+	}, nil
+}
+
 func (repo Repository) GetBlobName(oid string) (string, error) {
 	cmd := exec.Command(repo.gitBin, "-C", repo.path, "rev-list", "--objects", "--all")
 	out, err := cmd.StdoutPipe()
@@ -61,10 +101,9 @@ func (repo Repository) GetBlobName(oid string) (string, error) {
 		if len(line) <= 41 {
 			continue
 		}
-		texts := strings.Split(line, " ")
-		if texts[0] == oid {
-			// blob(file) name maybe lile: "bad dir/readme.md
-			blobname = strings.Join(texts[1:], " ")
+		if line[0:40] == oid {
+			blobname = line[41:]
+			break
 		}
 	}
 	return blobname, nil
@@ -129,14 +168,14 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 		// set bitsize to 64, means max single blob size is 4 GiB
 		size, _ := strconv.ParseUint(objectsize, 10, 64)
 		if repo.opts.lfs && !repo.opts.interact {
-			name, err := repo.GetBlobName(objectid)
+			path, err := repo.GetBlobName(objectid)
 			if err != nil {
 				if err != io.EOF {
 					return empty, fmt.Errorf(LocalPrinter().Sprintf(
 						"run GetBlobName error: %s", err))
 				}
 			}
-			if name == "" {
+			if path == "" {
 				continue
 			}
 
@@ -148,20 +187,15 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 			if size < limit {
 				continue
 			}
-			if len(repo.opts.types) != 0 || repo.opts.types != "*" {
-				var pattern string
-				if strings.HasSuffix(name, "\"") {
-					pattern = "." + repo.opts.types + "\"$"
-				} else {
-					pattern = "." + repo.opts.types + "$"
-				}
-				if matches := Match(pattern, name); len(matches) == 0 {
+			if len(repo.opts.types) != 0 && repo.opts.types != "*" {
+				extent := filepath.Ext(path)
+				if extent != "."+repo.opts.types {
 					// matched none, skip
 					continue
 				}
 			}
 			// append this record blob into slice
-			blobs = append(blobs, HistoryRecord{objectid, size, name})
+			blobs = append(blobs, HistoryRecord{objectid, size, path})
 			// sort according by size
 			sort.Slice(blobs, func(i, j int) bool {
 				return blobs[i].objectSize > blobs[j].objectSize
@@ -174,30 +208,25 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 			}
 
 			if size > limit {
-				name, err := repo.GetBlobName(objectid)
+				path, err := repo.GetBlobName(objectid)
 				if err != nil {
 					if err != io.EOF {
 						return empty, fmt.Errorf(LocalPrinter().Sprintf(
 							"run GetBlobName error: %s", err))
 					}
 				}
-				if name == "" {
+				if path == "" {
 					continue
 				}
-				if len(repo.opts.types) != 0 || repo.opts.types != "*" {
-					var pattern string
-					if strings.HasSuffix(name, "\"") {
-						pattern = "." + repo.opts.types + "\"$"
-					} else {
-						pattern = "." + repo.opts.types + "$"
-					}
-					if matches := Match(pattern, name); len(matches) == 0 {
+				if len(repo.opts.types) != 0 && repo.opts.types != "*" {
+					extent := filepath.Ext(path)
+					if extent != "."+repo.opts.types {
 						// matched none, skip
 						continue
 					}
 				}
 				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{objectid, size, name})
+				blobs = append(blobs, HistoryRecord{objectid, size, path})
 				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize
@@ -439,46 +468,6 @@ func (repo Repository) PushRepo() error {
 	return nil
 }
 
-func NewRepository(path string) (*Repository, error) {
-	// Find the `git` executable to be used:
-	gitBin, err := findGitBin()
-	if err != nil {
-		return nil, fmt.Errorf(LocalPrinter().Sprintf(
-			"couldn't find Git execute program: %s", err))
-	}
-	gitdir, err := GitDir(gitBin, path)
-	if err != nil {
-		return nil, err
-	}
-
-	if shallow, err := isShallow(gitBin, path); shallow {
-		return nil, err
-	}
-
-	var bare bool
-	if b, err := isBare(gitBin, path); b && err == nil {
-		bare = true
-		PrintLocalWithYellowln("bare repo warning")
-	}
-
-	version, err := gitVersion(gitBin, path)
-	if err != nil {
-		return nil, err
-	}
-	// Git version should >= 2.24.0
-	if gitVersionConvert(version) < 2240 {
-		return nil, fmt.Errorf(LocalPrinter().Sprintf(
-			"sorry, this tool requires Git version at least 2.24.0"))
-	}
-
-	return &Repository{
-		path:   path,   // working dir
-		gitDir: gitdir, // .git dir
-		gitBin: gitBin,
-		bare:   bare,
-	}, nil
-}
-
 // BrachesChanged prints all branches that have been changed
 func BrachesChanged() bool {
 	branches := Branch_changed.ToSlice()
@@ -553,4 +542,63 @@ func (repo Repository) CleanUp() {
 	if err != nil {
 		PrintRedln(fmt.Sprint(err))
 	}
+}
+
+func LFSPrompt() {
+	FilesChanged()
+	PrintLocalWithPlainln("before you push to remote, you have to do something below:")
+	PrintLocalWithYellowln("1. install git-lfs")
+	PrintLocalWithYellowln("2. run command: git lfs install")
+	PrintLocalWithYellowln("3. edit .gitattributes file")
+	PrintLocalWithYellowln("4. commit your .gitattributes file.")
+}
+
+func (repo Repository) Prompt() {
+	PrintLocalWithGreenln("cleaning completed")
+	PrintLocalWithPlain("current repository size")
+	PrintLocalWithYellowln(repo.GetDatabaseSize())
+	if lfs := repo.GetLFSObjSize(); len(lfs) > 0 {
+		PrintLocalWithPlain("including LFS objects size")
+		PrintLocalWithYellowln(lfs)
+	}
+	if repo.opts.lfs {
+		LFSPrompt()
+	}
+	var pushed bool
+	if !repo.opts.lfs {
+		if AskForUpdate() {
+			PrintLocalWithPlainln("execute force push")
+			PrintLocalWithYellowln("git push origin --all --force")
+			PrintLocalWithYellowln("git push origin --tags --force")
+			err := repo.PushRepo()
+			if err == nil {
+				pushed = true
+			}
+		}
+	}
+	PrintLocalWithPlainln("suggest operations header")
+	if pushed {
+		PrintLocalWithGreenln("1. (Done!)")
+		fmt.Println()
+	} else {
+		PrintLocalWithRedln("1. (Undo)")
+		PrintLocalWithRedln("    git push origin --all --force")
+		PrintLocalWithRedln("    git push origin --tags --force")
+		fmt.Println()
+	}
+	PrintLocalWithRedln("2. (Undo)")
+	url := repo.GetGiteeGCWeb()
+	if url != "" {
+		PrintLocalWithRed("gitee GC page link")
+		PrintYellowln(url)
+	}
+	fmt.Println()
+	PrintLocalWithRedln("3. (Undo)")
+	PrintLocalWithRed("for detailed documentation, see")
+	PrintYellowln("https://gitee.com/oschina/git-repo-clean/blob/main/docs/repo-update.md")
+	fmt.Println()
+	PrintLocalWithPlainln("suggest operations done")
+	PrintLocalWithPlainln("introduce GIT LFS")
+	PrintLocalWithPlain("for the use of Gitee LFS, see")
+	PrintYellowln("https://gitee.com/help/articles/4235")
 }
