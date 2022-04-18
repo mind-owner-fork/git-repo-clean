@@ -29,7 +29,7 @@ Linux-64:
 	cp ./releases/git-repo-clean releases/$(VERSION)/Linux-64/
 	tar -cf releases/git-repo-clean-$(VERSION)-Linux-64.tar releases/$(VERSION)/Linux-64/
 	rm releases/git-repo-clean
-	rm -rf releases/$(VERSION)/Linux-64
+	rm -rf releases/$(VERSION)
 
 Linux-32:
 	mkdir -p releases/$(VERSION)/Linux-32/
@@ -40,7 +40,7 @@ Linux-32:
 	cp ./releases/git-repo-clean releases/$(VERSION)/Linux-32/
 	tar -cf releases/git-repo-clean-$(VERSION)-Linux-32.tar releases/$(VERSION)/Linux-32/
 	rm releases/git-repo-clean
-	rm -rf releases/$(VERSION)/Linux-32/
+	rm -rf releases/$(VERSION)
 
 MacOS: macOS-64
 macOS-64:
@@ -52,7 +52,7 @@ macOS-64:
 	cp ./releases/git-repo-clean releases/$(VERSION)/macOS-64/
 	tar -cf releases/git-repo-clean-$(VERSION)-macOS-64.tar releases/$(VERSION)/macOS-64/
 	rm releases/git-repo-clean
-	rm -rf releases/$(VERSION)/macOS-64/
+	rm -rf releases/$(VERSION)
 
 Windows: Windows-64 Windows-32
 Windows-64:
@@ -64,7 +64,7 @@ Windows-64:
 	cp ./releases/git-repo-clean.exe releases/$(VERSION)/Windows-64/
 	zip -r releases/git-repo-clean-$(VERSION)-Windows-64.zip releases/$(VERSION)/Windows-64/
 	rm releases/git-repo-clean.exe
-	rm -rf releases/$(VERSION)/Windows-64/
+	rm -rf releases/$(VERSION)
 
 Windows-32:
 	mkdir -p releases/$(VERSION)/Windows-32/
@@ -75,7 +75,7 @@ Windows-32:
 	cp ./releases/git-repo-clean.exe releases/$(VERSION)/Windows-32/
 	zip -r releases/git-repo-clean-$(VERSION)-Windows-32.zip releases/$(VERSION)/Windows-32/
 	rm releases/git-repo-clean.exe
-	rm -rf releases/$(VERSION)/Windows-32/
+	rm -rf releases/$(VERSION)
 
 RELEASE_BUILD = GOOS=$(1) GOARCH=$(2) \
 	go build \
