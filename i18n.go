@@ -144,7 +144,7 @@ func initEnglish() {
 	message.SetString(language.English, "multi select help info", "Use <Up/Down> arrows to move, <space> to select, <right> to all, <left> to none, type to filter, ? for more help")
 
 	message.SetString(language.English, "confirm message", "The above is the file you want to delete. Are you sure you want to *DELETE* it ?")
-	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Do you need to update the backup?")
+	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Please make sure you do not overwrite the original backup file")
 	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to *FORCE PUSH* to the remote repository now ?")
 	message.SetString(language.English, "ask for migrating big file into LFS", "Do you want to migrate your big files into Gitee LFS? ")
 	message.SetString(language.English, "process interrupted", "process interrupted")
@@ -264,7 +264,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "multi select help info", "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择。")
 
 	message.SetString(language.Chinese, "confirm message", "以上是你要删除的文件，确定要<删除>吗?")
-	message.SetString(language.Chinese, "ask for override message", "当前目录下存在同名文件夹，可能已经备份，是否需要更新备份?")
+	message.SetString(language.Chinese, "ask for override message", "检测到存在同名备份文件，你可能已经备份，请谨慎操作不要覆盖原始备份！选择No/N取消备份。")
 	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在<强制推送>到远程仓库？")
 	message.SetString(language.Chinese, "ask for migrating big file into LFS", "是否将大文件迁移到 Gitee LFS 进行管理？")
 	message.SetString(language.Chinese, "process interrupted", "过程中断")
