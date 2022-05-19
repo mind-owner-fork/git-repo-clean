@@ -108,7 +108,8 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 			// filter by blob name or directory
 			if len(filter.filepaths) != 0 {
 				for _, path := range filter.filepaths {
-					if path == EndcodePath(TrimeDoubleQuote(filechange.filepath)) {
+					matches := Match(path,EndcodePath(TrimeDoubleQuote(filechange.filepath)))
+					if len(matches) != 0 {
 						Branch_changed.Add(filechange.branch)
 						matched = true
 					}
