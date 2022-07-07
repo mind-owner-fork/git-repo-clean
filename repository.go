@@ -33,7 +33,7 @@ type BlobList []HistoryRecord
 
 var Blob_size_list = make(map[string]string)
 
-func NewRepository(path string) (*Repository, error) {
+func initContext(path string) (*Repository, error) {
 	// Find the `git` executable to be used:
 	gitBin, err := findGitBin()
 	if err != nil {
@@ -71,6 +71,43 @@ func NewRepository(path string) (*Repository, error) {
 		gitBin: gitBin,
 		bare:   bare,
 	}, nil
+}
+
+func NewRepository(args []string) *Repository {
+	var op = Options{}
+	if err := op.ParseOptions(args); err != nil {
+		PrintLocalWithRedln("Parse Option error")
+		os.Exit(1)
+	}
+	if len(args) == 0 {
+		op.interact = true
+	}
+
+	r, err := initContext(op.path)
+	if err != nil {
+		PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
+		os.Exit(1)
+	}
+
+	// check if current repo has uncommited files
+	if err = GetCurrentStatus(r.gitBin, r.path); err != nil {
+		PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
+		os.Exit(1)
+	}
+
+	// set default branch to all is to keep deleting process consistent with scanning process
+	// user end pass '--branch=all', but git-fast-export takes '--all'
+	if op.branch == DefaultRepoBranch {
+		op.branch = "--all"
+	}
+
+	return &Repository{
+		op.path,
+		r.gitBin,
+		r.gitDir,
+		r.bare,
+		op,
+	}
 }
 
 func (repo Repository) GetBlobName(oid string) (string, error) {

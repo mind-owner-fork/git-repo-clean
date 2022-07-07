@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -10,6 +11,129 @@ type RepoFilter struct {
 	repo      *Repository
 	scanned   []string // file's oid provided by scanner
 	filepaths []string // files(or dir) provided by user
+}
+
+func NewFilter(args []string) (*RepoFilter, error) {
+	var repo = NewRepository(args)
+	err := repo.GetBlobSize()
+	if err != nil {
+		ft := LocalPrinter().Sprintf("run getblobsize error: %s", err)
+		PrintRedln(ft)
+	}
+	var scanned_targets []string
+	var input_paths []string
+
+	// when run git-repo-clean -i, its means run scan too
+	if repo.opts.interact {
+		repo.opts.scan = true
+		repo.opts.delete = true
+		repo.opts.verbose = true
+		repo.opts.lfs = true
+
+		if err := repo.opts.SurveyCmd(); err != nil {
+			ft := LocalPrinter().Sprintf("ask question module fail: %s", err)
+			PrintRedln(ft)
+			os.Exit(1)
+		}
+	}
+
+	PrintLocalWithPlain("current repository size")
+	PrintLocalWithYellowln(repo.GetDatabaseSize())
+	if lfs := repo.GetLFSObjSize(); len(lfs) > 0 {
+		PrintLocalWithPlain("including LFS objects size")
+		PrintLocalWithYellowln(lfs)
+	}
+
+	if repo.opts.scan {
+		scanned_targets = scanMode(repo)
+	} else if repo.opts.file != nil {
+		/* Filter by provided files
+		 * Default: file size limit and file type
+		 * Max file number limit
+		 */
+		input_paths = nonScanMode(repo, DefaultFileSize, DefaultFileType, math.MaxUint32)
+	} else if repo.opts.limit != "" {
+		/* Filter by file size
+		 * Default: file type
+		 * Max file number limit
+		 */
+		nonScanMode(repo, repo.opts.limit, DefaultFileType, math.MaxUint32)
+	} else if repo.opts.types != "*" {
+		/* Filter by file type
+		 * Default: file size limit
+		 * Max file number limit
+		 */
+		nonScanMode(repo, DefaultFileSize, repo.opts.types, math.MaxUint32)
+	}
+
+	if !repo.opts.delete {
+		os.Exit(1)
+	}
+
+	return &RepoFilter{
+		repo:      repo,
+		scanned:   scanned_targets,
+		filepaths: input_paths}, nil
+}
+
+func nonScanMode(repo *Repository, file_limit string, file_type string, file_num uint32) (files []string) {
+	repo.opts.limit = file_limit
+	repo.opts.types = file_type
+	repo.opts.number = file_num
+	return repo.opts.file
+}
+
+func scanMode(repo *Repository) (result []string) {
+	var first_target []string
+
+	if repo.opts.lfs {
+		limit, _ := UnitConvert(repo.opts.limit)
+		if limit < 200 {
+			repo.opts.limit = "200b" // to project LFS file
+		}
+	} else {
+		repo.opts.limit = "1M" // set default to 1M for scan
+	}
+
+	bloblist, err := repo.ScanRepository()
+	if err != nil {
+		ft := LocalPrinter().Sprintf("scanning repository error: %s", err)
+		PrintRedln(ft)
+		os.Exit(1)
+	}
+	if len(bloblist) == 0 {
+		PrintLocalWithRedln("no files were scanned")
+		os.Exit(1)
+	} else {
+		repo.ShowScanResult(bloblist)
+	}
+
+	if repo.opts.interact {
+		first_target = MultiSelectCmd(bloblist)
+		if len(bloblist) != 0 && len(first_target) == 0 {
+			PrintLocalWithRedln("no files were selected")
+			os.Exit(1)
+		}
+		var ok = false
+		ok, result = Confirm(first_target)
+		if !ok {
+			PrintLocalWithRedln("operation aborted")
+			os.Exit(1)
+		}
+	} else {
+		for _, item := range bloblist {
+			result = append(result, item.oid)
+		}
+	}
+	//  record target file's name
+	for _, item := range bloblist {
+		for _, target := range result {
+			if item.oid == target {
+				Files_changed.Add(item.objectName)
+			}
+		}
+	}
+	return result
 }
 
 func (filter *RepoFilter) tweak_blob(blob *Blob) {
@@ -108,7 +232,7 @@ func filter_filechange(commit *Commit, filter *RepoFilter) {
 			// filter by blob name or directory
 			if len(filter.filepaths) != 0 {
 				for _, path := range filter.filepaths {
-					matches := Match(path,EndcodePath(TrimeDoubleQuote(filechange.filepath)))
+					matches := Match(path, EndcodePath(TrimeDoubleQuote(filechange.filepath)))
 					if len(matches) != 0 {
 						Branch_changed.Add(filechange.branch)
 						matched = true

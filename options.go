@@ -172,6 +172,16 @@ type Options struct {
 	lfs      bool
 }
 
+var (
+	DefaultFileSize   = "0b"
+	DefaultFileNumber = uint32(3)
+	DefaultFileType   = "*"
+
+	DefaultRepoDir    = "."
+	DefaultRepoBranch = "all"
+	DefaultRepoScan   = false
+)
+
 func (op *Options) init(args []string) error {
 
 	flags := pflag.NewFlagSet("git-repo-clean", pflag.ContinueOnError)
@@ -180,19 +190,19 @@ func (op *Options) init(args []string) error {
 	flags.BoolVarP(&op.version, "version", "V", false, "show git-repo-clean version number")
 	flags.BoolVarP(&op.help, "help", "h", false, "show usage information")
 
-	flags.StringVarP(&op.path, "path", "p", ".", "Git repository path, default is '.'")
+	flags.StringVarP(&op.path, "path", "p", DefaultRepoDir, "Git repository path, default is '.'")
 	// default is to scan repo
-	flags.BoolVarP(&op.scan, "scan", "s", false, "scan the Git repository objects")
+	flags.BoolVarP(&op.scan, "scan", "s", DefaultRepoScan, "scan the Git repository objects")
 	// specify the target files to delete
 	flags.StringArrayVarP(&op.file, "file", "f", nil, "specify the target files to delete")
 	// since the deleting process is not very slow, default is all branch
-	flags.StringVarP(&op.branch, "branch", "b", "all", "set the branch to scan")
+	flags.StringVarP(&op.branch, "branch", "b", DefaultRepoBranch, "set the branch to scan")
 	// default file size threshold is 1m
-	flags.StringVarP(&op.limit, "limit", "l", "", "set the file size limitation")
+	flags.StringVarP(&op.limit, "limit", "l", DefaultFileSize, "set the file size limitation")
 	// default to show top 3 largest files
-	flags.Uint32VarP(&op.number, "number", "n", 3, "set the number of results to show")
+	flags.Uint32VarP(&op.number, "number", "n", DefaultFileNumber, "set the number of results to show")
 	// default is null, which means all types
-	flags.StringVarP(&op.types, "type", "t", "*", "set the file type to filter from Git repository")
+	flags.StringVarP(&op.types, "type", "t", DefaultFileType, "set the file type to filter from Git repository")
 	// interactive with user end
 	flags.BoolVarP(&op.interact, "interative", "i", false, "enable interactive operation")
 	// perform delete files action
@@ -233,7 +243,7 @@ func (op *Options) ParseOptions(args []string) error {
 		PrintPlainln(ft)
 		os.Exit(1)
 	}
-	if len(args) == 1 && op.SingleOpts() && !op.interact {
+	if len(args) == 1 && op.SingleOpts() {
 		PrintLocalWithRedln("single parameter is invalid")
 		os.Exit(1)
 	}
@@ -241,7 +251,7 @@ func (op *Options) ParseOptions(args []string) error {
 }
 
 func (op *Options) SingleOpts() bool {
-	if op.verbose || op.scan || op.delete || op.path != "" {
+	if !op.interact && (op.verbose || op.scan || op.delete || op.path != "") {
 		return true
 	} else {
 		return false
