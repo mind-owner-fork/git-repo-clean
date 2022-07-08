@@ -90,7 +90,8 @@ func NewRepository(args []string) *Repository {
 	}
 
 	// check if current repo has uncommited files
-	if err = GetCurrentStatus(r.gitBin, r.path); err != nil {
+	err = GetCurrentStatus(r.gitBin, r.path)
+	if !r.bare && err != nil {
 		PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
 		os.Exit(1)
 	}
