@@ -124,12 +124,12 @@ func (repo Repository) GitCommand(callerArgs ...string) *exec.Cmd {
 		"-c",
 		"advice.graftFileDeprecated=false",
 		"-C",
-		repo.path,
+		repo.context.path,
 	}
 
 	args = append(args, callerArgs...)
 
-	cmd := exec.Command(repo.gitBin, args...)
+	cmd := exec.Command(repo.context.gitBin, args...)
 	cmd.Env = append(
 		os.Environ(),
 		// "GIT_DIR"+repo.gitDir, // fix Windows issue
@@ -149,7 +149,6 @@ func CanonicalizePath(path, relPath string) string {
 }
 
 func GitDir(gitbin, path string) (string, error) {
-
 	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--git-dir")
 	out, err := cmd.Output()
 	if err != nil {

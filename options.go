@@ -162,7 +162,7 @@ type Options struct {
 	help     bool
 	path     string
 	scan     bool
-	file     []string
+	files    []string
 	delete   bool
 	branch   string
 	limit    string
@@ -182,7 +182,7 @@ var (
 	DefaultRepoScan   = false
 )
 
-func (op *Options) init(args []string) error {
+func initialize(args []string) error {
 
 	flags := pflag.NewFlagSet("git-repo-clean", pflag.ContinueOnError)
 
@@ -194,7 +194,7 @@ func (op *Options) init(args []string) error {
 	// default is to scan repo
 	flags.BoolVarP(&op.scan, "scan", "s", DefaultRepoScan, "scan the Git repository objects")
 	// specify the target files to delete
-	flags.StringArrayVarP(&op.file, "file", "f", nil, "specify the target files to delete")
+	flags.StringArrayVarP(&op.files, "file", "f", nil, "specify the target files to delete")
 	// since the deleting process is not very slow, default is all branch
 	flags.StringVarP(&op.branch, "branch", "b", DefaultRepoBranch, "set the branch to scan")
 	// default file size threshold is 1m
@@ -228,8 +228,8 @@ func usage() {
 	LocalFprintf(os.Stderr, "help info")
 }
 
-func (op *Options) ParseOptions(args []string) error {
-	if err := op.init(args); err != nil {
+func ParseOptions(args []string) error {
+	if err := initialize(args); err != nil {
 		ft := LocalPrinter().Sprintf("option format error: %s", err)
 		PrintRedln(ft)
 		os.Exit(1)
@@ -243,14 +243,17 @@ func (op *Options) ParseOptions(args []string) error {
 		PrintPlainln(ft)
 		os.Exit(1)
 	}
-	if len(args) == 1 && op.SingleOpts() {
+	if len(args) == 0 {
+		op.interact = true
+	}
+	if len(args) == 1 && SingleOpts() {
 		PrintLocalWithRedln("single parameter is invalid")
 		os.Exit(1)
 	}
 	return nil
 }
 
-func (op *Options) SingleOpts() bool {
+func SingleOpts() bool {
 	if !op.interact && (op.verbose || op.scan || op.delete || op.path != "") {
 		return true
 	} else {

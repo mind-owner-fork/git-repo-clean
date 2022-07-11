@@ -223,7 +223,6 @@ func NewCommit(original_oid_, branch_, author_, commiter_ string, size_ int32, m
 }
 
 func (commit *Commit) dump(writer io.WriteCloser) {
-
 	commit.ele.base.dumped = true
 
 	HASH_ID[commit.original_oid] = commit.ele.id
@@ -396,7 +395,6 @@ func parse_ref_line(reftype, line string) (refname string) {
 // parent ref types are: from or merge
 func parse_parent_ref(reftype, line string) (orig_ref, ref int32) {
 	matches := Match(reftype+" :"+ref_re, line)
-
 	// from 0000000000000000000000000000000000000000
 	if len(line) == 46 {
 		if line[5:len(line)-1] == "0000000000000000000000000000000000000000" {
@@ -509,7 +507,6 @@ func parse_filechange(line string) FileChange {
 //  0]
 // thus we use -1 to indicate parse error
 func (iter *FEOutPutIter) parse_data(line string, size int64) (n int64, data, extra_msg []byte) {
-
 	var writer bytes.Buffer
 	var sum int64
 	newline := line
@@ -572,7 +569,6 @@ func (iter *FEOutPutIter) parseBlob(line string) *Blob {
 }
 
 func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
-
 	if line == "\n" {
 		line, _ = iter.Next()
 	}
@@ -764,22 +760,22 @@ func (iter *FEOutPutIter) parseTag(line string) *Tag {
 	return &tag
 }
 
-func (filter *RepoFilter) Parser() {
-	if filter.repo.opts.verbose {
-		if filter.repo.opts.lfs {
+func (repo *Repository) Parser() {
+	if repo.context.opts.verbose {
+		if repo.context.opts.lfs {
 			PrintLocalWithGreenln("start to migrate specified files")
 		} else {
 			PrintLocalWithGreenln("start to clean up specified files")
 		}
 	}
 
-	iter, err := filter.repo.NewFastExportIter()
+	iter, err := repo.NewFastExportIter()
 	if err != nil {
 		fmt.Fprint(os.Stdout, err)
 	}
 	defer iter.Close()
 
-	input, cmd, err := filter.repo.FastImportOut()
+	input, cmd, err := repo.FastImportOut()
 	defer func() {
 		input.Close()
 		cmd.Wait()
@@ -794,7 +790,7 @@ func (filter *RepoFilter) Parser() {
 			continue
 		} else if matches := Match("^blob\n$", line); len(matches) != 0 {
 			blob := iter.parseBlob(line)
-			filter.tweak_blob(blob)
+			repo.tweak_blob(blob)
 
 			if blob.ele.base.dumped {
 				blob.dump(input)
@@ -802,7 +798,7 @@ func (filter *RepoFilter) Parser() {
 
 		} else if matches := Match("commit (.*)\n$", line); len(matches) != 0 {
 			commit, aux_info := iter.parseCommit(line)
-			filter.tweak_commit(commit, aux_info)
+			repo.tweak_commit(commit, aux_info)
 
 			if commit.ele.base.dumped {
 				commit.dump(input)
@@ -811,7 +807,7 @@ func (filter *RepoFilter) Parser() {
 		} else if matches := Match("reset (.*)\n$", line); len(matches) != 0 {
 			reset := iter.parseReset(line)
 
-			filter.tweak_reset(reset)
+			repo.tweak_reset(reset)
 
 			if reset.base.dumped {
 				reset.dump(input)
@@ -819,7 +815,7 @@ func (filter *RepoFilter) Parser() {
 		} else if matches := Match("tag (.*)\n$", line); len(matches) != 0 {
 			tag := iter.parseTag(line)
 
-			filter.tweak_tag(tag)
+			repo.tweak_tag(tag)
 
 			if tag.ele.base.dumped {
 				tag.dump(input)

@@ -4,29 +4,31 @@ import (
 	"os"
 )
 
+var op Options
+
 func main() {
-	filter, err := NewFilter(os.Args[1:])
-	if err != nil {
-		LocalFprintf(os.Stderr, "init repo filter error")
+	if err := ParseOptions(os.Args[1:]); err != nil {
+		PrintLocalWithRedln("Parse Option error")
 		os.Exit(1)
 	}
+	var repo = NewRepository()
 	// repo backup
-	filter.repo.BackUp()
+	BackUp(repo.context.gitBin, repo.context.path)
 
 	// ask for lfs migrate
-	if filter.repo.opts.lfs && AskForMigrateToLFS() {
+	if repo.context.opts.lfs && AskForMigrateToLFS() {
 		// can't run lfs-migrate in bare repo
 		// git lfs track must be run in a work tree.
-		if filter.repo.bare {
+		if repo.context.bare {
 			PrintLocalWithYellowln("bare repo error")
 			os.Exit(1)
 		}
 	} else {
-		filter.repo.opts.lfs = false
+		repo.context.opts.lfs = false
 	}
 	// filter data
-	filter.Parser()
+	repo.Parser()
 
-	filter.repo.CleanUp()
-	filter.repo.Prompt()
+	repo.context.CleanUp()
+	repo.context.Prompt()
 }

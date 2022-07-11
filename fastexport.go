@@ -28,11 +28,11 @@ func (repo *Repository) NewFastExportIter() (*FEOutPutIter, error) {
 		"--use-done-feature",
 		"--mark-tags",    // git >= 2.24.0
 		"--reencode=yes", // git >= 2.23.0
-		repo.opts.branch,
+		repo.context.opts.branch,
 		"--no-data",
 	}
 	// drop "--no-data"
-	if repo.opts.lfs {
+	if repo.context.opts.lfs {
 		args = args[:len(args)-1]
 	}
 

@@ -34,7 +34,7 @@ func UnitConvert(input string) (uint64, error) {
 	}
 }
 
-func (repo Repository) ShowScanResult(list BlobList) {
+func ShowScanResult(list BlobList) {
 	PrintLocalWithGreenln("scan done!")
 	PrintLocalWithYellowln("note that there may be multiple versions of the same file")
 	PrintLocalWithYellowln("please delete selectively according to its Blob ID")

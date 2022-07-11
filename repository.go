@@ -15,12 +15,17 @@ import (
 	"path/filepath"
 )
 
-type Repository struct {
+type Context struct {
 	path   string
 	gitBin string
 	gitDir string
 	bare   bool
-	opts   Options
+	opts   *Options
+}
+
+type Repository struct {
+	context  *Context
+	filtered []string
 }
 
 type HistoryRecord struct {
@@ -33,65 +38,67 @@ type BlobList []HistoryRecord
 
 var Blob_size_list = make(map[string]string)
 
-func initContext(path string) (*Repository, error) {
+func InitContext(path string) (*Context, error) {
 	// Find the `git` executable to be used:
 	gitBin, err := findGitBin()
 	if err != nil {
 		return nil, fmt.Errorf(LocalPrinter().Sprintf(
 			"couldn't find Git execute program: %s", err))
 	}
+
+	version, err := GitVersion(gitBin)
+	if err != nil {
+		return nil, err
+	}
+	// Git version should >= 2.24.0
+	if GitVersionConvert(version) < 2240 {
+		return nil, fmt.Errorf(LocalPrinter().Sprintf(
+			"sorry, this tool requires Git version at least 2.24.0"))
+	}
+
 	gitdir, err := GitDir(gitBin, path)
 	if err != nil {
 		return nil, err
 	}
 
-	if shallow, err := isShallow(gitBin, path); shallow {
+	if shallow, err := IsShallow(gitBin, path); shallow {
 		return nil, err
 	}
 
 	var bare bool
-	if b, err := isBare(gitBin, path); b && err == nil {
+	if b, err := IsBare(gitBin, path); b && err == nil {
 		bare = true
 		PrintLocalWithYellowln("bare repo warning")
 	}
 
-	version, err := gitVersion(gitBin, path)
-	if err != nil {
-		return nil, err
-	}
-	// Git version should >= 2.24.0
-	if gitVersionConvert(version) < 2240 {
-		return nil, fmt.Errorf(LocalPrinter().Sprintf(
-			"sorry, this tool requires Git version at least 2.24.0"))
-	}
-
-	return &Repository{
+	return &Context{
 		path:   path,   // working dir
 		gitDir: gitdir, // .git dir
 		gitBin: gitBin,
 		bare:   bare,
+		opts:   &op, // global
 	}, nil
 }
 
-func NewRepository(args []string) *Repository {
-	var op = Options{}
-	if err := op.ParseOptions(args); err != nil {
-		PrintLocalWithRedln("Parse Option error")
-		os.Exit(1)
-	}
-	if len(args) == 0 {
-		op.interact = true
-	}
-
-	r, err := initContext(op.path)
+func NewRepository() *Repository {
+	ctx, err := InitContext(op.path)
 	if err != nil {
 		PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
 		os.Exit(1)
 	}
-
+	err = GetBlobSize(ctx.gitBin, ctx.path)
+	if err != nil {
+		ft := LocalPrinter().Sprintf("run getblobsize error: %s", err)
+		PrintRedln(ft)
+	}
+	scanedfiles, err := ScanFiles(ctx)
+	if err != nil {
+		LocalFprintf(os.Stderr, "init repo filter error")
+		os.Exit(1)
+	}
 	// check if current repo has uncommited files
-	err = GetCurrentStatus(r.gitBin, r.path)
-	if !r.bare && err != nil {
+	err = GetCurrentStatus(ctx.gitBin, ctx.path)
+	if !ctx.bare && err != nil {
 		PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
 		os.Exit(1)
 	}
@@ -103,16 +110,13 @@ func NewRepository(args []string) *Repository {
 	}
 
 	return &Repository{
-		op.path,
-		r.gitBin,
-		r.gitDir,
-		r.bare,
-		op,
+		context:  ctx,
+		filtered: scanedfiles,
 	}
 }
 
-func (repo Repository) GetBlobName(oid string) (string, error) {
-	cmd := exec.Command(repo.gitBin, "-C", repo.path, "rev-list", "--objects", "--all")
+func GetBlobName(gitbin, path, oid string) (string, error) {
+	cmd := exec.Command(gitbin, "-C", path, "rev-list", "--objects", "--all")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", err
@@ -158,9 +162,9 @@ func parseBatchHeader(header string) (objectid, objecttype, objectsize string, e
 	return infos[0], infos[1], infos[2], nil
 }
 
-func (repo Repository) GetBlobSize() error {
-
-	cmd := exec.Command(repo.gitBin, "-C", repo.path, "cat-file", "--batch-all-objects",
+// GetBlobSize to get repository blobs list
+func GetBlobSize(gitbin, path string) error {
+	cmd := exec.Command(gitbin, "-C", path, "cat-file", "--batch-all-objects",
 		"--batch-check=%(objectname) %(objecttype) %(objectsize)")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
@@ -193,20 +197,20 @@ func (repo Repository) GetBlobSize() error {
 	return nil
 }
 
-func (repo Repository) ScanRepository() (BlobList, error) {
-
+// #TODO
+func (context Context) ScanRepository() (BlobList, error) {
 	var empty BlobList
 	var blobs BlobList
 
-	if repo.opts.verbose {
+	if context.opts.verbose {
 		PrintLocalWithGreenln("start scanning")
 	}
 
 	for objectid, objectsize := range Blob_size_list {
 		// set bitsize to 64, means max single blob size is 4 GiB
 		size, _ := strconv.ParseUint(objectsize, 10, 64)
-		if repo.opts.lfs && !repo.opts.interact {
-			path, err := repo.GetBlobName(objectid)
+		if context.opts.lfs && !context.opts.interact {
+			path, err := GetBlobName(context.gitBin, context.path, objectid)
 			if err != nil {
 				if err != io.EOF {
 					return empty, fmt.Errorf(LocalPrinter().Sprintf(
@@ -217,7 +221,7 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 				continue
 			}
 
-			limit, err := UnitConvert(repo.opts.limit)
+			limit, err := UnitConvert(context.opts.limit)
 			if err != nil {
 				return empty, fmt.Errorf(LocalPrinter().Sprintf(
 					"convert uint error: %s", err))
@@ -225,9 +229,9 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 			if size < limit {
 				continue
 			}
-			if len(repo.opts.types) != 0 && repo.opts.types != "*" {
+			if len(context.opts.types) != 0 && context.opts.types != "*" {
 				extent := filepath.Ext(path)
-				if extent != "."+repo.opts.types {
+				if extent != "."+context.opts.types {
 					// matched none, skip
 					continue
 				}
@@ -239,14 +243,14 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 				return blobs[i].objectSize > blobs[j].objectSize
 			})
 		} else {
-			limit, err := UnitConvert(repo.opts.limit)
+			limit, err := UnitConvert(context.opts.limit)
 			if err != nil {
 				return empty, fmt.Errorf(LocalPrinter().Sprintf(
 					"convert uint error: %s", err))
 			}
 
 			if size > limit {
-				path, err := repo.GetBlobName(objectid)
+				path, err := GetBlobName(context.gitBin, context.path, objectid)
 				if err != nil {
 					if err != io.EOF {
 						return empty, fmt.Errorf(LocalPrinter().Sprintf(
@@ -256,9 +260,9 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 				if path == "" {
 					continue
 				}
-				if len(repo.opts.types) != 0 && repo.opts.types != "*" {
+				if len(context.opts.types) != 0 && context.opts.types != "*" {
 					extent := filepath.Ext(path)
-					if extent != "."+repo.opts.types {
+					if extent != "."+context.opts.types {
 						// matched none, skip
 						continue
 					}
@@ -270,8 +274,8 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 					return blobs[i].objectSize > blobs[j].objectSize
 				})
 				// remain first [op.number] blobs
-				if len(blobs) > int(repo.opts.number) {
-					blobs = blobs[:repo.opts.number]
+				if len(blobs) > int(context.opts.number) {
+					blobs = blobs[:context.opts.number]
 					// break
 				}
 			}
@@ -281,8 +285,7 @@ func (repo Repository) ScanRepository() (BlobList, error) {
 }
 
 // check if the current repository is bare repo
-func isBare(gitbin, path string) (bool, error) {
-
+func IsBare(gitbin, path string) (bool, error) {
 	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--is-bare-repository")
 	out, err := cmd.Output()
 	if err != nil {
@@ -290,12 +293,11 @@ func isBare(gitbin, path string) (bool, error) {
 			"could not run 'git rev-parse --is-bare-repository': %s", err),
 		)
 	}
-
 	return string(bytes.TrimSpace(out)) == "true", nil
 }
 
 // check if the current repository is shallow repo, need Git version 2.15.0 or newer
-func isShallow(gitbin, path string) (bool, error) {
+func IsShallow(gitbin, path string) (bool, error) {
 	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--is-shallow-repository")
 	out, err := cmd.Output()
 	if err != nil {
@@ -310,7 +312,7 @@ func isShallow(gitbin, path string) (bool, error) {
 }
 
 // check if the current repository is flesh clone.
-func isFresh(gitbin, path string) (bool, error) {
+func IsFresh(gitbin, path string) (bool, error) {
 	cmd := exec.Command(gitbin, "-C", path, "reflog", "show")
 	out, err := cmd.Output()
 	if err != nil {
@@ -322,18 +324,18 @@ func isFresh(gitbin, path string) (bool, error) {
 }
 
 // check if Git-LFS has installed in host machine
-func hasLFSEnv(gitbin, path string) (bool, error) {
+func HasLFSEnv(gitbin string) (bool, error) {
 	cmd := exec.Command(gitbin, "lfs", "version")
 	out, err := cmd.Output()
 	if err != nil {
 		return false, fmt.Errorf(LocalPrinter().Sprintf("could not run 'git lfs version': %s", err))
 	}
-
+	// #FIXME $?
 	return strings.Contains(string(out), "git-lfs"), nil
 }
 
 // get git version string
-func gitVersion(gitbin, path string) (string, error) {
+func GitVersion(gitbin string) (string, error) {
 	cmd := exec.Command(gitbin, "version")
 	out, err := cmd.Output()
 	if err != nil {
@@ -347,7 +349,7 @@ func gitVersion(gitbin, path string) (string, error) {
 }
 
 // convert version string to int number for compare. e.g. convert 2.33.0 to 2330
-func gitVersionConvert(version string) int {
+func GitVersionConvert(version string) int {
 	var vstr string
 	dict := strings.Split(version, ".")
 	if len(dict) == 3 {
@@ -365,8 +367,8 @@ func gitVersionConvert(version string) int {
 }
 
 // get current branch
-func (repo Repository) GetCurrentBranch() (string, error) {
-	cmd := exec.Command(repo.gitBin, "-C", repo.path, "symbolic-ref", "HEAD", "--short")
+func GetCurrentBranch(gitbin, path string) (string, error) {
+	cmd := exec.Command(gitbin, "-C", path, "symbolic-ref", "HEAD", "--short")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf(LocalPrinter().Sprintf("could not run 'git symbolic-ref HEAD --short': %s", err))
@@ -395,12 +397,12 @@ func GetCurrentStatus(gitbin, path string) error {
 }
 
 // get git objects data size
-func (repo Repository) GetDatabaseSize() string {
+func GetDatabaseSize(dir string, bare bool) string {
 	var path string
-	if repo.bare {
-		path = filepath.Join(repo.path, ".")
+	if bare {
+		path = filepath.Join(dir, ".")
 	} else {
-		path = filepath.Join(repo.path, ".git/objects")
+		path = filepath.Join(dir, ".git/objects")
 	}
 	cmd := exec.Command("du", "-hs", path)
 	out, err := cmd.Output()
@@ -411,8 +413,8 @@ func (repo Repository) GetDatabaseSize() string {
 }
 
 // get lfs objects data size
-func (repo Repository) GetLFSObjSize() string {
-	path := filepath.Join(repo.path, ".git/lfs")
+func GetLFSObjSize(dir string) string {
+	path := filepath.Join(dir, ".git/lfs")
 	if _, err := os.Stat(path); err == nil {
 		cmd := exec.Command("du", "-hs", path)
 		out, err := cmd.Output()
@@ -425,8 +427,8 @@ func (repo Repository) GetLFSObjSize() string {
 }
 
 // get repo GC url if the repo is hosted on Gitee.com
-func (repo Repository) GetGiteeGCWeb() string {
-	cmd := exec.Command(repo.gitBin, "-C", repo.path, "config", "--get", "remote.origin.url")
+func GetGiteeGCWeb(gitbin, path string) string {
+	cmd := exec.Command(gitbin, "-C", path, "config", "--get", "remote.origin.url")
 	out, err := cmd.Output()
 	if err != nil {
 		return ""
@@ -447,7 +449,7 @@ func (repo Repository) GetGiteeGCWeb() string {
 	return url
 }
 
-func getRepoPath(gitbin, path string) string {
+func GetRepoPath(gitbin, path string) string {
 	cmd := exec.Command(gitbin, "-C", path, "worktree", "list")
 	out, err := cmd.Output()
 	if err != nil {
@@ -457,8 +459,8 @@ func getRepoPath(gitbin, path string) string {
 	return repopath
 }
 
-func (repo Repository) BackUp() {
-	repo_path := getRepoPath(repo.gitBin, repo.path)
+func BackUp(gitbin, path string) {
+	repo_path := GetRepoPath(gitbin, path)
 	dst := repo_path + ".bak"
 	// check if the same directory exist
 	_, err := os.Stat(dst)
@@ -472,7 +474,7 @@ func (repo Repository) BackUp() {
 		}
 	}
 	PrintLocalWithGreenln("start backup")
-	cmd := exec.Command(repo.gitBin, "-C", repo.path, "clone", "--no-local", repo.path, dst)
+	cmd := exec.Command(gitbin, "-C", path, "clone", "--no-local", path, dst)
 	_, err = cmd.Output()
 	if err != nil {
 		PrintLocalWithRedln("clone error")
@@ -486,8 +488,8 @@ func (repo Repository) BackUp() {
 	PrintGreenln(ft)
 }
 
-func (repo Repository) PushRepo() error {
-	cmd := exec.Command(repo.gitBin, "-C", repo.path, "push", "origin", "--all", "--force", "--porcelain")
+func PushRepo(gitbin, path string) error {
+	cmd := exec.Command(gitbin, "-C", path, "push", "origin", "--all", "--force", "--porcelain")
 	out1, err := cmd.Output()
 	if err != nil {
 		PrintLocalWithRedln("Push failed")
@@ -495,7 +497,7 @@ func (repo Repository) PushRepo() error {
 	}
 	PrintYellowln(strings.TrimSuffix(string(out1), "\n"))
 
-	cmd2 := exec.Command(repo.gitBin, "-C", repo.path, "push", "origin", "--tags", "--force")
+	cmd2 := exec.Command(gitbin, "-C", path, "push", "origin", "--tags", "--force")
 	out2, err := cmd2.Output()
 	if err != nil {
 		PrintLocalWithRedln("Push failed")
@@ -531,8 +533,8 @@ func BrachesChanged() bool {
 	return false
 }
 
-func (repo Repository) CleanUp() {
-	if BrachesChanged() || repo.opts.lfs {
+func (context Context) CleanUp() {
+	if BrachesChanged() || context.opts.lfs {
 		// clean up
 		PrintLocalWithGreenln("file cleanup is complete. Start cleaning the repository")
 	} else {
@@ -541,9 +543,9 @@ func (repo Repository) CleanUp() {
 		os.Exit(1)
 	}
 
-	if !repo.bare {
+	if !context.bare {
 		fmt.Println("running git reset --hard")
-		cmd1 := exec.Command(repo.gitBin, "-C", repo.path, "reset", "--hard")
+		cmd1 := exec.Command(context.gitBin, "-C", context.path, "reset", "--hard")
 		cmd1.Stdout = os.Stdout
 		err := cmd1.Start()
 		if err != nil {
@@ -556,7 +558,7 @@ func (repo Repository) CleanUp() {
 	}
 
 	fmt.Println("running git reflog expire --expire=now --all")
-	cmd2 := exec.Command(repo.gitBin, "-C", repo.path, "reflog", "expire", "--expire=now", "--all")
+	cmd2 := exec.Command(context.gitBin, "-C", context.path, "reflog", "expire", "--expire=now", "--all")
 	cmd2.Stderr = os.Stderr
 	cmd2.Stdout = os.Stdout
 	err := cmd2.Start()
@@ -569,7 +571,7 @@ func (repo Repository) CleanUp() {
 	}
 
 	fmt.Println("running git gc --prune=now")
-	cmd3 := exec.Command(repo.gitBin, "-C", repo.path, "gc", "--prune=now")
+	cmd3 := exec.Command(context.gitBin, "-C", context.path, "gc", "--prune=now")
 	cmd3.Stderr = os.Stderr
 	cmd3.Stdout = os.Stdout
 	err = cmd3.Start()
@@ -591,24 +593,24 @@ func LFSPrompt() {
 	PrintLocalWithYellowln("4. commit your .gitattributes file.")
 }
 
-func (repo Repository) Prompt() {
+func (context Context) Prompt() {
 	PrintLocalWithGreenln("cleaning completed")
 	PrintLocalWithPlain("current repository size")
-	PrintLocalWithYellowln(repo.GetDatabaseSize())
-	if lfs := repo.GetLFSObjSize(); len(lfs) > 0 {
+	PrintLocalWithYellowln(GetDatabaseSize(context.path, context.bare))
+	if lfs := GetLFSObjSize(context.path); len(lfs) > 0 {
 		PrintLocalWithPlain("including LFS objects size")
 		PrintLocalWithYellowln(lfs)
 	}
-	if repo.opts.lfs {
+	if context.opts.lfs {
 		LFSPrompt()
 	}
 	var pushed bool
-	if !repo.opts.lfs {
+	if !context.opts.lfs {
 		if AskForUpdate() {
 			PrintLocalWithPlainln("execute force push")
 			PrintLocalWithYellowln("git push origin --all --force")
 			PrintLocalWithYellowln("git push origin --tags --force")
-			err := repo.PushRepo()
+			err := PushRepo(context.gitBin, context.path)
 			if err == nil {
 				pushed = true
 			}
@@ -625,7 +627,7 @@ func (repo Repository) Prompt() {
 		fmt.Println()
 	}
 	PrintLocalWithRedln("2. (Undo)")
-	url := repo.GetGiteeGCWeb()
+	url := GetGiteeGCWeb(context.gitBin, context.path)
 	if url != "" {
 		PrintLocalWithRed("gitee GC page link")
 		PrintYellowln(url)
