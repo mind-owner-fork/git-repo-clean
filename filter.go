@@ -23,9 +23,25 @@ func ScanFiles(ctx *Context) ([]string, error) {
 		}
 	}
 
+	// set default branch to all is to keep deleting process consistent with scanning process
+	// user end pass '--branch=all', but git-fast-export takes '--all'
+	if op.branch == DefaultRepoBranch {
+		op.branch = "--all"
+	}
+
+	if ctx.opts.lfs {
+		limit, _ := UnitConvert(ctx.opts.limit)
+		if limit < 200 {
+			ctx.opts.limit = "200b" // to project LFS file
+		}
+	}
+	if ctx.opts.limit == DefaultFileSize && ctx.opts.scan {
+		ctx.opts.limit = "1M" // set default to 1M for scan
+	}
+
 	PrintLocalWithPlain("current repository size")
-	PrintLocalWithYellowln(GetDatabaseSize(ctx.path, ctx.bare))
-	if lfs := GetLFSObjSize(ctx.path); len(lfs) > 0 {
+	PrintLocalWithYellowln(GetDatabaseSize(ctx.workDir, ctx.bare))
+	if lfs := GetLFSObjSize(ctx.workDir); len(lfs) > 0 {
 		PrintLocalWithPlain("including LFS objects size")
 		PrintLocalWithYellowln(lfs)
 	}
@@ -37,22 +53,29 @@ func ScanFiles(ctx *Context) ([]string, error) {
 		 * Default: file size limit and file type
 		 * Max file number limit
 		 */
+		ctx.scan_t.filepath = true
 		nonScanMode(ctx, DefaultFileSize, DefaultFileType, math.MaxUint32)
-	} else if ctx.opts.limit != "" {
+	} else if ctx.opts.limit != DefaultFileSize {
 		/* Filter by file size
 		 * Default: file type
 		 * Max file number limit
 		 */
+		ctx.scan_t.filesize = true
 		nonScanMode(ctx, ctx.opts.limit, DefaultFileType, math.MaxUint32)
-	} else if ctx.opts.types != "*" {
+	} else if ctx.opts.types != DefaultFileType {
 		/* Filter by file type
 		 * Default: file size limit
 		 * Max file number limit
 		 */
+		ctx.scan_t.filetype = true
 		nonScanMode(ctx, DefaultFileSize, ctx.opts.types, math.MaxUint32)
 	}
 
 	if !ctx.opts.delete {
+		os.Exit(1)
+	}
+	if (ctx.scan_t.filepath || ctx.scan_t.filesize || ctx.scan_t.filetype) && ctx.opts.lfs {
+		PrintLocalWithRedln("Convert LFS file error")
 		os.Exit(1)
 	}
 	return scanned_targets, nil
@@ -66,15 +89,6 @@ func nonScanMode(ctx *Context, file_limit string, file_type string, file_num uin
 
 func scanMode(ctx *Context) (result []string) {
 	var first_target []string
-
-	if ctx.opts.lfs {
-		limit, _ := UnitConvert(ctx.opts.limit)
-		if limit < 200 {
-			ctx.opts.limit = "200b" // to project LFS file
-		}
-	} else {
-		ctx.opts.limit = "1M" // set default to 1M for scan
-	}
 
 	bloblist, err := ctx.ScanRepository()
 	if err != nil {
@@ -116,6 +130,9 @@ func scanMode(ctx *Context) (result []string) {
 	}
 	return result
 }
+
+///////////////////////////////////////////////////////
+// tweak git objects
 
 func (repo *Repository) tweak_blob(blob *Blob) {
 	for _, target := range repo.filtered {
@@ -187,7 +204,7 @@ func filter_filechange(commit *Commit, repo *Repository) {
 			}
 		} else {
 			// filter by blob size threshold
-			if repo.context.opts.limit != "" {
+			if repo.context.scan_t.filesize {
 				objectsize := Blob_size_list[filechange.blob_id]
 				// set bitsize to 64, means max single blob size is 4 GiB
 				size, _ := strconv.ParseUint(objectsize, 10, 64)
@@ -203,14 +220,14 @@ func filter_filechange(commit *Commit, repo *Repository) {
 				}
 			}
 			// filter by file type
-			if repo.context.opts.types != "*" {
+			if repo.context.scan_t.filetype {
 				if filepath.Ext(filechange.filepath) == "."+repo.context.opts.types {
 					Branch_changed.Add(filechange.branch)
 					matched = true
 				}
 			}
 			// filter by blob name or directory
-			if len(repo.context.opts.files) != 0 {
+			if repo.context.scan_t.filepath {
 				for _, path := range repo.context.opts.files {
 					matches := Match(path, EndcodePath(TrimeDoubleQuote(filechange.filepath)))
 					if len(matches) != 0 {

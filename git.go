@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -124,7 +122,7 @@ func (repo Repository) GitCommand(callerArgs ...string) *exec.Cmd {
 		"-c",
 		"advice.graftFileDeprecated=false",
 		"-C",
-		repo.context.path,
+		repo.context.workDir,
 	}
 
 	args = append(args, callerArgs...)
@@ -138,26 +136,4 @@ func (repo Repository) GitCommand(callerArgs ...string) *exec.Cmd {
 	)
 
 	return cmd
-}
-
-// CanonicalizePath returns absolute repo path
-func CanonicalizePath(path, relPath string) string {
-	if filepath.IsAbs(relPath) {
-		return relPath
-	}
-	return filepath.Join(path, relPath)
-}
-
-func GitDir(gitbin, path string) (string, error) {
-	cmd := exec.Command(gitbin, "-C", path, "rev-parse", "--git-dir")
-	out, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf(
-			"could not run 'git rev-parse --git-dir': %s", err,
-		)
-	}
-	// git object dir: ${repo-path}/${git-dir}
-	gitDir := CanonicalizePath(path, string(bytes.TrimSpace(out)))
-
-	return gitDir, nil
 }

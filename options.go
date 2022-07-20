@@ -172,10 +172,13 @@ type Options struct {
 	lfs      bool
 }
 
+var UserInput []string
+
 var (
 	DefaultFileSize   = "0b"
 	DefaultFileNumber = uint32(3)
 	DefaultFileType   = "*"
+	DefaultFileInput  = UserInput
 
 	DefaultRepoDir    = "."
 	DefaultRepoBranch = "all"
@@ -194,7 +197,7 @@ func initialize(args []string) error {
 	// default is to scan repo
 	flags.BoolVarP(&op.scan, "scan", "s", DefaultRepoScan, "scan the Git repository objects")
 	// specify the target files to delete
-	flags.StringArrayVarP(&op.files, "file", "f", nil, "specify the target files to delete")
+	flags.StringArrayVarP(&op.files, "file", "f", DefaultFileInput, "specify the target files to delete")
 	// since the deleting process is not very slow, default is all branch
 	flags.StringVarP(&op.branch, "branch", "b", DefaultRepoBranch, "set the branch to scan")
 	// default file size threshold is 1m

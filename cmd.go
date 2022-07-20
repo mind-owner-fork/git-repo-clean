@@ -16,7 +16,7 @@ var qs = []*survey.Question{
 		Name: "fileType",
 		Prompt: &survey.Input{
 			Message: LocalSprintf("select the type of file to scan, such as zip, png:"),
-			Default: "*",
+			Default: DefaultFileType,
 			Help:    LocalSprintf("default is all types. If you want to specify a type, you can directly enter the type suffix without prefix '.'"),
 		},
 		Validate: func(ans interface{}) error {
@@ -25,7 +25,7 @@ var qs = []*survey.Question{
 				return errors.New(LocalSprintf("filetype error one"))
 			}
 			match, _ := regexp.MatchString(`^[a-zA-Z1-9]+[.]?[a-zA-Z1-9]*$|^[a-zA-Z1-9]+$`, str)
-			if !match && str != "*" {
+			if !match && str != DefaultFileType {
 				return errors.New(LocalSprintf("filetype error two"))
 			}
 			return nil

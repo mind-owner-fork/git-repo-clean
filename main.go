@@ -13,7 +13,7 @@ func main() {
 	}
 	var repo = NewRepository()
 	// repo backup
-	BackUp(repo.context.gitBin, repo.context.path)
+	BackUp(repo.context.gitBin, repo.context.workDir)
 
 	// ask for lfs migrate
 	if repo.context.opts.lfs && AskForMigrateToLFS() {

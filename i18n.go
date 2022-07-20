@@ -153,6 +153,7 @@ func initEnglish() {
 	message.SetString(language.English, "parse uint error: %s", "Parse uint error: %s")
 
 	message.SetString(language.English, "file have been changed", "those files have been converted to LFS file:")
+	message.SetString(language.English, "Convert LFS file error", "Can not convert noraml file into LFS file under non-scan mode")
 
 }
 
@@ -273,6 +274,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "parse uint error: %s", "解析无符号整数出错: %s")
 
 	message.SetString(language.Chinese, "file have been changed", "以下这些文件已经被转化为 LFS 文件:")
+	message.SetString(language.Chinese, "Convert LFS file error", "无法在非扫描模式下将文件转换为 LFS 文件")
 
 }
 
