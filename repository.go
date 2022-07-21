@@ -73,10 +73,12 @@ func InitContext(path string) (*Context, error) {
 	}
 
 	// check if current repo has uncommited files
-	err = GetCurrentStatus(gitBin, path)
-	if !bare && err != nil {
-		PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
-		os.Exit(1)
+	if !bare {
+		err = GetCurrentStatus(gitBin, path)
+		if err != nil {
+			PrintLocalWithRedln(LocalPrinter().Sprintf("%s", err))
+			os.Exit(1)
+		}
 	}
 
 	// check if current repo is in shallow repo
@@ -206,8 +208,7 @@ func GetBlobSize(gitbin, path string) error {
 	return nil
 }
 
-// #TODO
-func (context Context) ScanRepository() (BlobList, error) {
+func ScanRepository(context *Context) (BlobList, error) {
 	var empty BlobList
 	var blobs BlobList
 
@@ -293,7 +294,7 @@ func (context Context) ScanRepository() (BlobList, error) {
 func ScanMode(ctx *Context) (result []string) {
 	var first_target []string
 
-	bloblist, err := ctx.ScanRepository()
+	bloblist, err := ScanRepository(ctx)
 	if err != nil {
 		ft := LocalPrinter().Sprintf("scanning repository error: %s", err)
 		PrintRedln(ft)
@@ -529,7 +530,7 @@ func GetCurrentStatus(gitbin, path string) error {
 	cmd := exec.Command(gitbin, "-C", path, "status", "-s")
 	out, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("could not run 'git status'")
+		return fmt.Errorf(LocalPrinter().Sprintf("could not run 'git status'"))
 	}
 	st := string(out)
 	if st == "" {
@@ -538,7 +539,7 @@ func GetCurrentStatus(gitbin, path string) error {
 	list := strings.Split(st, "\n")
 	for _, ele := range list {
 		if strings.HasPrefix(ele, "M ") || strings.HasPrefix(ele, " M") || strings.HasPrefix(ele, "A ") {
-			return fmt.Errorf("there's some changes to be committed, please commit them first")
+			return fmt.Errorf(LocalPrinter().Sprintf("there's some changes to be committed, please commit them first"))
 		}
 	}
 	return nil
