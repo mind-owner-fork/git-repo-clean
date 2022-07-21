@@ -219,39 +219,38 @@ func ScanRepository(context *Context) (BlobList, error) {
 	for objectid, objectsize := range Blob_size_list {
 		// set bitsize to 64, means max single blob size is 4 GiB
 		actual_size, _ := strconv.ParseUint(objectsize, 10, 64)
+		// e.g. git repo-clean -s -l=1000k --lfs --type=po --lfs
 		if context.opts.lfs && !context.opts.interact {
-			name, err := GetBlobName(context.gitBin, context.workDir, objectid)
+			limit, err := UnitConvert(context.opts.limit)
 			if err != nil {
-				if err != io.EOF {
-					return empty, fmt.Errorf(LocalPrinter().Sprintf(
-						"run GetBlobName error: %s", err))
-				}
+				return empty, fmt.Errorf(LocalPrinter().Sprintf(
+					"convert uint error: %s", err))
 			}
-			if name == "" {
-				continue
+			// to protect LFS file itself
+			if limit < 200 {
+				context.opts.limit = LFS_SAFE_SIZE
 			}
-			if len(context.opts.types) != 0 && context.opts.types != DefaultFileType {
-				extent := filepath.Ext(name)
-				if extent == "."+context.opts.types {
-					limit, err := UnitConvert(context.opts.limit)
-					if err != nil {
+			if actual_size > limit {
+				name, err := GetBlobName(context.gitBin, context.workDir, objectid)
+				if err != nil {
+					if err != io.EOF {
 						return empty, fmt.Errorf(LocalPrinter().Sprintf(
-							"convert uint error: %s", err))
+							"run GetBlobName error: %s", err))
 					}
-					// to protect LFS file itself
-					if limit < 200 {
-						context.opts.limit = LFS_SAFE_SIZE
+				}
+				if name == "" {
+					continue
+				}
+				if len(context.opts.types) != 0 && context.opts.types != DefaultFileType {
+					extent := filepath.Ext(name)
+					if extent == "."+context.opts.types {
+						// append this record blob into slice
+						blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
+						// sort according by size
+						sort.Slice(blobs, func(i, j int) bool {
+							return blobs[i].objectSize > blobs[j].objectSize
+						})
 					}
-					if actual_size < limit {
-						// skip
-						continue
-					}
-					// append this record blob into slice
-					blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
-					// sort according by size
-					sort.Slice(blobs, func(i, j int) bool {
-						return blobs[i].objectSize > blobs[j].objectSize
-					})
 				}
 			}
 		} else {
@@ -274,21 +273,19 @@ func ScanRepository(context *Context) (BlobList, error) {
 				}
 				if len(context.opts.types) != 0 && context.opts.types != DefaultFileType {
 					extent := filepath.Ext(name)
-					if extent != "."+context.opts.types {
-						// matched none, skip
-						continue
+					if extent == "."+context.opts.types {
+						// append this record blob into slice
+						blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
+						// sort according by size
+						sort.Slice(blobs, func(i, j int) bool {
+							return blobs[i].objectSize > blobs[j].objectSize
+						})
+						// remain first {op.number} blobs
+						if len(blobs) > int(context.opts.number) {
+							blobs = blobs[:context.opts.number]
+							// break
+						}
 					}
-				}
-				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
-				// sort according by size
-				sort.Slice(blobs, func(i, j int) bool {
-					return blobs[i].objectSize > blobs[j].objectSize
-				})
-				// remain first [op.number] blobs
-				if len(blobs) > int(context.opts.number) {
-					blobs = blobs[:context.opts.number]
-					// break
 				}
 			}
 		}
