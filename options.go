@@ -253,6 +253,13 @@ func ParseOptions(args []string) error {
 		PrintLocalWithRedln("single parameter is invalid")
 		os.Exit(1)
 	}
+
+	// '--lfs' option must follow with '--scan' and '--types'
+	if !ValidateLFSOpts() {
+		PrintLocalWithRedln("LFS parameter is invalid")
+		os.Exit(1)
+	}
+
 	return nil
 }
 
@@ -262,4 +269,15 @@ func SingleOpts() bool {
 	} else {
 		return false
 	}
+}
+
+func ValidateLFSOpts() bool {
+	if op.lfs {
+		if op.scan != DefaultRepoScan && op.types != DefaultFileType {
+			return true
+		} else {
+			return false
+		}
+	}
+	return true
 }
