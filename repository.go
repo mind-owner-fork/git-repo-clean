@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"sort"
@@ -218,38 +219,35 @@ func (context Context) ScanRepository() (BlobList, error) {
 		// set bitsize to 64, means max single blob size is 4 GiB
 		size, _ := strconv.ParseUint(objectsize, 10, 64)
 		if context.opts.lfs && !context.opts.interact {
-			path, err := GetBlobName(context.gitBin, context.workDir, objectid)
+			name, err := GetBlobName(context.gitBin, context.workDir, objectid)
 			if err != nil {
 				if err != io.EOF {
 					return empty, fmt.Errorf(LocalPrinter().Sprintf(
 						"run GetBlobName error: %s", err))
 				}
 			}
-			if path == "" {
-				continue
-			}
-
-			limit, err := UnitConvert(context.opts.limit)
-			if err != nil {
-				return empty, fmt.Errorf(LocalPrinter().Sprintf(
-					"convert uint error: %s", err))
-			}
-			if size < limit {
+			if name == "" {
 				continue
 			}
 			if len(context.opts.types) != 0 && context.opts.types != DefaultFileType {
-				extent := filepath.Ext(path)
-				if extent != "."+context.opts.types {
-					// matched none, skip
-					continue
+				extent := filepath.Ext(name)
+				if extent == "."+context.opts.types {
+					limit, err := UnitConvert(context.opts.limit)
+					if err != nil {
+						return empty, fmt.Errorf(LocalPrinter().Sprintf(
+							"convert uint error: %s", err))
+					}
+					if size < limit {
+						continue
+					}
+					// append this record blob into slice
+					blobs = append(blobs, HistoryRecord{objectid, size, name})
+					// sort according by size
+					sort.Slice(blobs, func(i, j int) bool {
+						return blobs[i].objectSize > blobs[j].objectSize
+					})
 				}
 			}
-			// append this record blob into slice
-			blobs = append(blobs, HistoryRecord{objectid, size, path})
-			// sort according by size
-			sort.Slice(blobs, func(i, j int) bool {
-				return blobs[i].objectSize > blobs[j].objectSize
-			})
 		} else {
 			limit, err := UnitConvert(context.opts.limit)
 			if err != nil {
@@ -258,25 +256,25 @@ func (context Context) ScanRepository() (BlobList, error) {
 			}
 
 			if size > limit {
-				path, err := GetBlobName(context.gitBin, context.workDir, objectid)
+				name, err := GetBlobName(context.gitBin, context.workDir, objectid)
 				if err != nil {
 					if err != io.EOF {
 						return empty, fmt.Errorf(LocalPrinter().Sprintf(
 							"run GetBlobName error: %s", err))
 					}
 				}
-				if path == "" {
+				if name == "" {
 					continue
 				}
 				if len(context.opts.types) != 0 && context.opts.types != DefaultFileType {
-					extent := filepath.Ext(path)
+					extent := filepath.Ext(name)
 					if extent != "."+context.opts.types {
 						// matched none, skip
 						continue
 					}
 				}
 				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{objectid, size, path})
+				blobs = append(blobs, HistoryRecord{objectid, size, name})
 				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize
@@ -290,6 +288,136 @@ func (context Context) ScanRepository() (BlobList, error) {
 		}
 	}
 	return blobs, nil
+}
+
+func ScanMode(ctx *Context) (result []string) {
+	var first_target []string
+
+	bloblist, err := ctx.ScanRepository()
+	if err != nil {
+		ft := LocalPrinter().Sprintf("scanning repository error: %s", err)
+		PrintRedln(ft)
+		os.Exit(1)
+	}
+	if len(bloblist) == 0 {
+		PrintLocalWithRedln("no files were scanned")
+		os.Exit(1)
+	} else {
+		ShowScanResult(bloblist)
+	}
+
+	if ctx.opts.interact {
+		first_target = MultiSelectCmd(bloblist)
+		if len(bloblist) != 0 && len(first_target) == 0 {
+			PrintLocalWithRedln("no files were selected")
+			os.Exit(1)
+		}
+		var ok = false
+		ok, result = Confirm(first_target)
+		if !ok {
+			PrintLocalWithRedln("operation aborted")
+			os.Exit(1)
+		}
+	} else {
+		for _, item := range bloblist {
+			result = append(result, item.oid)
+		}
+	}
+	//  record target file's name
+	for _, item := range bloblist {
+		for _, target := range result {
+			if item.oid == target {
+				Files_changed.Add(item.objectName)
+			}
+		}
+	}
+	return result
+}
+
+func NonScanMode(ctx *Context, file_limit string, file_type string, file_num uint32) {
+	ctx.opts.limit = file_limit
+	ctx.opts.types = file_type
+	ctx.opts.number = file_num
+}
+
+func ScanFiles(ctx *Context) ([]string, error) {
+	var scanned_targets []string
+	// when run git-repo-clean -i, its means run scan too
+	if ctx.opts.interact {
+		ctx.opts.scan = true
+		ctx.opts.delete = true
+		ctx.opts.verbose = true
+		ctx.opts.lfs = true
+
+		if err := ctx.opts.SurveyCmd(); err != nil {
+			ft := LocalPrinter().Sprintf("ask question module fail: %s", err)
+			PrintRedln(ft)
+			os.Exit(1)
+		}
+	}
+
+	// set default branch to all is to keep deleting process consistent with scanning process
+	// user end pass '--branch=all', but git-fast-export takes '--all'
+	if op.branch == DefaultRepoBranch {
+		op.branch = "--all"
+	}
+
+	if ctx.opts.lfs {
+		limit, _ := UnitConvert(ctx.opts.limit)
+		if limit < 200 {
+			ctx.opts.limit = "200b" // to project LFS file
+		}
+		// can't run lfs-migrate in bare repo
+		// git lfs track must be run in a work tree.
+		if ctx.bare {
+			PrintLocalWithYellowln("bare repo error")
+			os.Exit(1)
+		}
+	}
+	if ctx.opts.limit == DefaultFileSize && ctx.opts.scan {
+		ctx.opts.limit = "1M" // set default to 1M for scan
+	}
+
+	PrintLocalWithPlain("current repository size")
+	PrintLocalWithYellowln(GetDatabaseSize(ctx.workDir, ctx.bare))
+	if lfs := GetLFSObjSize(ctx.workDir); len(lfs) > 0 {
+		PrintLocalWithPlain("including LFS objects size")
+		PrintLocalWithYellowln(lfs)
+	}
+
+	if ctx.opts.scan {
+		scanned_targets = ScanMode(ctx)
+	} else if ctx.opts.files != nil {
+		/* Filter by provided files
+		 * Default: file size limit and file type
+		 * Max file number limit
+		 */
+		ctx.scan_t.filepath = true
+		NonScanMode(ctx, DefaultFileSize, DefaultFileType, math.MaxUint32)
+	} else if ctx.opts.limit != DefaultFileSize {
+		/* Filter by file size
+		 * Default: file type
+		 * Max file number limit
+		 */
+		ctx.scan_t.filesize = true
+		NonScanMode(ctx, ctx.opts.limit, DefaultFileType, math.MaxUint32)
+	} else if ctx.opts.types != DefaultFileType {
+		/* Filter by file type
+		 * Default: file size limit
+		 * Max file number limit
+		 */
+		ctx.scan_t.filetype = true
+		NonScanMode(ctx, DefaultFileSize, ctx.opts.types, math.MaxUint32)
+	}
+
+	if !ctx.opts.delete {
+		os.Exit(1)
+	}
+	if (ctx.scan_t.filepath || ctx.scan_t.filesize || ctx.scan_t.filetype) && ctx.opts.lfs {
+		PrintLocalWithRedln("Convert LFS file error")
+		os.Exit(1)
+	}
+	return scanned_targets, nil
 }
 
 // GitDir get .git dir in repository with absolute path
