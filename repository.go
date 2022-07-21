@@ -218,7 +218,7 @@ func ScanRepository(context *Context) (BlobList, error) {
 
 	for objectid, objectsize := range Blob_size_list {
 		// set bitsize to 64, means max single blob size is 4 GiB
-		size, _ := strconv.ParseUint(objectsize, 10, 64)
+		actual_size, _ := strconv.ParseUint(objectsize, 10, 64)
 		if context.opts.lfs && !context.opts.interact {
 			name, err := GetBlobName(context.gitBin, context.workDir, objectid)
 			if err != nil {
@@ -238,11 +238,16 @@ func ScanRepository(context *Context) (BlobList, error) {
 						return empty, fmt.Errorf(LocalPrinter().Sprintf(
 							"convert uint error: %s", err))
 					}
-					if size < limit {
+					// to protect LFS file itself
+					if limit < 200 {
+						context.opts.limit = LFS_SAFE_SIZE
+					}
+					if actual_size < limit {
+						// skip
 						continue
 					}
 					// append this record blob into slice
-					blobs = append(blobs, HistoryRecord{objectid, size, name})
+					blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
 					// sort according by size
 					sort.Slice(blobs, func(i, j int) bool {
 						return blobs[i].objectSize > blobs[j].objectSize
@@ -256,7 +261,7 @@ func ScanRepository(context *Context) (BlobList, error) {
 					"convert uint error: %s", err))
 			}
 
-			if size > limit {
+			if actual_size > limit {
 				name, err := GetBlobName(context.gitBin, context.workDir, objectid)
 				if err != nil {
 					if err != io.EOF {
@@ -275,7 +280,7 @@ func ScanRepository(context *Context) (BlobList, error) {
 					}
 				}
 				// append this record blob into slice
-				blobs = append(blobs, HistoryRecord{objectid, size, name})
+				blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
 				// sort according by size
 				sort.Slice(blobs, func(i, j int) bool {
 					return blobs[i].objectSize > blobs[j].objectSize
@@ -366,7 +371,7 @@ func ScanFiles(ctx *Context) ([]string, error) {
 	if ctx.opts.lfs {
 		limit, _ := UnitConvert(ctx.opts.limit)
 		if limit < 200 {
-			ctx.opts.limit = "200b" // to project LFS file
+			ctx.opts.limit = LFS_SAFE_SIZE
 		}
 		// can't run lfs-migrate in bare repo
 		// git lfs track must be run in a work tree.

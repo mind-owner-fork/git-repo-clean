@@ -12,6 +12,8 @@ import (
 
 var (
 	LFSVER = "https://git-lfs.github.com/spec/v1"
+	// To protect LFS pointer file itself be converted again
+	LFS_SAFE_SIZE = "200b"
 )
 
 type Pointer struct {
