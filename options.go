@@ -62,7 +62,7 @@ Command-Line way:
 
   * If you want to use Git LFS to manage your big file, use '--lfs' option to
   convert big files into LFS pointer files. Note that this operation must under
-  scan mode, and must specify the file type, and will suppress file size limit:
+  scan mode, and must specify the file type, and will suppress file number limit:
 	git repo-clean --scan --type=so --lfs --delete
 
   * In non-scan mode, which means without specifying the --scan option,
@@ -136,7 +136,7 @@ git repo-clean 是一款扫描Git仓库元数据，然后根据指定的文件�
 
   * 如果你想用Git LFS管理大文件，可以使用'--lfs'选项将大文件转换为LFS指针文件
   这个操作必须在扫描模式下进行，必须指定文件类型，即必须有--scan, --type 参数
-  此时--limit, --number参数都无效：
+  此时--number参数无效：
     git repo-clean --scan --type=so --lfs --delete
 
 

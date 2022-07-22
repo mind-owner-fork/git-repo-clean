@@ -4,7 +4,6 @@
 
 ## 依赖环境：
 + Git >= 2.24.0  （必须）
-+ Golang >= 1.15 （可选）
 
 
 ## 安装
@@ -28,6 +27,8 @@ drwxrwxr-x 3 git git 4.0K Dec  1 17:31 docs                 # 附录文档
 **2. 源码编译安装包**
 
 该方式需要你的电脑有基本的Golang开发环境
++ Golang >= 1.15
+
 安装网址：https://docs.studygolang.com/doc/install
 
 ```bash
@@ -139,9 +140,9 @@ LFS指针文件代替了原始文件存储在Git仓库`.git/objects/`中，而�
 在完成转换后，直到推送到远程之前，用户需要在本地安装`git lfs`工具，用来安装相关的钩子，如`pre-push`，这样在推送时，才会将`LFS`对象上传到`Gitee LFS`服务器。
 > `git lfs`的安装，参考：https://github.com/git-lfs/git-lfs#downloading
 
-目前只能在扫描模式下使用LFS功能，如：
-`git repo-clean --verbose --scan --limit=100M --delete --lfs`
-这条命令会将仓库中的大于`100 MB`的文件转化为不超过`200 Bytes`的LFS指针文件，极大的节省仓库空间。
+目前只能在扫描模式下并且必须指定文件类型才能使用LFS功能，如：
+`git repo-clean --verbose --scan --limit=100M --type=so --delete --lfs`
+这条命令会将仓库中的大于`100 MB`的`.so`文件转化为不超过`200 Bytes`的LFS指针文件，极大的节省仓库空间。
 
 
 ## 代码结构
@@ -149,6 +150,7 @@ LFS指针文件代替了原始文件存储在Git仓库`.git/objects/`中，而�
 + main.go       | 程序主入口
 + options.go    | 程序选项参数处理
 + cmd.go        | 交互式命令处理
++ color.go      | 颜色显示模块
 + repository.go | 仓库扫描相关处理
 + fastexport.go | 启动git-fast-export进程
 + fastimport.go | 启动git-fast-import进程
@@ -163,9 +165,6 @@ LFS指针文件代替了原始文件存储在Git仓库`.git/objects/`中，而�
 - [ ] 支持在同一个选项中有多个选择，如：--type=jpg, png, mp4
 - [ ] 增加处理过程的进度提示信息，时间消耗信息等
 - [ ] 对用户提供的仓库做进一步检测，如检测`.git`与工作目录是否分离
-- [ ] 考虑重写历史对签名的影响
-- [ ] 考虑重写历史对PR的影响
-- [ ] 使用libgit2的Golang实现代替直接调用git命令
 - [ ] 重构i18n模块，使用文件加载的方式
 - [ ] 实现Windows下一键安装
 - [ ] 升级Golang
@@ -173,6 +172,7 @@ LFS指针文件代替了原始文件存储在Git仓库`.git/objects/`中，而�
 
 ## BUG
 + 如果仓库中存在nested tag, 则在清理过程中会出现错误，如：`error: multiple updates for ref 'refs/tags/v1.0.1-pointer' not allowed`, 这会导致文件删除失败。暂时处理方式是一旦检测到这种情况，就退出程序，并显示警告信息。
++ 如果是在非扫描模式下指定历史版本中存在的文件路径或者文件类型进行删除，可能需要多次操作，才能完全删除。
 
 ## NOTE
 + 目前只关注文件本身，所以扫描时只关注blob类型对象
@@ -189,6 +189,12 @@ Q：
 A：
 应该是终端的本地化配置问题，需要检查终端的本地化配置：在git Bash终端鼠标右键，找到底部`Options`选项，选择里面的文本`Text`选项，在`Locale` 下拉框中选择`zh_CN`, 在右边的字符集(Character set)选择中选择`UTF-8(Unicode)`。
 如果设置成功之后，还是显示乱码，建议使用PowerShell终端。
+
+Q:
+Win10 交互式模块运行失败, 见 [issue](https://gitee.com/oschina/git-repo-clean/issues/I53TF0)
+
+A:
+在Windows某些终端，如git bash (Mingw64)确实可能会出现这个问题，来源于git-repo-clean使用的第三方依赖库 [survey](https://github.com/AlecAivazis/survey/issues/148)，解决方法是换个终端，如普通命令行Command Prompt，或Windows PowerShell。
 
 Q：
 删除不成功。使用`git repo-clean`删除文件后，再次进行扫描，结果发现文件还是存在。
