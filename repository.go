@@ -14,6 +14,13 @@ import (
 	"strings"
 
 	"path/filepath"
+
+	mapset "github.com/deckarep/golang-set"
+)
+
+var (
+	Branch_changed = mapset.NewSet() // record branches that has been changed
+	Files_changed  = mapset.NewSet() // record files for LFS
 )
 
 type Context struct {
@@ -682,6 +689,17 @@ func BrachesChanged() bool {
 		return true
 	}
 	return false
+}
+
+// FilesChanged prints all files that have been changed
+func FilesChanged() {
+	files := Files_changed.ToSlice()
+	if len(files) != 0 {
+		PrintLocalWithPlainln("file have been changed")
+		for _, file := range files {
+			PrintYellowln(file.(string))
+		}
+	}
 }
 
 func (context Context) CleanUp() {

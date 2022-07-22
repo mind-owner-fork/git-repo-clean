@@ -16,15 +16,10 @@ func main() {
 	BackUp(repo.context.gitBin, repo.context.workDir)
 
 	// ask for lfs migrate
-	if repo.context.opts.lfs && AskForMigrateToLFS() {
-		// can't run lfs-migrate in bare repo
-		// git lfs track must be run in a work tree.
-		if repo.context.bare {
-			PrintLocalWithYellowln("bare repo error")
-			os.Exit(1)
+	if repo.context.opts.lfs {
+		if ok := AskForMigrateToLFS(); !ok {
+			repo.context.opts.lfs = false
 		}
-	} else {
-		repo.context.opts.lfs = false
 	}
 	// filter data
 	repo.Parser()

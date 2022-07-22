@@ -24,8 +24,6 @@ var (
 	SKIPPED_COMMITS    = mapset.NewSet()
 	Lasted_commit      = make(map[string]int32)
 	Lasted_orig_commit = make(map[string]int32)
-	Branch_changed     = mapset.NewSet() // record branches that has been changed
-	Files_changed      = mapset.NewSet() // record files for LFS
 )
 
 type origParents []int32

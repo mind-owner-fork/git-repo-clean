@@ -111,14 +111,3 @@ func CreateLFSDir(sha256 string) (name string) {
 	}
 	return absdir
 }
-
-// FilesChanged prints all files that have been changed
-func FilesChanged() {
-	files := Files_changed.ToSlice()
-	if len(files) != 0 {
-		PrintLocalWithPlainln("file have been changed")
-		for _, file := range files {
-			PrintYellowln(file.(string))
-		}
-	}
-}
