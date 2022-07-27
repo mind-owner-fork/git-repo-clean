@@ -280,19 +280,22 @@ func ScanRepository(context *Context) (BlobList, error) {
 				}
 				if len(context.opts.types) != 0 && context.opts.types != DefaultFileType {
 					extent := filepath.Ext(name)
-					if extent == "."+context.opts.types {
-						// append this record blob into slice
-						blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
-						// sort according by size
-						sort.Slice(blobs, func(i, j int) bool {
-							return blobs[i].objectSize > blobs[j].objectSize
-						})
-						// remain first {op.number} blobs
-						if len(blobs) > int(context.opts.number) {
-							blobs = blobs[:context.opts.number]
-							// break
-						}
+					if extent != "."+context.opts.types {
+						// matched none, skip
+						continue
 					}
+				}
+
+				// append this record blob into slice
+				blobs = append(blobs, HistoryRecord{objectid, actual_size, name})
+				// sort according by size
+				sort.Slice(blobs, func(i, j int) bool {
+					return blobs[i].objectSize > blobs[j].objectSize
+				})
+				// remain first {op.number} blobs
+				if len(blobs) > int(context.opts.number) {
+					blobs = blobs[:context.opts.number]
+					// break
 				}
 			}
 		}
