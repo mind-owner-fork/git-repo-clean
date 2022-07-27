@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	Branch_changed = mapset.NewSet() // record branches that has been changed
-	Files_changed  = mapset.NewSet() // record files for LFS
+	Branch_changed = mapset.NewSet()         // record branches that has been changed
+	Files_changed  = mapset.NewSet()         // record files for LFS
+	Blob_size_list = make(map[string]string) // record repo's blob list
 )
 
 type Context struct {
@@ -50,8 +51,6 @@ type HistoryRecord struct {
 }
 
 type BlobList []HistoryRecord
-
-var Blob_size_list = make(map[string]string)
 
 func InitContext(path string) (*Context, error) {
 	// Find the `git` executable to be used:
@@ -226,7 +225,7 @@ func ScanRepository(context *Context) (BlobList, error) {
 	for objectid, objectsize := range Blob_size_list {
 		// set bitsize to 64, means max single blob size is 4 GiB
 		actual_size, _ := strconv.ParseUint(objectsize, 10, 64)
-		// e.g. git repo-clean -s -l=1000k --lfs --type=po --lfs
+		// e.g. git repo-clean -s -l=1000k --lfs --type=po --delete
 		if context.opts.lfs && !context.opts.interact {
 			limit, err := UnitConvert(context.opts.limit)
 			if err != nil {
