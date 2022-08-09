@@ -645,7 +645,7 @@ func BackUp(gitbin, path string) {
 		PrintLocalWithRedln("run filepach.Abs error")
 	}
 	ft := LocalPrinter().Sprintf("backup done! Backup file path is: %s", abs_path)
-	PrintGreenln(ft)
+	PrintYellowln(ft)
 }
 
 func PushRepo(gitbin, path string) error {
@@ -808,8 +808,9 @@ func (context Context) Prompt() {
 	PrintLocalWithRed("for detailed documentation, see")
 	PrintYellowln("https://gitee.com/oschina/git-repo-clean/blob/main/docs/repo-update.md")
 	fmt.Println()
-	PrintLocalWithPlainln("suggest operations done")
-	PrintLocalWithPlainln("introduce GIT LFS")
-	PrintLocalWithPlain("for the use of Gitee LFS, see")
-	PrintYellowln("https://gitee.com/help/articles/4235")
+	if !context.opts.interact {
+		PrintLocalWithPlainln("introduce GIT LFS")
+		PrintLocalWithPlain("for the use of Gitee LFS, see")
+		PrintYellowln("https://gitee.com/help/articles/4235")
+	}
 }

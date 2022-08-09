@@ -37,7 +37,6 @@ func UnitConvert(input string) (uint64, error) {
 func ShowScanResult(list BlobList) {
 	PrintLocalWithGreenln("scan done!")
 	PrintLocalWithYellowln("note that there may be multiple versions of the same file")
-	PrintLocalWithYellowln("please delete selectively according to its Blob ID")
 
 	// if maxNameLen = 58 maxUTF8NameLen = 34, then ActualLen = (58-34)/2
 	maxNameLen, maxUTF8NameLen := maxLenBlobName(list)

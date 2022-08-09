@@ -35,23 +35,22 @@ func initEnglish() {
 	message.SetString(language.English, "execute force push",
 		"The following two commands will be executed, then the remote commit will be overwritten:")
 	message.SetString(language.English, "suggest operations header",
-		"the files has been cleaned or converted into LFS objects, please confirm the current repo status is Ok. If there's no other files to handle, please follow those steps below:")
+		"Finally, please confirm the current repo status is Ok and no file is deleted by mistake and the repo size is under the repo size limit, please follow those steps below:")
 	message.SetString(language.English, "1. (Done!)", "1. (Done!) remote repository have been updated.")
 	message.SetString(language.English, "1. (Undo)", "1. (Undo) update remote repository. Push local cleaned repository to remote repository:")
 	message.SetString(language.English, "2. (Undo)",
 		"2. (Undo) clean up the remote repository. After successful push, please go to your corresponding repository management page to perform GC operation.")
 	message.SetString(language.English, "3. (Undo)",
 		"3. (Undo) process the associated repository. Process other repository in the clone under the same remote repository to ensure that the same file won't be submitted to the remote repository again. ")
-	message.SetString(language.English, "gitee GC page link", "If you are a Gitee repository and have admin right, please check the link: ")
-	message.SetString(language.English, "for detailed documentation, see", "For detailed documentation, see: ")
-	message.SetString(language.English, "suggest operations done", "After completing the above three steps, Congratulations, all the cleaning work has been done!")
+	message.SetString(language.English, "gitee GC page link", "    please click Gitee repo manage link: ")
+	message.SetString(language.English, "for detailed documentation, see", "    For detailed documentation, see: ")
 	message.SetString(language.English, "introduce GIT LFS",
-		"If you need to store large files, please use '--lfs' option to convert big file into Gitee LFS to avoid the size of the repository exceed the limit again.")
+		"If you have Gitee LFS(large file storage) service,  you can use '--lfs' option to convert big file into LFS to manage your large file separately.")
 	message.SetString(language.English, "for the use of Gitee LFS, see", "For the use of Gitee LFS, see: ")
 	message.SetString(language.English, "init repo filter error", "Init repo Filter error")
 	message.SetString(language.English, "ask question module fail: %s", "Ask question module fail: %s")
 	message.SetString(language.English, "before you push to remote, you have to do something below:",
-		"before you push to remote, you have to do something below:")
+		"Before you push to remote, you have to do something below:")
 	message.SetString(language.English, "1. install git-lfs",
 		"1. install git-lfs by this link: https://packagecloud.io/github/git-lfs/install")
 	message.SetString(language.English, "2. run command: git lfs install",
@@ -89,8 +88,7 @@ func initEnglish() {
 	message.SetString(language.English, "scan done!", "Scan done!")
 	message.SetString(language.English, "note that there may be multiple versions of the same file",
 		"Note that there may be multiple versions of the same file, which are the main reasons for wasting git repository storage")
-	message.SetString(language.English, "please delete selectively according to its Blob ID",
-		"Please delete selectively according to its Blob ID, if you are sure that all files can be deleted, select all.")
+
 	// repository.go
 	message.SetString(language.English, "start scanning", "Start scanning(if the repository is too large, the scanning time will be long, please wait a few minutes)...")
 	message.SetString(language.English, "run GetBlobName error: %s", "Run GetBlobName error: %s")
@@ -116,7 +114,7 @@ func initEnglish() {
 
 	message.SetString(language.English, "backup done! Backup file path is: %s", "Backup done! Backup file path is: %s")
 	message.SetString(language.English, "push failed",
-		"Push failed. You may not have permission to push, or the repository does not have a remote repository")
+		"Push failed. Your repo may still exceed the size limit, please clear other history big files again, and then push by hand.")
 	message.SetString(language.English, "done", "Done")
 	message.SetString(language.English, "file cleanup is complete. Start cleaning the repository", "File cleanup is complete. Start cleaning the repository...")
 	message.SetString(language.English, "branches have been changed", "The following branches have been changed: ")
@@ -146,7 +144,7 @@ func initEnglish() {
 
 	message.SetString(language.English, "confirm message", "The above is the file you want to delete. Are you sure you want to *DELETE* it ?")
 	message.SetString(language.English, "ask for override message", "A folder with the same name exists in the current directory. Please make sure you do not overwrite the original backup file")
-	message.SetString(language.English, "ask for update message", "Your local commit history has changed. Do you want to *FORCE PUSH* to the remote repository now ?")
+	message.SetString(language.English, "ask for update message", "You have done a repo clear work. You can force push to remote if no file is deleted by mistake and the repo size is under the limit. Otherwise, select NO to continue clearing history files.")
 	message.SetString(language.English, "ask for migrating big file into LFS", "Do you want to migrate your big files into Gitee LFS? ")
 	message.SetString(language.English, "process interrupted", "process interrupted")
 
@@ -174,15 +172,14 @@ func initChinese() {
 	message.SetString(language.Chinese, "current repository size", "当前仓库大小：")
 	message.SetString(language.Chinese, "including LFS objects size", "LFS对象大小:  ")
 	message.SetString(language.Chinese, "execute force push", "将会执行如下两条命令，远端的的提交将会被覆盖:")
-	message.SetString(language.Chinese, "suggest operations header", "文件已清理或已转换为LFS对象，请确认当前仓库状态是否正常。如果没有其它文件要处理，建议完成如下工作：")
+	message.SetString(language.Chinese, "suggest operations header", "最后，当确认当前仓库状态是正常，不存在文件误删除，并且未超过仓库大小限制后，请手动完成如下工作：")
 	message.SetString(language.Chinese, "1. (Done!)", "1. (已完成！)远程仓库已经更新。")
-	message.SetString(language.Chinese, "1. (Undo)", "1. (待完成)更新远程仓库。将本地清理后的仓库推送到远程仓库：")
+	message.SetString(language.Chinese, "1. (Undo)", "1. (待完成)更新远程仓库。将本地清理后的仓库手动推送到远程仓库：")
 	message.SetString(language.Chinese, "2. (Undo)", "2. (待完成)清理远程仓库。提交成功后，请前往你对应的仓库管理页面，执行GC操作。")
-	message.SetString(language.Chinese, "3. (Undo)", "3. (待完成)处理关联仓库。处理同一个远程仓库下clone的其它仓库，确保不会将同样的文件再次提交到远程仓库。")
-	message.SetString(language.Chinese, "gitee GC page link", "如果是 Gitee 仓库，且有管理权限，请点击链接: ")
-	message.SetString(language.Chinese, "for detailed documentation, see", "详细文档请参阅: ")
-	message.SetString(language.Chinese, "suggest operations done", "完成以上三步后，恭喜你，所有的清理工作已经完成！")
-	message.SetString(language.Chinese, "introduce GIT LFS", "如果有大文件的存储需求，可使用'--lfs'选项，将大文件迁移到Gitee LFS，避免仓库体积膨胀。")
+	message.SetString(language.Chinese, "3. (Undo)", "3. (待完成)处理关联仓库。处理同一远程仓库下clone的其它仓库，确保不会将同样的文件再次提交到远程仓库。")
+	message.SetString(language.Chinese, "gitee GC page link", "    请点击Gitee仓库管理页面链接: ")
+	message.SetString(language.Chinese, "for detailed documentation, see", "    详细文档请参阅: ")
+	message.SetString(language.Chinese, "introduce GIT LFS", "如果开通了Gitee LFS(Large file storage)服务，可使用'--lfs'选项，将大文件迁移到LFS服务器进行管理。")
 	message.SetString(language.Chinese, "for the use of Gitee LFS, see", "Gitee LFS 的使用请参阅：")
 	message.SetString(language.Chinese, "init repo filter error", "初始化仓库过滤器失败")
 	message.SetString(language.Chinese, "ask question module fail: %s", "交互式模块运行失败: %s")
@@ -217,8 +214,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "expected a value followed by --limit option, but you are: %s", "'--limit'选项后面需要跟一个数值，但是你给的是: %s")
 	message.SetString(language.Chinese, "expected format: --limit=<n>b|k|m|g, but you are: --limit=%s", "希望的格式为: --limit=<n>b|k|m|g, 但是你给的是: --limit=%s")
 	message.SetString(language.Chinese, "scan done!", "扫描完成!")
-	message.SetString(language.Chinese, "note that there may be multiple versions of the same file", "注意，同一个文件因为版本不同可能会存在多个，这些是占用 Git 仓库存储的主要原因。")
-	message.SetString(language.Chinese, "please delete selectively according to its Blob ID", "请根据需要，通过其对应的ID进行选择性删除，如果确认文件可以全部删除，全选即可。")
+	message.SetString(language.Chinese, "note that there may be multiple versions of the same file", "注意，同一个文件因为版本不同可能会存在多个。")
 	// repository.go
 	message.SetString(language.Chinese, "start scanning", "开始扫描(如果仓库过大，扫描时间会比较长，请耐心等待)...")
 	message.SetString(language.Chinese, "run GetBlobName error: %s", "运行 GetBlobName 错误: %s")
@@ -240,7 +236,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "clone error", "git clone --no-local 错误")
 	message.SetString(language.Chinese, "run filepach.Abs error", "运行 filepach.Abs 错误")
 	message.SetString(language.Chinese, "backup done! Backup file path is: %s", "备份完毕! 备份文件路径为：%s")
-	message.SetString(language.Chinese, "Push failed", "推送失败，可能是没有权限推送，或者该仓库没有设置远程仓库。")
+	message.SetString(language.Chinese, "Push failed", "推送失败，可能是仓库大小仍然超出限制，建议继续清理其它历史大文件，再手动推送。")
 	message.SetString(language.Chinese, "done", "完成")
 	message.SetString(language.Chinese, "file cleanup is complete. Start cleaning the repository", "文件清理完毕，开始清理仓库...")
 	message.SetString(language.Chinese, "branches have been changed", "以下分支已经更改：")
@@ -268,8 +264,8 @@ func initChinese() {
 	message.SetString(language.Chinese, "multi select help info", "使用键盘的上下左右，可进行上下换行、全选、全取消，使用空格建选中单个，使用Enter键确认选择。")
 
 	message.SetString(language.Chinese, "confirm message", "以上是你要删除的文件，确定要<删除>吗?")
-	message.SetString(language.Chinese, "ask for override message", "检测到存在同名备份文件，你可能已经备份，请谨慎操作不要覆盖原始备份！选择No/N取消备份。")
-	message.SetString(language.Chinese, "ask for update message", "你的本地提交历史已经更改，是否现在<强制推送>到远程仓库？")
+	message.SetString(language.Chinese, "ask for override message", "检测到存在同名备份文件，你可能已经备份，请谨慎操作，不要覆盖原始备份！选择No/N取消备份。")
+	message.SetString(language.Chinese, "ask for update message", "你已完成一次文件清理过程，请确认仓库没有文件误删除，且仓库大小已经满足推送条件，则可以强制推送，否则选择No, 继续清理其它文件。")
 	message.SetString(language.Chinese, "ask for migrating big file into LFS", "是否将大文件迁移到 Gitee LFS 进行管理？")
 	message.SetString(language.Chinese, "process interrupted", "过程中断")
 
