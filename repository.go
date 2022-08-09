@@ -715,8 +715,8 @@ func (context Context) CleanUp() {
 	}
 
 	if !context.bare {
-		fmt.Println("running git reset --hard")
-		cmd1 := exec.Command(context.gitBin, "-C", context.workDir, "reset", "--hard")
+		fmt.Println("running git reset --hard --quiet")
+		cmd1 := exec.Command(context.gitBin, "-C", context.workDir, "reset", "--hard", "--quiet")
 		cmd1.Stdout = os.Stdout
 		err := cmd1.Start()
 		if err != nil {
@@ -741,8 +741,8 @@ func (context Context) CleanUp() {
 		PrintRedln(fmt.Sprint(err))
 	}
 
-	fmt.Println("running git gc --prune=now")
-	cmd3 := exec.Command(context.gitBin, "-C", context.workDir, "gc", "--prune=now")
+	fmt.Println("running git gc --prune=now --quiet")
+	cmd3 := exec.Command(context.gitBin, "-C", context.workDir, "gc", "--prune=now", "--quiet")
 	cmd3.Stderr = os.Stderr
 	cmd3.Stdout = os.Stdout
 	err = cmd3.Start()
@@ -750,6 +750,19 @@ func (context Context) CleanUp() {
 		PrintRedln(fmt.Sprint(err))
 	}
 	cmd3.Wait()
+	if err != nil {
+		PrintRedln(fmt.Sprint(err))
+	}
+
+	fmt.Println("running git gc --aggressive --quiet")
+	cmd4 := exec.Command(context.gitBin, "-C", context.workDir, "gc", "--aggressive", "--quiet")
+	cmd4.Stderr = os.Stderr
+	cmd4.Stdout = os.Stdout
+	err = cmd4.Start()
+	if err != nil {
+		PrintRedln(fmt.Sprint(err))
+	}
+	cmd4.Wait()
 	if err != nil {
 		PrintRedln(fmt.Sprint(err))
 	}
