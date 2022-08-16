@@ -238,11 +238,9 @@ func ScanRepository(context *Context) (BlobList, error) {
 			}
 			if actual_size > limit {
 				name, err := GetBlobName(context.gitBin, context.workDir, objectid)
-				if err != nil {
-					if err != io.EOF {
-						return empty, fmt.Errorf(LocalPrinter().Sprintf(
-							"run GetBlobName error: %s", err))
-					}
+				if err != nil && err != io.EOF {
+					return empty, fmt.Errorf(LocalPrinter().Sprintf(
+						"run GetBlobName error: %s", err))
 				}
 				if name == "" {
 					continue
@@ -268,11 +266,9 @@ func ScanRepository(context *Context) (BlobList, error) {
 
 			if actual_size > limit {
 				name, err := GetBlobName(context.gitBin, context.workDir, objectid)
-				if err != nil {
-					if err != io.EOF {
-						return empty, fmt.Errorf(LocalPrinter().Sprintf(
-							"run GetBlobName error: %s", err))
-					}
+				if err != nil && err != io.EOF {
+					return empty, fmt.Errorf(LocalPrinter().Sprintf(
+						"run GetBlobName error: %s", err))
 				}
 				if name == "" {
 					continue

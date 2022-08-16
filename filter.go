@@ -94,11 +94,9 @@ func filter_filechange(commit *Commit, repo *Repository) {
 				}
 			}
 			// filter by file type
-			if repo.context.scan_t.filetype {
-				if filepath.Ext(filechange.filepath) == "."+repo.context.opts.types {
-					Branch_changed.Add(filechange.branch)
-					matched = true
-				}
+			if repo.context.scan_t.filetype && (filepath.Ext(filechange.filepath) == "."+repo.context.opts.types) {
+				Branch_changed.Add(filechange.branch)
+				matched = true
 			}
 			// filter by blob name or directory
 			if repo.context.scan_t.filepath {

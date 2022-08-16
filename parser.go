@@ -394,12 +394,10 @@ func parse_ref_line(reftype, line string) (refname string) {
 func parse_parent_ref(reftype, line string) (orig_ref, ref int32) {
 	matches := Match(reftype+" :"+ref_re, line)
 	// from 0000000000000000000000000000000000000000
-	if len(line) == 46 {
-		if line[5:len(line)-1] == "0000000000000000000000000000000000000000" {
-			// mark to delete
-			PrintLocalWithRedln("nested tags error")
-			os.Exit(1)
-		}
+	if len(line) == 46 && line[5:len(line)-1] == "0000000000000000000000000000000000000000" {
+		// mark to delete
+		PrintLocalWithRedln("nested tags error")
+		os.Exit(1)
 	}
 	if len(matches) == 0 {
 		// don't matched parent ref line
@@ -651,15 +649,11 @@ func (iter *FEOutPutIter) parseCommit(line string) (*Commit, *Helper_info) {
 		newline, _ = iter.Next()
 	}
 
-	if n := len(orig_parents); n == 0 {
-		if Lasted_commit[branch] > 0 {
-			parents = []int32{Lasted_commit[branch]}
-		}
+	if n := len(orig_parents); n == 0 && Lasted_commit[branch] > 0 {
+		parents = []int32{Lasted_commit[branch]}
 	}
-	if n := len(orig_parents); n == 0 {
-		if Lasted_orig_commit[branch] > 0 {
-			orig_parents = []int32{Lasted_orig_commit[branch]}
-		}
+	if n := len(orig_parents); n == 0 && Lasted_orig_commit[branch] > 0 {
+		orig_parents = []int32{Lasted_orig_commit[branch]}
 	}
 
 	// parse filechanges

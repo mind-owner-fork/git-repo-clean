@@ -109,11 +109,9 @@ func MultiSelectCmd(list BlobList) []string {
 		Help:     LocalSprintf("multi select help info"),
 	}
 	err := survey.AskOne(prompt, &selected, survey.WithHelpInput('?'))
-	if err != nil {
-		if err == terminal.InterruptErr {
-			PrintLocalWithRedln("process interrupted")
-			os.Exit(1)
-		}
+	if err == terminal.InterruptErr {
+		PrintLocalWithRedln("process interrupted")
+		os.Exit(1)
 	}
 	return selected
 }
@@ -127,11 +125,9 @@ func Confirm(list []string) (bool, []string) {
 	}
 
 	err := survey.AskOne(prompt, &ok)
-	if err != nil {
-		if err == terminal.InterruptErr {
-			PrintLocalWithRedln("process interrupted")
-			os.Exit(1)
-		}
+	if err == terminal.InterruptErr {
+		PrintLocalWithRedln("process interrupted")
+		os.Exit(1)
 	}
 
 	// turn back to name oid only
@@ -150,11 +146,9 @@ func AskForMigrateToLFS() bool {
 		Message: LocalSprintf("ask for migrating big file into LFS") + "\n",
 	}
 	err := survey.AskOne(prompt, &ok)
-	if err != nil {
-		if err == terminal.InterruptErr {
-			PrintLocalWithRedln("process interrupted")
-			os.Exit(1)
-		}
+	if err == terminal.InterruptErr {
+		PrintLocalWithRedln("process interrupted")
+		os.Exit(1)
 	}
 
 	return ok
@@ -167,11 +161,9 @@ func AskForOverride() bool {
 		Message: LocalSprintf("ask for override message") + "\n",
 	}
 	err := survey.AskOne(prompt, &ok)
-	if err != nil {
-		if err == terminal.InterruptErr {
-			PrintLocalWithRedln("process interrupted")
-			os.Exit(1)
-		}
+	if err == terminal.InterruptErr {
+		PrintLocalWithRedln("process interrupted")
+		os.Exit(1)
 	}
 
 	return ok
@@ -184,11 +176,9 @@ func AskForUpdate() bool {
 		Message: LocalSprintf("ask for update message") + "\n",
 	}
 	err := survey.AskOne(prompt, &ok)
-	if err != nil {
-		if err == terminal.InterruptErr {
-			PrintLocalWithRedln("process interrupted")
-			os.Exit(1)
-		}
+	if err == terminal.InterruptErr {
+		PrintLocalWithRedln("process interrupted")
+		os.Exit(1)
 	}
 
 	return ok
