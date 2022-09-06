@@ -103,7 +103,7 @@ func initEnglish() {
 	message.SetString(language.English, "could not run 'git symbolic-ref HEAD --short': %s", "Could not run 'git symbolic-ref HEAD --short': %s")
 	message.SetString(language.English, "could not run 'git status'", "Could not run 'git status', make sure you are in a git repo.")
 	message.SetString(language.English, "there's some changes to be committed, please commit them first",
-		"There's some changes to be committed, please commit them first.")
+		"There's some changes to be committed, please commit them first(Try to use 'git status' to see un-committed changes).")
 	message.SetString(language.English, "could not run 'du -hs'", "Could not run 'du -hs'")
 	message.SetString(language.English, "backup canceled", "Backup canceled")
 	message.SetString(language.English, "start backup", "Start backup...")
@@ -228,7 +228,7 @@ func initChinese() {
 	message.SetString(language.Chinese, "match git version wrong", "Git版本号匹配错误")
 	message.SetString(language.Chinese, "could not run 'git symbolic-ref HEAD --short': %s", "无法运行'git symbolic-ref HEAD --short': %s")
 	message.SetString(language.Chinese, "could not run 'git status'", "无法运行`git status`, 请确保你在一个 Git 仓库中")
-	message.SetString(language.Chinese, "there's some changes to be committed, please commit them first", "当前仍有未提交的更改，请先提交。")
+	message.SetString(language.Chinese, "there's some changes to be committed, please commit them first", "当前仍有未提交的更改，请先提交(使用 git status 查看未提交的更改)。")
 	message.SetString(language.Chinese, "git status clean", "git status为空")
 	message.SetString(language.Chinese, "could not run 'du -hs'", "无法运行'du -hs'")
 	message.SetString(language.Chinese, "backup canceled", "已取消备份")
