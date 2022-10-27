@@ -21,7 +21,7 @@ var qs = []*survey.Question{
 		},
 		Validate: func(ans interface{}) error {
 			str, ok := ans.(string)
-			if !ok || len(str) > 10 {
+			if !ok || len(str) > 50 {
 				return errors.New(LocalSprintf("filetype error one"))
 			}
 			match, _ := regexp.MatchString(`^[a-zA-Z1-9]+[.]?[a-zA-Z1-9]*$|^[a-zA-Z1-9]+$`, str)

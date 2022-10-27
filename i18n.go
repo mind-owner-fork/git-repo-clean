@@ -124,7 +124,7 @@ func initEnglish() {
 	message.SetString(language.English, "select the type of file to scan, such as zip, png:", "Select the type of file to scan, such as zip, png:")
 	message.SetString(language.English, "default is all types. If you want to specify a type, you can directly enter the type suffix without prefix '.'",
 		"Default is all types. If you want to specify a type, you can directly enter the type suffix without prefix '.'")
-	message.SetString(language.English, "filetype error one", "Sorry, the type name you entered is too long, more than 10 characters")
+	message.SetString(language.English, "filetype error one", "Sorry, the type name you entered is too long, more than 50 characters")
 	message.SetString(language.English, "filetype error two", "The type must be a letter. It can contain '.' in the middle, but it doesn't need to contain '.' at the beginning")
 
 	message.SetString(language.English, "select the minimum size of the file to scan, such as 1m, 1G:", "Select the minimum size of the file to scan, such as 1m, 1G:")
@@ -247,7 +247,7 @@ func initChinese() {
 	// cmd.go
 	message.SetString(language.Chinese, "select the type of file to scan, such as zip, png:", "选择要扫描的文件的类型，如：zip, png:")
 	message.SetString(language.Chinese, "filetype help message", "默认无类型，即查找所有类型。如果想指定类型，则直接输入类型后缀名即可, 不需要加'.'")
-	message.SetString(language.Chinese, "filetype error one", "抱歉，输入的类型名过长，超过10个字符")
+	message.SetString(language.Chinese, "filetype error one", "抱歉，输入的类型名过长，超过50个字符")
 	message.SetString(language.Chinese, "filetype error two", "类型必须是字母，中间可以包含'.'，但是开头不需要包含'.'")
 
 	message.SetString(language.Chinese, "select the minimum size of the file to scan, such as 1m, 1G:", "选择要扫描文件的最低大小，如：1M, 1g:")
